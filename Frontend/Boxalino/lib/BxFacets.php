@@ -6,7 +6,9 @@ class BxFacets
 {
 	public $facets = array();
 	protected $facetResponse = null;
-	
+
+	protected $selectedPriceValues = null;
+
 	protected $parameterPrefix = '';
 	
 	protected $priceFieldName = 'discountedPrice';
@@ -69,15 +71,12 @@ class BxFacets
         return array_keys($this->facets);
     }
 
-    public function getFacetResponse($fieldName) {
-        if($this->facetResponse != null) {
-			foreach($this->facetResponse as $facetResponse) {
-				if($facetResponse->fieldName == $fieldName) {
-					return $facetResponse;
-				}
-			}
-		}
-		
+    protected function getFacetResponse($fieldName) {
+        foreach($this->facetResponse as $facetResponse) {
+            if($facetResponse->fieldName == $fieldName) {
+                return $facetResponse;
+            }
+        }
         throw new \Exception("trying to get facet response on unexisting fieldname " . $fieldName);
     }
 	
@@ -191,15 +190,9 @@ class BxFacets
 	
 	public function getSelectedValues($fieldName) {
 		$selectedValues = array();
-        try {
-			foreach($this->getFacetValues($fieldName) as $key) {
-				if($this->isFacetValueSelected($fieldName, $key)) {
-					$selectedValues[] = $key;
-				}
-			}
-		} catch(\Exception $e) {
-			if(isset($this->facets[$fieldName]['selectedValues'])) {
-				return $this->facets[$fieldName]['selectedValues'];
+        foreach($this->getFacetValues($fieldName) as $key) {
+			if($this->isFacetValueSelected($fieldName, $key)) {
+				$selectedValues[] = $key;
 			}
 		}
 		return $selectedValues;
@@ -317,6 +310,8 @@ class BxFacets
 			}
 			if($facet['type'] == 'ranged') {
 				if(isset($this->facets[$fieldName]['selectedValues'][0])) {
+					$values = explode('-', $this->facets[$fieldName]['selectedValues'][0]);
+
 					return $this->facets[$fieldName]['selectedValues'][0];
 				}
 			}
@@ -344,7 +339,7 @@ class BxFacets
 	public function getCategoryResponse(){
 		return $this->getFacetResponse($this->getCategoryFieldName());
 	}
-	
+
 	public function getCategories() {
 		return $this->getFacetValues($this->getCategoryFieldName());
 	}
@@ -365,10 +360,24 @@ class BxFacets
 	}
 	
 	protected function getFacetValueArray($fieldName, $facetValue) {
+
+		if(($fieldName == $this->priceFieldName) && ($this->selectedPriceValues != null)){
+			$from = round($this->selectedPriceValues[0]->rangeFromInclusive, 2);
+			$to = round($this->selectedPriceValues[0]->rangeToExclusive, 2);
+			$valueLabel = $from . ' - ' . $to;
+			$paramValue = "$from-$to";
+			return array($valueLabel, $paramValue, null, true);
+		}
+
         $keyValues = $this->getFacetKeysValues($fieldName);
+
+		if(is_array($facetValue)){
+			$facetValue = reset($facetValue);
+		}
 		if(!isset($keyValues[$facetValue])) {
 			throw new \Exception("Requesting an invalid facet values for fieldname: " . $fieldName . ", requested value: " . $facetValue . ", available values . " . implode(',', array_keys($keyValues)));
 		}
+
 		$type = $this->getFacetType($fieldName);
 		$fv = isset($keyValues[$facetValue]) ? $keyValues[$facetValue] : null;
 		switch($type) {
@@ -392,11 +401,21 @@ class BxFacets
 	public function getCategoryValueLabel($facetValue){
 		return $this->getFacetValueLabel($this->getCategoryFieldName(), $facetValue);
 	}
-	
+
+	public function getSelectedPriceRange(){
+		$valueLabel = null;
+		if($this->selectedPriceValues !== null && ($this->selectedPriceValues != null)){
+			$from = round($this->selectedPriceValues[0]->rangeFromInclusive, 2);
+			$to = round($this->selectedPriceValues[0]->rangeToExclusive, 2);
+			$valueLabel = $from . '-' . $to;
+		}
+		return $valueLabel;
+	}
+
 	public function getPriceValueLabel($facetValue) {
 		return $this->getFacetValueLabel($this->getPriceFieldName(), $facetValue);
 	}
-	
+
 	public function getFacetValueLabel($fieldName, $facetValue) {
         list($label, $parameterValue, $hitCount, $selected) = $this->getFacetValueArray($fieldName, $facetValue);
 		return $label;
@@ -444,7 +463,11 @@ class BxFacets
 		foreach($this->facets as $fieldName => $facet) {
 			$type = $facet['type'];
 			$order = $facet['order'];
-			
+
+			if($fieldName == 'discountedPrice'){
+				$this->selectedPriceValues = $this->facetSelectedValue($fieldName, $type);
+			}
+
 			$facetRequest = new \com\boxalino\p13n\api\thrift\FacetRequest();
 			$facetRequest->fieldName = $fieldName;
 			$facetRequest->numerical = $type == 'ranged' ? true : $type == 'numerical' ? true : false;
@@ -458,8 +481,6 @@ class BxFacets
 		return $thriftFacets;
 	}
 
-	private $trimMode = true;
-
     private function facetSelectedValue($fieldName, $option)
     {
         $selectedFacets = array();
@@ -472,12 +493,9 @@ class BxFacets
                         $selectedFacet->rangeFromInclusive = $rangedValue[0];
                     }
                     if ($rangedValue[1] != '*') {
-                        $selectedFacet->rangeToExclusive = $rangedValue[1];
+                        $selectedFacet->rangeToExclusive = $rangedValue[1] + 0.01;
                     }
                 } else {
-					if ($this->trimMode) {
-//						$value = trim($value);
-					}
                     $selectedFacet->stringValue = $value;
                 }
                 $selectedFacets[] = $selectedFacet;

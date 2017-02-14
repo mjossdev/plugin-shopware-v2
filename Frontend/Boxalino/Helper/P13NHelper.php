@@ -41,14 +41,45 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
     private static $choiceContexts = array();
 
     /**
+     * @var Shopware_Plugins_Frontend_Boxalino_Benchmark
+     */
+    private $benchmark;
+
+    /**
      * Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper constructor.
      */
     private function __construct() {
+        $this->benchmark = Shopware_Plugins_Frontend_Boxalino_Benchmark::instance();
         $this->config = Shopware()->Config();
         $libPath = __DIR__ . '/../lib';
         require_once($libPath . '/BxClient.php');
         \com\boxalino\bxclient\v1\BxClient::LOAD_CLASSES($libPath);
         $this->initializeBXClient();
+    }
+
+    /**
+     * initializeBXClient
+     */
+    protected function initializeBXClient() {
+
+        $account = $this->config->get('boxalino_account');
+        $password = $this->config->get('boxalino_password');
+        $isDev = $this->config->get('boxalino_dev');
+        $host = $this->config->get('boxalino_host');
+        $p13n_username = $this->config->get('boxalino_p13_user_name');
+        $p13n_password = $this->config->get('boxalino_p13_user_password');
+        $domain = $this->config->get('boxalino_domain');
+        self::$bxClient = new \com\boxalino\bxclient\v1\BxClient($account, $password, $domain, $isDev, $host, null, null, null, $p13n_username, $p13n_password);
+        self::$bxClient->setTimeout(1000);
+    }
+
+    /**
+     * @return null|Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper
+     */
+    public static function instance() {
+        if (self::$instance == null)
+            self::$instance = new Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper();
+        return self::$instance;
     }
 
     /**
@@ -85,6 +116,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
      */
     public function addSearch($queryText = "", $pageOffset = 0, $hitCount = 10, $type = "product", $sort = null, $options = array()){
 
+        $this->benchmark->log("Start of addSearch");
         $choiceId = $this->getSearchChoice($queryText);
         $returnFields = $this->getReturnFields($type);
         $lang = $this->getShortLocale();
@@ -104,6 +136,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
 
         self::$bxClient->addRequest($bxRequest);
         self::$choiceContexts[$choiceId][] = $type;
+        $this->benchmark->log("End of addSearch");
     }
 
     /**
@@ -131,17 +164,10 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         return $bxFacets;
     }
 
-    public function getLocalArticles($ids = array()) {
-
-        $articles = array();
-        foreach ($ids as $id) {
-            $articleNew = Shopware()->Modules()->Articles()->sGetPromotionById('fix', 0, $id);
-            if (!empty($articleNew['articleID'])) {
-                $articles[] = $articleNew;
-            }
-        }
-        return $articles;
-    }
+    /**
+     * @param string $type
+     * @return null
+     */
     public function getFacets($type = "product") {
 
         $count = array_search($type, self::$choiceContexts[$this->currentSearchChoice]);
@@ -151,13 +177,17 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         }
         return $facets;
     }
-    
+
+    /**
+     * @param string $type
+     * @return array
+     */
     protected function getReturnFields($type = "product"){
         $returnFields = array($this->getEntityIdFieldName($type));
         if($type == 'product'){
-            $returnFields = array_merge($returnFields, ['id', 'categories', 'score', 'products_bx_type', 'title', 'discountedPrice', 'products_ordernumber']);
+            $returnFields = array_merge($returnFields, ['id', 'score', 'products_brand', 'products_bx_type', 'title', 'discountedPrice', 'products_ordernumber']);
         }else{
-            $returnFields = array_merge($returnFields, ['id', 'categories', 'score', 'products_bx_type', 'products_blog_title', 'products_blog_id']);
+            $returnFields = array_merge($returnFields, ['id', 'score', 'products_bx_type', 'products_blog_title', 'products_blog_id']);
         }
         $additionalFields = explode(',', $this->config->get('boxalino_returned_fields'));
         if(isset($additionalFields) && $additionalFields[0] != ''){
@@ -183,29 +213,12 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         }
         return $entityIdFieldName;
     }
-    
-    protected function initializeBXClient() {
-
-        $account = $this->config->get('boxalino_account');
-        $password = $this->config->get('boxalino_password');
-        $isDev = $this->config->get('boxalino_dev');
-        $host = $this->config->get('boxalino_host');
-        $p13n_username = $this->config->get('boxalino_p13_user_name');
-        $p13n_password = $this->config->get('boxalino_p13_user_password');
-        $domain = $this->config->get('boxalino_domain');
-        self::$bxClient = new \com\boxalino\bxclient\v1\BxClient($account, $password, $domain, $isDev, $host, null, null, null, $p13n_username, $p13n_password);
-//            self::$bxClient->setTimeout($this->scopeConfig->getValue('bxGeneral/advanced/thrift_timeout',$this->scopeStore))->setRequestParams($this->request->getParams());
-    }
 
     /**
-     * @return null|Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper
+     * @param string $type
+     * @param string $query
+     * @return array
      */
-    public static function instance() {
-        if (self::$instance == null)
-            self::$instance = new Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper();
-        return self::$instance;
-    }
-
     private function getSystemFilters($type = 'product', $query = ''){
         $filters = array();
 //        if($query == "") {
@@ -216,11 +229,17 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         return $filters;
     }
 
+    /**
+     * @param $queryText
+     * @param $with_blog
+     * @return array
+     */
     public function autocomplete($queryText, $with_blog){
+        $this->benchmark->log("Start autocomplete p13nHelper");
         $choice = $this->getSearchChoice($queryText);
         $auto_complete_choice = $this->config->get('boxalino_autocomplete_widget_name');
-        $textual_Limit = 6;//$this->config->get('boxalino_textual_suggestion_limit');
-        $product_limit = 5;//$this->config->get('boxalino_product_suggestion_limit');
+        $textual_Limit = $this->config->get('boxalino_textual_suggestion_limit', 3);
+        $product_limit = $this->config->get('boxalino_product_suggestion_limit', 3);
         $searches = !$with_blog ? array('product') : array('product','blog');
         $bxRequests = array();
         foreach ($searches as $search){
@@ -246,9 +265,14 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
             $bxAutocompelteRespomse = self::$bxClient->getAutocompleteResponse($index);
             $template_properties = array_merge($template_properties, $this->createAjaxData($bxAutocompelteRespomse, $queryText, $search));
         }
+        $this->benchmark->log("End autocomplete p13nHelper");
         return $template_properties;
     }
 
+    /**
+     * @param $ids
+     * @return array
+     */
     protected function getBlogs($ids){
         $blogs = array();
         foreach ($ids as $id) {
@@ -261,15 +285,19 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         return $blogs;
     }
 
+    /**
+     * @param $autocompleteResponse
+     * @param $queryText
+     * @param string $type
+     * @return array
+     */
     protected function createAjaxData($autocompleteResponse, $queryText, $type = 'product'){
 
         $choice = $this->getSearchChoice($queryText);
         $suggestions = array();
-        $totalHitCount = 0;
-        foreach ($autocompleteResponse->getTextualSuggestions() as $suggestion) {
-            $hits = $autocompleteResponse->getTextualSuggestionTotalHitCount($suggestion, true);
-            $totalHitCount += $hits;
-            $suggestions[] = array('html' => $autocompleteResponse->getHighlightedSuggestions($suggestion), 'hits' => $hits);
+        foreach ($autocompleteResponse->getTextualSuggestions() as $i => $suggestion) {
+            $hits = $autocompleteResponse->getTextualSuggestionTotalHitCount($suggestion);
+            $suggestions[] = array('html' => $autocompleteResponse->getTextualSuggestionHighlighted($suggestion), 'hits' => $hits);
         }
         $hitIds = $autocompleteResponse->getBxSearchResponse()->getHitIds($choice, true, 0, 10, $this->getEntityIdFieldName($type));
         if($type == 'product'){
@@ -287,7 +315,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
                 'sSearchRequest' => array('sSearch' => $queryText),
                 'sSearchResults' => array(
                     'sResults' => $sResults,
-                    'sArticlesCount' => $totalHitCount,
+                    'sArticlesCount' => $autocompleteResponse->getBxSearchResponse()->getTotalHitCount($this->currentSearchChoice),
                     'sSuggestions' => $suggestions
                 )
             );
@@ -314,6 +342,21 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
             );
         }
     }
+
+    public function getResponse(){
+        return self::$bxClient->getResponse();
+    }
+    
+    /**
+     * @param $choiceId
+     * @param int $max
+     * @param int $min
+     * @param int $offset
+     * @param array $context
+     * @param string $type
+     * @param bool $execute
+     * @return array
+     */
     public function getRecommendation($choiceId, $max = 5, $min = 5, $offset = 0, $context = array(), $type = '', $execute = true) {
 
         if(!$execute){
@@ -341,45 +384,85 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
             }
             return array();
         }
+        $benchmark = Shopware_Plugins_Frontend_Boxalino_Benchmark::instance();
+        $benchmark->log("before get hit ids for recommendation");
         $ids = self::$bxClient->getResponse()->getHitIds($choiceId);
-        return $this->getLocalArticles($ids);
+        $benchmark->log("after get hit ids for recommendation");
+        $benchmark->log("before getLocalArticles");
+        $articles = $this->getLocalArticles($ids);
+        $benchmark->log("after getLocalArticles");
+        return $articles;
     }
-    
-    public function getResponse(){
-        return self::$bxClient->getResponse();
+
+    /**
+     * Reset BxClient requests
+     */
+    public function resetRequests(){
+        self::$bxClient->resetRequests();
     }
+
+    /**
+     * @param string $type
+     * @return mixed
+     */
     public function getEntitiesIds($type = "product"){
 
         $count = array_search($type, self::$choiceContexts[$this->currentSearchChoice]);
-        return self::$bxClient->getResponse()->getHitIds($this->currentSearchChoice, true, $count, 10, $this->getEntityIdFieldName());
+        return self::$bxClient->getResponse()->getHitIds($this->currentSearchChoice, true, $count, 10, $this->getEntityIdFieldName($type));
     }
 
+    /**
+     * @param $queryText
+     * @param string $type
+     * @return mixed
+     */
     public function getSubPhraseEntitiesIds($queryText, $type = "product") {
 
         $count = array_search($type, self::$choiceContexts[$this->currentSearchChoice]);
-        return self::$bxClient->getResponse()->getSubPhraseHitIds($queryText, $this->currentSearchChoice, $count, $this->getEntityIdFieldName());
+        return self::$bxClient->getResponse()->getSubPhraseHitIds($queryText, $this->currentSearchChoice, $count, $this->getEntityIdFieldName($type));
     }
+
+    /**
+     * @param string $type
+     * @return mixed
+     */
     public function getSubPhrasesQueries($type = "product") {
 
         $count = array_search($type, self::$choiceContexts[$this->currentSearchChoice]);
         return self::$bxClient->getResponse()->getSubPhrasesQueries($this->currentSearchChoice, $count);
     }
+
+    /**
+     * @param string $type
+     * @return mixed
+     */
     public function areThereSubPhrases($type = "product") {
 
-        $count = array_search($type = "product", self::$choiceContexts[$this->currentSearchChoice]);
+        $count = array_search($type, self::$choiceContexts[$this->currentSearchChoice]);
         return self::$bxClient->getResponse()->areThereSubPhrases($this->currentSearchChoice, $count);
     }
+
+    /**
+     * @param $queryText
+     * @param string $type
+     * @return mixed
+     */
     public function getSubPhraseTotalHitCount($queryText, $type = "product") {
 
-        $count = array_search($type = "product", self::$choiceContexts[$this->currentSearchChoice]);
+        $count = array_search($type, self::$choiceContexts[$this->currentSearchChoice]);
         return self::$bxClient->getResponse()->getSubPhraseTotalHitCount($queryText, $this->currentSearchChoice, $count);
     }
 
+    /**
+     * @param string $type
+     * @return mixed
+     */
     public function getTotalHitCount($type = "product"){
 
         $count = array_search($type, self::$choiceContexts[$this->currentSearchChoice]);
         return self::$bxClient->getResponse()->getTotalHitCount($this->currentSearchChoice, true, $count);
     }
+
     /**
      * Sets request instance
      *
@@ -414,36 +497,10 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         return $this->config->get('maxlivesearchresults', 6);
     }
 
-    public function debug($a, $b = null) {
-        if ($this->isDebug()) {
-            echo '<pre>';
-            var_dump($a, $b);
-            echo '</pre>';
-        }
-    }
-
-    public function debugProtected($a, $b = null) {
-        if (!$this->isDebugProtected()) return;
-
-        $this->debug($a, $b);
-    }
-
-    private function isDebug() {
-        if (!$this->Request()) return false;
-
-        return $this->Request()->getQuery('dev_bx_disp', false) == 'true';
-    }
-
-    private function isDebugProtected() {
-        if (!$this->Request()) return false;
-
-        return $this->Request()->getQuery('bx_debug_auth', false) == $this->config->get('boxalino_password');
-    }
-
     public static function getAccount() {
         $config = Shopware()->Config();
-        return $config->get('boxalino_dev') == 1 ? 
-            $config->get('boxalino_account') . '_dev' : 
+        return $config->get('boxalino_dev') == 1 ?
+            $config->get('boxalino_account') . '_dev' :
             $config->get('boxalino_account');
     }
     
@@ -454,15 +511,6 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         }
         return $basket;
     }
-    
-    public function newTiming($name) {
-        $then = microtime(true);
-        return function() use($name, $then) {
-            $took = microtime(true) - $then;
-            $this->debug("timing $name -- took [ms]", ($took * 1000));
-        };
-    }
-
 
     /**
      * @param $ids
@@ -476,5 +524,24 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
             )
         );
     }
-    
+
+    /**
+     * @param array $ids
+     * @return array
+     */
+    public function getLocalArticles($ids = array()) {
+
+        $articles = array();
+        foreach ($ids as $id) {
+
+            $this->benchmark->log("Start article getLocalArticles");
+            $articleNew = Shopware()->Modules()->Articles()->sGetPromotionById('fix', 0, $id);
+            $this->benchmark->log("End article getLocalArticles");
+            if (!empty($articleNew['articleID'])) {
+                $articles[] = $articleNew;
+            }
+        }
+        return $articles;
+    }
+
 }

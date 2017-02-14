@@ -42,4 +42,9 @@
     {else}
         {$smarty.block.parent}
     {/if}
+    {if $bxNoResult}
+        <div class="content no-result" style="height:400px">
+            {include file="widgets/emotion/components/component_article_slider.tpl" Data=$BxData}
+        </div>
+    {/if}
 {/block}

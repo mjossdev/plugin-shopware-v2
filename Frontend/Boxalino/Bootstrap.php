@@ -31,7 +31,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
     }
 
     public function getVersion() {
-        return '1.2.21';
+        return '1.2.22';
     }
 
     public function getInfo() {
@@ -140,13 +140,11 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
     }
 
     public function onBoxalinoExportCronJob(Shopware_Components_Cron_CronJob $job) {
-//        return $this->runBoxalinoExportCronJob();
-        return true;
+        return $this->runBoxalinoExportCronJob();
     }
 
     public function onBoxalinoExportCronJobDelta(Shopware_Components_Cron_CronJob $job) {
-//        return $this->runBoxalinoExportCronJob(true);
-        return true;
+        return $this->runBoxalinoExportCronJob(true);
     }
 
     private function runBoxalinoExportCronJob($delta = false) {
@@ -248,6 +246,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
             'convertRecommendationSlider'
         );
         $this->registerController('Frontend', 'RecommendationSlider');
+        $this->registerController('Frontend', 'BxDebug');
     }
     
     public function convertRecommendationSlider($args) {
@@ -296,8 +295,6 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
         return $this->searchInterceptor->listing($arguments);
     }
     public function onAjaxListing(Enlight_Event_EventArgs $arguments){
-        $request = $arguments->getSubject()->Request();
-        if ($request->getModuleName() != 'frontend') { return; }
         return $this->searchInterceptor->listingAjax($arguments);
     }
 

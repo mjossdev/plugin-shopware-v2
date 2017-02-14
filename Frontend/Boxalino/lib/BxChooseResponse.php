@@ -60,16 +60,17 @@ class BxChooseResponse
 		return null;
 	}
 	
-	public function getVariantSearchResult($variant, $considerRelaxation=true, $maxDistance=10) {
+	public function getVariantSearchResult($variant, $considerRelaxation=true, $maxDistance=10, $discardIfSubPhrases = true) {
 
 		$searchResult = $variant->searchResult;
-		if($considerRelaxation && $variant->searchResult->totalHitCount == 0) {
+		if($considerRelaxation && $variant->searchResult->totalHitCount == 0 && !($discardIfSubPhrases && $this->areThereSubPhrases())) {
 			return $this->getFirstPositiveSuggestionSearchResult($variant, $maxDistance);
 		}
 		return $searchResult;
 	}
 	
 	public function getSearchResultHitIds($searchResult, $fieldId='id') {
+
 		$ids = array();
 		if($searchResult) {
 			if($searchResult->hits){
@@ -85,10 +86,10 @@ class BxChooseResponse
         return $ids;
 	}
 
-    public function getHitIds($choice=null, $considerRelaxation=true, $count=0, $maxDistance=10, $fieldId='id') {
+    public function getHitIds($choice=null, $considerRelaxation=true, $count=0, $maxDistance=10, $fieldId='id', $discardIfSubPhrases = true) {
 
 		$variant = $this->getChoiceResponseVariant($choice, $count);
-		return $this->getSearchResultHitIds($this->getVariantSearchResult($variant, $considerRelaxation, $maxDistance), $fieldId);
+		return $this->getSearchResultHitIds($this->getVariantSearchResult($variant, $considerRelaxation, $maxDistance, $discardIfSubPhrases), $fieldId);
     }
 	
 	public function retrieveHitFieldValues($item, $field, $fields, $hits) {
@@ -137,10 +138,10 @@ class BxChooseResponse
 		return null;
 	}
 
-    public function getFacets($choice=null, $considerRelaxation=true, $count=0, $maxDistance=10) {
+    public function getFacets($choice=null, $considerRelaxation=true, $count=0, $maxDistance=10, $discardIfSubPhrases = true) {
 		
 		$variant = $this->getChoiceResponseVariant($choice, $count);
-		$searchResult = $this->getVariantSearchResult($variant, $considerRelaxation, $maxDistance);
+		$searchResult = $this->getVariantSearchResult($variant, $considerRelaxation, $maxDistance, $discardIfSubPhrases);
 		$facets = $this->getRequestFacets($choice);
 
 		if(empty($facets) || $searchResult == null){
@@ -150,9 +151,9 @@ class BxChooseResponse
 		return $facets;
     }
 
-    public function getHitFieldValues($fields, $choice=null, $considerRelaxation=true, $count=0, $maxDistance=10) {
+    public function getHitFieldValues($fields, $choice=null, $considerRelaxation=true, $count=0, $maxDistance=10, $discardIfSubPhrases = true) {
 		$variant = $this->getChoiceResponseVariant($choice, $count);
-		return $this->getSearchHitFieldValues($this->getVariantSearchResult($variant, $considerRelaxation, $maxDistance), $fields);
+		return $this->getSearchHitFieldValues($this->getVariantSearchResult($variant, $considerRelaxation, $maxDistance, $discardIfSubPhrases), $fields);
     }
 	
 	public function getFirstHitFieldValue($field=null, $returnOneValue=true, $hitIndex=0, $choice=null, $count=0, $maxDistance=10) {
@@ -178,14 +179,12 @@ class BxChooseResponse
 		return null;
 	}
 
-    public function getTotalHitCount($choice=null, $considerRelaxation=true, $count=0, $maxDistance=10) {
+    public function getTotalHitCount($choice=null, $considerRelaxation=true, $count=0, $maxDistance=10, $discardIfSubPhrases = true) {
 		$variant = $this->getChoiceResponseVariant($choice, $count);
-	
-		$searchResult = $this->getVariantSearchResult($variant, $considerRelaxation, $maxDistance);
+		$searchResult = $this->getVariantSearchResult($variant, $considerRelaxation, $maxDistance, $discardIfSubPhrases);
 		if($searchResult == null) {
 			return 0;
 		}
-		
 		return $searchResult->totalHitCount;
     }
 	
@@ -193,9 +192,13 @@ class BxChooseResponse
         return $this->getTotalHitCount($choice, false, $count) == 0 && $this->getTotalHitCount($choice, true, $count, $maxDistance) > 0 && $this->areThereSubPhrases() == false;
 	}
 	
-	public function getCorrectedQuery($choice=null, $count=0) {
+	public function areResultsCorrectedAndAlsoProvideSubPhrases($choice=null, $count=0, $maxDistance=10) {
+        return $this->getTotalHitCount($choice, false, $count) == 0 && $this->getTotalHitCount($choice, true, $count, $maxDistance, false) > 0 && $this->areThereSubPhrases() == true;
+	}
+	
+	public function getCorrectedQuery($choice=null, $count=0, $maxDistance=10) {
 		$variant = $this->getChoiceResponseVariant($choice, $count);
-		$searchResult = $this->getVariantSearchResult($variant);
+		$searchResult = $this->getVariantSearchResult($variant, true, $maxDistance, false);
 		if($searchResult) {
 			return $searchResult->queryText;
 		}

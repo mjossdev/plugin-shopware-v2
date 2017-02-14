@@ -322,6 +322,7 @@ class BxClient
 	
 	public function resetRequests() {
 		$this->chooseRequests = array();
+		$this->chooseResponses = null;
 	}
 	
 	public function getRequest($index=0) {
