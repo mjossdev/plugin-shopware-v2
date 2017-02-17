@@ -253,9 +253,9 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
         foreach ($facets as $facet) {
 
             $facet_id = $facet['id'];
-            $facet_name = preg_replace('/[\{\}\(\)]/', '',  trim($facet['name']));
-            $facet_name = str_replace(' ', '_', $facet_name);
-            $facet_name = "option_{$facet_id}_" . preg_replace('/[^äöü ÄÖÜ A-Za-z0-9\_\&]/', '_', strtolower($facet_name));
+//            $facet_name = preg_replace('/[\{\}\(\)]/', '',  trim($facet['name']));
+//            $facet_name = str_replace(' ', '_', $facet_name);
+            $facet_name = "option_{$facet_id}";// . preg_replace('/[^äöü ÄÖÜ A-Za-z0-9\_\&]/', '_', strtolower($facet_name));
 
             $data = array();
             $localized_columns = array();
@@ -348,7 +348,9 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
     private function exportItemBlogs($account, $files){
 
         $db = $this->db;
-        $headers = array('id', 'title', 'author_id', 'active', 'short_description', 'description', 'views', 'display_date', 'category_id', 'template', 'meta_keywords', 'meta_description', 'meta_title', 'assigned_articles', 'tags');
+        $headers = array('id', 'title', 'author_id', 'active', 'short_description', 'description', 'views',
+            'display_date', 'category_id', 'template', 'meta_keywords', 'meta_description', 'meta_title',
+            'assigned_articles', 'tags', 'shop_id');
         $id = $this->_config->getAccountStoreId($account);
         $data = array();
         $sql = $db->select()
@@ -368,14 +370,18 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
                 array('c' => 's_categories'),
                 $this->qi('c.id') . ' = ' . $this->qi('b.category_id') .
                 $this->getShopCategoryIds($id),
-                array()
+                array('path')
             )
             ->group('b.id');
 
         $stmt = $db->query($sql);
         while ($row = $stmt->fetch()) {
+            $id = explode('|', $row['path']);
+            unset($row['path']);
+            $row['shop_id'] = $id[count($id) - 2];
             $data[] = $row;
         }
+
         if (count($data)) {
             $data = array_merge(array(array_keys(end($data))), $data);
         } else {
@@ -406,7 +412,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
         $shop = $repository->getActiveById($main_shopId);
         $defaultPath = 'http://'. $shop->getHost() . $shop->getBasePath() . '/';
         $languages = $this->_config->getAccountLanguages($account);
-        $lang_header = array('articleID', 'subshopID');
+        $lang_header = array();
         $data = array();
         foreach ($languages as $shopId => $language) {
             $lang_header[$language] = "value_$language";
@@ -453,7 +459,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
         }
 
         if (count($data) > 0) {
-            $data = array_merge(array($lang_header), $data);
+            $data = array_merge(array(array_merge(array('articleID', 'subshopID'), $lang_header)), $data);
         }
         $files->savepartToCsv('url.csv', $data);
         $referenceKey = $this->bxData->addResourceFile($files->getPath('url.csv'), 'articleID', $lang_header);

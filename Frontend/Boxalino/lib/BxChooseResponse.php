@@ -79,6 +79,10 @@ class BxChooseResponse
 				}
 			}elseif(isset($searchResult->hitsGroups)){
 				foreach ($searchResult->hitsGroups as $hitGroup){
+				    if ($fieldId != 'id' && $fieldId != '') {
+				        $ids[] = $hitGroup->hits[0]->values[$fieldId][0];
+				        continue;
+                    }
 					$ids[] = $hitGroup->groupValue;
 				}
 			}
@@ -87,7 +91,6 @@ class BxChooseResponse
 	}
 
     public function getHitIds($choice=null, $considerRelaxation=true, $count=0, $maxDistance=10, $fieldId='id', $discardIfSubPhrases = true) {
-
 		$variant = $this->getChoiceResponseVariant($choice, $count);
 		return $this->getSearchResultHitIds($this->getVariantSearchResult($variant, $considerRelaxation, $maxDistance, $discardIfSubPhrases), $fieldId);
     }

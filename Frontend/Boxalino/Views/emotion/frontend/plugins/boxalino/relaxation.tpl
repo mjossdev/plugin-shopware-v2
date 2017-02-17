@@ -1,7 +1,7 @@
 {block name='frontend_index_content' prepend}
 	{if count($sSearchResults.sSuggestions)}
 		<h3 class="cat-filter--headline">
-			{s name='BoxalinoDidYouMean'}Did you mean…{/s}
+			{s namespace='frontend/plugins/boxalino/relaxation' name='BoxalinoDidYouMean'}{/s}
 		</h3>
 		<div class="block-group modal--compare">
 			{foreach $sSearchResults.sSuggestions as $suggestion}

@@ -288,11 +288,19 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
     }
 
     public function onSearch(Enlight_Event_EventArgs $arguments) {
-        return $this->searchInterceptor->search($arguments);
+        try {
+            return $this->searchInterceptor->search($arguments);
+        } catch (\Exception $e) {
+            $this->logException($e, __FUNCTION__);
+        }
     }
 
     public function onListing(Enlight_Event_EventArgs $arguments){
-        return $this->searchInterceptor->listing($arguments);
+        try {
+            return $this->searchInterceptor->listing($arguments);
+        } catch (\Exception $e) {
+            $this->logException($e, __FUNCTION__);
+        }
     }
     public function onAjaxListing(Enlight_Event_EventArgs $arguments){
         return $this->searchInterceptor->listingAjax($arguments);
@@ -377,6 +385,13 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
         }
     }
 
+    /**
+     * @param $exception
+     */
+    private function logException($exception, $context) {
+        Shopware()->PluginLogger()->info("Boxalino Log: Exception on \"{$context}\" with message : " . $exception->getMessage());
+    }
+
     private function applyBackendViewModifications() {
         try {
             $parent = $this->Menu()->findOneBy(array('label' => 'import/export'));
@@ -387,5 +402,5 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
             throw new Exception('can\'t create menu entry: ' . $e->getMessage());
         }
     }
-    
+
 }

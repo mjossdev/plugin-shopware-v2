@@ -4,12 +4,13 @@ class Shopware_Controllers_Frontend_RecommendationSlider extends Enlight_Control
     public function indexAction() {
         $this->productStreamSliderRecommendationsAction();
     }
-    
+
     public function productStreamSliderRecommendationsAction() {
 
         $benchmark = Shopware_Plugins_Frontend_Boxalino_Benchmark::instance();
         $benchmark->startRecording(__FUNCTION__);
         $helper = Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper::instance();
+        $helper->setRequest($this->request);
         $choiceId = $this->Request()->getQuery('bxChoiceId');
         $count = $this->Request()->getQuery('bxCount');
         $context = $this->Request()->getQuery('category_id');
