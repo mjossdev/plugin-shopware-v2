@@ -22,8 +22,11 @@ class Shopware_Plugins_Frontend_Boxalino_FrontendInterceptor
      * @return boolean
      */
     public function intercept(Enlight_Event_EventArgs $arguments) {
+        
         $this->init($arguments);
-
+        if (!$this->Config()->get('boxalino_active')) {
+            return null;
+        }
 
         $script = null;
         switch ($this->Request()->getParam('controller')) {
@@ -74,6 +77,10 @@ class Shopware_Plugins_Frontend_Boxalino_FrontendInterceptor
         $this->addScript($script);
         return false;
     }
+
+    /**
+     * @return mixed|string
+     */
     protected function getSearchTerm() {
         $term = $this->Request()->get('sSearch', '');
 
@@ -84,6 +91,7 @@ class Shopware_Plugins_Frontend_Boxalino_FrontendInterceptor
 
         return $term;
     }
+    
     /**
      * basket recommendations
      * @param Enlight_Event_EventArgs $arguments
@@ -91,8 +99,10 @@ class Shopware_Plugins_Frontend_Boxalino_FrontendInterceptor
      */
     public function basket(Enlight_Event_EventArgs $arguments) {
 
-        if (!$this->Config()->get('boxalino_cart_recommendation_enabled')) return null;
         $this->init($arguments);
+        if (!$this->Config()->get('boxalino_active') || !$this->Config()->get('boxalino_cart_recommendation_enabled')) {
+            return null;
+        }
 
         if($this->Request()->getActionName() != 'ajaxCart'){
             return null;
@@ -125,6 +135,10 @@ class Shopware_Plugins_Frontend_Boxalino_FrontendInterceptor
      * @return boolean
      */
     public function addToBasket(Enlight_Event_EventArgs $arguments) {
+
+        if (!$this->Config()->get('boxalino_active')) {
+            return null;
+        }
         if ($this->Config()->get('boxalino_tracking_enabled')) {
             $article = $arguments->getArticle();
             $price = $arguments->getPrice();
@@ -144,6 +158,9 @@ class Shopware_Plugins_Frontend_Boxalino_FrontendInterceptor
      * @return boolean
      */
     public function purchase(Enlight_Event_EventArgs $arguments) {
+        if (!$this->Config()->get('boxalino_active')) {
+            return null;
+        }
         if ($this->Config()->get('boxalino_tracking_enabled')) {
             $products = array();
             foreach ($arguments->getDetails() as $detail) {

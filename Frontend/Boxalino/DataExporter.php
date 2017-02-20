@@ -650,12 +650,12 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
         $db = $this->db;
         $data = array();
         $sql = $db->select()
-            ->from(array('ac' => 's_articles_categories'), array('categoryID'))
+            ->from(array('ac' => 's_articles_categories'), array())
             ->join(
                 array('d' => 's_articles_details'),
                 $this->qi('d.articleID') . ' = ' . $this->qi('ac.articleID') . ' AND ' .
                 $this->qi('d.kind') . ' <> ' . $db->quote(3),
-                array('id')
+                array('id', 'ac.categoryID')
             );
         if ($this->delta) {
             $sql->where('d.articleID IN(?)', $this->deltaIds);
@@ -732,6 +732,10 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
         foreach ($main_properties as $property) {
 
             if ($property == 'id') {
+                continue;
+            }
+            if ($property == 'sales') {
+                $this->bxData->addSourceNumberField($mainSourceKey, $property, $property);
                 continue;
             }
             $this->bxData->addSourceStringField($mainSourceKey, $property, $property);

@@ -31,11 +31,6 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
     private $navigation;
 
     /**
-     * @var bool
-     */
-    private $relaxationEnabled = false;
-
-    /**
      * @var array
      */
     private static $choiceContexts = array();

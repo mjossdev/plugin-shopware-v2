@@ -32,6 +32,9 @@ abstract class Shopware_Plugins_Frontend_Boxalino_Interceptor
      */
     private $view;
 
+    /**
+     * @var Shopware_Plugins_Frontend_Boxalino_Benchmark
+     */
     private $benchmark;
 
     /**

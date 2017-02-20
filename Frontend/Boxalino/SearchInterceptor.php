@@ -40,7 +40,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
      */
     public function ajaxSearch(Enlight_Event_EventArgs $arguments) {
 
-        if (!$this->Config()->get('boxalino_search_enabled') || !$this->Config()->get('boxalino_autocomplete_enabled')) {
+        if (!$this->Config()->get('boxalino_active') || !$this->Config()->get('boxalino_search_enabled') || !$this->Config()->get('boxalino_autocomplete_enabled')) {
             return null;
         }
         $this->init($arguments);
@@ -67,7 +67,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
 
     public function listingAjax(Enlight_Event_EventArgs $arguments) {
 
-        if (!$this->Config()->get('boxalino_navigation_enabled')) {
+        if (!$this->Config()->get('boxalino_active') || !$this->Config()->get('boxalino_navigation_enabled')) {
             return null;
         }
 
@@ -105,7 +105,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
 
     public function listing(Enlight_Event_EventArgs $arguments) {
 
-        if (!$this->Config()->get('boxalino_navigation_enabled')) {
+        if (!$this->Config()->get('boxalino_active') || !$this->Config()->get('boxalino_navigation_enabled')) {
             return null;
         }
 
@@ -165,7 +165,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
      */
     public function search(Enlight_Event_EventArgs $arguments) {
 
-        if (!$this->Config()->get('boxalino_search_enabled')) {
+        if (!$this->Config()->get('boxalino_active') || !$this->Config()->get('boxalino_search_enabled')) {
             return null;
         }
         
@@ -286,13 +286,6 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         $this->Benchmark()->log("End preparing template and data");
         $this->Benchmark()->endRecording();
         return false;
-    }
-
-    private function checkCategoryIdsInShop($ids){
-//        $db = Shopware()->Db();
-//        $db->select()
-//            ->from('')
-//        return $ids;
     }
     
     private function getSearchTemplateProperties($hitCount) {

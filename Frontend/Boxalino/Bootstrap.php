@@ -31,7 +31,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
     }
 
     public function getVersion() {
-        return '1.2.22';
+        return '1.3.0';
     }
 
     public function getInfo() {
@@ -170,6 +170,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
     }
 
     private function registerEvents() {
+        
         // search results and autocompletion results
         $this->subscribeEvent('Enlight_Controller_Action_PostDispatch_Frontend_Listing', 'onListing');
         $this->subscribeEvent('Enlight_Controller_Action_PostDispatch_Widgets_Listing', 'onAjaxListing');
@@ -302,29 +303,54 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
             $this->logException($e, __FUNCTION__);
         }
     }
+    
     public function onAjaxListing(Enlight_Event_EventArgs $arguments){
-        return $this->searchInterceptor->listingAjax($arguments);
+        try {
+            return $this->searchInterceptor->listingAjax($arguments);
+        } catch (\Exception $e) {
+            $this->logException($e, __FUNCTION__);
+        }
     }
 
     public function onAjaxSearch(Enlight_Event_EventArgs $arguments) {
-        return $this->searchInterceptor->ajaxSearch($arguments);
+        try {
+            return $this->searchInterceptor->ajaxSearch($arguments);
+        } catch (\Exception $e) {
+            $this->logException($e, __FUNCTION__);
+        }
     }
 
     public function onFrontend(Enlight_Event_EventArgs $arguments) {
-        $this->onBasket($arguments);
-        return $this->frontendInterceptor->intercept($arguments);
+        try {
+            $this->onBasket($arguments);
+            return $this->frontendInterceptor->intercept($arguments);
+        } catch (\Exception $e) {
+            $this->logException($e, __FUNCTION__);
+        }
     }
 
     public function onBasket(Enlight_Event_EventArgs $arguments) {
-        return $this->frontendInterceptor->basket($arguments);
+        try {
+            return $this->frontendInterceptor->basket($arguments);
+        } catch (\Exception $e) {
+            $this->logException($e, __FUNCTION__);
+        }
     }
 
     public function onAddToBasket(Enlight_Event_EventArgs $arguments) {
-        return $this->frontendInterceptor->addToBasket($arguments);
+        try {
+            return $this->frontendInterceptor->addToBasket($arguments);
+        } catch (\Exception $e) {
+            $this->logException($e, __FUNCTION__);
+        }
     }
 
     public function onPurchase(Enlight_Event_EventArgs $arguments) {
-        return $this->frontendInterceptor->purchase($arguments);
+        try {
+            return $this->frontendInterceptor->purchase($arguments);
+        } catch (\Exception $e) {
+            $this->logException($e, __FUNCTION__);
+        }
     }
 
     public function createConfiguration() {
@@ -389,9 +415,12 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
      * @param $exception
      */
     private function logException($exception, $context) {
-        Shopware()->PluginLogger()->info("Boxalino Log: Exception on \"{$context}\" with message : " . $exception->getMessage());
+        Shopware()->PluginLogger()->error("Boxalino Log [ERROR]: Exception on \"{$context}\" with message : " . $exception->getMessage());
     }
 
+    /**
+     * @throws Exception
+     */
     private function applyBackendViewModifications() {
         try {
             $parent = $this->Menu()->findOneBy(array('label' => 'import/export'));
