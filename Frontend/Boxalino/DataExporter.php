@@ -318,7 +318,8 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
             }
             $files->savepartToCsv("product_{$facet_name}.csv", $data);
             $attributeSourceKey = $this->bxData->addCSVItemFile($files->getPath("product_{$facet_name}.csv"), 'id');
-            $this->bxData->addSourceLocalizedTextField($attributeSourceKey, $facet_name, "{$facet_name}_id", $optionSourceKey);
+            $this->bxData->addSourceLocalizedTextField($attributeSourceKey, "optionID_{$facet_id}", "{$facet_name}_id", $optionSourceKey);
+            $this->bxData->addSourceStringField($attributeSourceKey, "optionID_{$facet_id}_id", "{$facet_name}_id");
         }
     }
 
