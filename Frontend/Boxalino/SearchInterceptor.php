@@ -222,28 +222,28 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                 $hitCount = $this->Helper()->getSubPhraseTotalHitCount($query);
                 $suggestions[] = array('count'=> $hitCount, 'text' => $query, 'articles' => $suggestion_articles);
             }
+        }else {
+            if ($totalHitCount = $this->Helper()->getTotalHitCount()) {
+                $this->Benchmark()->log("Stat update facets with response");
+                $facets = $this->updateFacetsWithResult($facets, $facetIdsToOptionIds);
+                $this->Benchmark()->log("End update facets with response");
+                $this->Benchmark()->log("Stat getLocalArticles");
+                $articles = $this->Helper()->getLocalArticles($this->Helper()->getEntitiesIds());
+                $this->Benchmark()->log("End getLocalArticles");
+            } else {
+                $this->Helper()->resetRequests();
+                $this->Helper()->flushResponses();
+                $this->Helper()->getRecommendation('search', 15, 15, 0, [], '', false);
+                $articles = $this->Helper()->getRecommendation('search');
+                $facets = array();
+            }
         }
-        if ($totalHitCount = $this->Helper()->getTotalHitCount()) {
-            $this->Benchmark()->log("Stat update facets with response");
-            $facets = $this->updateFacetsWithResult($facets, $facetIdsToOptionIds);
-            $this->Benchmark()->log("End update facets with response");
-            $this->Benchmark()->log("Stat getLocalArticles");
-            $articles = $this->Helper()->getLocalArticles($this->Helper()->getFieldsValues('product', 'products_ordernumber'));
-            $this->Benchmark()->log("End getLocalArticles");
-        } else {
-            $this->Helper()->resetRequests();
-            $this->Helper()->getRecommendation('search', 15, 15, 0, [], '', false);
-            $articles = $this->Helper()->getRecommendation('search');
-            $facets = array();
-        }
-
 
         $request = $this->Request();
         $params = $request->getParams();
         $params['sSearchOrginal'] = $term;
 
         // Assign result to template
-        Shopware()->Snippets()->addConfigDir($this->Bootstrap()->Path() . 'Snippets/');
         $this->Benchmark()->log("Start preparing template and data");
         $this->View()->loadTemplate('frontend/search/fuzzy.tpl');
         $this->View()->addTemplateDir($this->Bootstrap()->Path() . 'Views/emotion/');

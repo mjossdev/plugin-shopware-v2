@@ -158,11 +158,11 @@ class BxClient
 	
 	private function getP13n($timeout=2, $useCurlIfAvailable=true){
 
-//		if($useCurlIfAvailable && function_exists('curl_version')) {
-//			$transport = new \Thrift\Transport\P13nTCurlClient($this->host, $this->port, $this->uri, $this->schema);
-//		} else {
+		if($useCurlIfAvailable && function_exists('curl_version')) {
+			$transport = new \Thrift\Transport\P13nTCurlClient($this->host, $this->port, $this->uri, $this->schema);
+		} else {
 			$transport = new \Thrift\Transport\P13nTHttpClient($this->host, $this->port, $this->uri, $this->schema);
-//		}
+		}
 
 		$transport->setAuthorization($this->p13n_username, $this->p13n_password);
 		$transport->setTimeoutSecs($timeout);
@@ -322,7 +322,6 @@ class BxClient
 	
 	public function resetRequests() {
 		$this->chooseRequests = array();
-		$this->chooseResponses = null;
 	}
 	
 	public function getRequest($index=0) {
@@ -352,6 +351,16 @@ class BxClient
 	}
 	
 	public function getThriftChoiceRequest() {
+		
+		if(sizeof($this->chooseRequests) == 0 && sizeof($this->autocompleteRequests) > 0) {
+			list($sessionid, $profileid) = $this->getSessionAndProfile();
+			$userRecord = $this->getUserRecord();
+			$p13nrequests = array_map(function($request) use(&$profileid, &$userRecord) {
+				return $request->getAutocompleteThriftRequest($profileid, $userRecord);
+			}, $this->autocompleteRequests);
+			return $p13nrequests;
+		}
+		
 		$choiceInquiries = array();
 		
 		foreach($this->chooseRequests as $request) {
@@ -372,6 +381,10 @@ class BxClient
 	
 	protected function choose() {
 		$this->chooseResponses = $this->p13nchoose($this->getThriftChoiceRequest());
+	}
+	
+	public function flushResponses() {
+		$this->chooseResponses = null;
 	}
 	
 	public function getResponse() {

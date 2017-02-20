@@ -410,13 +410,20 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
     }
 
     /**
+     * Flush BxClient responses
+     */
+    public function flushResponses() {
+        self::$bxClient->flushResponses();
+    }
+
+    /**
      * Reset BxClient requests
      */
-    public function resetRequests(){
+    public function resetRequests() {
         self::$bxClient->resetRequests();
     }
 
-    public function getFieldsValues($type = "product", $field) {
+    public function getFieldsValues($type = "product", $field = 'id') {
         $count = array_search($type, self::$choiceContexts[$this->currentSearchChoice]);
         return self::$bxClient->getResponse()->getHitIds($this->currentSearchChoice, true, $count, 10, $field);
     }
@@ -544,24 +551,5 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
             )
         );
     }
-
-//    /**
-//     * @param array $ids
-//     * @return array
-//     */
-//    public function getLocalArticles($ids = array()) {
-//
-//        $articles = array();
-//        foreach ($ids as $id) {
-//
-//            $this->benchmark->log("Start article getLocalArticles");
-//            $articleNew = Shopware()->Modules()->Articles()->sGetPromotionById('fix', 0, $id);
-//            $this->benchmark->log("End article getLocalArticles");
-//            if (!empty($articleNew['articleID'])) {
-//                $articles[] = $articleNew;
-//            }
-//        }
-//        return $articles;
-//    }
 
 }
