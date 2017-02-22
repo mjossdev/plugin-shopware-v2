@@ -65,7 +65,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         $p13n_password = $this->config->get('boxalino_p13_user_password');
         $domain = $this->config->get('boxalino_domain');
         self::$bxClient = new \com\boxalino\bxclient\v1\BxClient($account, $password, $domain, $isDev, $host, null, null, null, $p13n_username, $p13n_password);
-        self::$bxClient->setTimeout(1000);
+        self::$bxClient->setTimeout(5000);
     }
 
     /**
@@ -214,9 +214,9 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
      * @param string $query
      * @return array
      */
-    private function getSystemFilters($type = 'product', $query = ''){
+    private function getSystemFilters($type = 'product', $query = '', $recommendation = false){
         $filters = array();
-        if ($query == "") {
+        if ($query == "" && !$recommendation) {
             $category_id = $this->Request()->getParam('sCategory');
             if ($category_id != Shopware()->Shop()->getCategory()->getId()) {
                 $filters[] = new \com\boxalino\bxclient\v1\BxFilter('category_id', array($category_id));
@@ -257,13 +257,14 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
             $bxRequests[] = $bxRequest;
         }
 
+
         self::$bxClient->setAutocompleteRequests($bxRequests);
         self::$bxClient->autocomplete();
 
         $template_properties = array();
         foreach ($searches as $index => $search) {
-            $bxAutocompelteRespomse = self::$bxClient->getAutocompleteResponse($index);
-            $template_properties = array_merge($template_properties, $this->createAjaxData($bxAutocompelteRespomse, $queryText, $search));
+            $bxAutocompleteResponse = self::$bxClient->getAutocompleteResponse($index);
+            $template_properties = array_merge($template_properties, $this->createAjaxData($bxAutocompleteResponse, $queryText, $search));
         }
         $this->benchmark->log("End autocomplete p13nHelper");
         return $template_properties;
@@ -298,7 +299,12 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         $hitIds = array();
         foreach ($autocompleteResponse->getTextualSuggestions() as $i => $suggestion) {
             $hits = $autocompleteResponse->getTextualSuggestionTotalHitCount($suggestion);
-            $suggestions[] = array('html' => $autocompleteResponse->getTextualSuggestionHighlighted($suggestion), 'hits' => $hits);
+            $suggestions[] = array('text' => $suggestion, 'html' => $autocompleteResponse->getTextualSuggestionHighlighted($suggestion), 'hits' => $hits);
+            if ($i == 0) {
+                if (count($autocompleteResponse->getBxSearchResponse()->getHitIds($choice, true, 0, 10, 'products_ordernumber')) == 0) {
+                    $hitIds = $autocompleteResponse->getBxSearchResponse($suggestion)->getHitIds($choice, true, 0, 10, 'products_ordernumber');
+                }
+            }
             if ($suggestion == $queryText) {
                 $hitIds = $autocompleteResponse->getBxSearchResponse($suggestion)->getHitIds($choice, true, 0, 10, 'products_ordernumber');
             }
@@ -318,6 +324,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
                     'title' => $result['articleName']
                 ));
             }
+            
             return array(
                 'sSearchRequest' => array('sSearch' => $queryText),
                 'sSearchResults' => array(
@@ -373,7 +380,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
             if ($max >= 0) {
                 $bxRequest = new \com\boxalino\bxclient\v1\BxRecommendationRequest($this->getShortLocale(), $choiceId, $max, $min);
                 $bxRequest->setGroupBy($this->getEntityIdFieldName());
-                $filters = $this->getSystemFilters();
+                $filters = $this->getSystemFilters('product', '', true);
                 $bxRequest->setReturnFields($this->getReturnFields());
                 $bxRequest->setOffset($offset);
                 if ($type === 'basket' && is_array($context)) {
@@ -383,7 +390,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
                     }
                     $bxRequest->setBasketProductWithPrices($this->getEntityIdFieldName(), $basketProducts);
                 } elseif ($type === 'product' && !is_array($context)) {
-                    $bxRequest->setProductContext('id', $context);
+                    $bxRequest->setProductContext('products_group_id', $context);
                 } elseif ($type === 'category' && $context != null) {
                     $filterField = "category_id";
                     $filterValues = is_array($context) ? $context : array($context);
@@ -426,7 +433,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
      * @param string $type
      * @return mixed
      */
-    public function getEntitiesIds($type = "product"){
+    public function getEntitiesIds($type = "product") {
 
         $count = array_search($type, self::$choiceContexts[$this->currentSearchChoice]);
         return self::$bxClient->getResponse()->getHitIds($this->currentSearchChoice, true, $count, 10, $this->getEntityIdFieldName($type));
@@ -481,6 +488,9 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
     public function getTotalHitCount($type = "product"){
 
         $count = array_search($type, self::$choiceContexts[$this->currentSearchChoice]);
+        if ($count === false) {
+            return 0;
+        }
         return self::$bxClient->getResponse()->getTotalHitCount($this->currentSearchChoice, true, $count);
     }
 

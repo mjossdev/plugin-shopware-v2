@@ -416,6 +416,7 @@ class BxClient
 			$this->throwCorrectP13nException($e);
 		}
 	}
+	
 	public function getAutocompleteRequests(){
 		return $this->autocompleteRequests;
 	}

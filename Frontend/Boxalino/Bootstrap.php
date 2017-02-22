@@ -31,7 +31,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
     }
 
     public function getVersion() {
-        return '1.3.0';
+        return '1.3.5';
     }
 
     public function getInfo() {
@@ -61,6 +61,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
             $this->createDatabase();
             $this->registerCronJobs();
             $this->registerEmotions();
+            $this->registerSnippets();
         } catch (Exception $e) {
             Shopware()->PluginLogger()->error('Plugin install error: '. $e->getMessage());
             return false;
@@ -73,6 +74,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
             $this->registerEvents();
             $this->createConfiguration();
             $this->registerEmotions();
+            $this->updateSnippets();
         } catch (Exception $e) {
             Shopware()->PluginLogger()->error('Plugin update error: '. $e->getMessage());
             return false;
@@ -83,11 +85,33 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
     public function uninstall() {
         try {
             $this->removeDatabase();
+            $this->removeSnippets();
         } catch (Exception $e) {
             Shopware()->PluginLogger()->error('Plugin uninstall error: '. $e->getMessage());
             return false;
         }
         return array('success' => true, 'invalidateCache' => array('frontend'));
+    }
+
+    private function registerSnippets() {
+        $dir = __DIR__ . '/snippets.json';
+        $fields = json_decode(file_get_contents($dir), true);
+        $shops = $this->getShops();
+        foreach ($shops as $shop_id => $shop) {
+            $snippetHelper = new Shopware_Plugins_Frontend_Boxalino_Helper_SnippetHelper('boxalino/intelligence', $shop_id, $shop['locale_id']);
+            foreach ($fields[$shop['locale']] as $field) {
+                $key = key($field);
+                $snippetHelper->add($key, $field[$key]);
+            }
+        }
+    }
+
+    public function removeSnippets($removeDirty = false) {
+        Shopware_Plugins_Frontend_Boxalino_Helper_SnippetHelper::removeAll('boxalino/intelligence');
+    }
+
+    private function updateSnippets() {
+        $this->registerSnippets();
     }
 
     private function registerCronJobs() {
@@ -300,6 +324,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
         try {
             return $this->searchInterceptor->listing($arguments);
         } catch (\Exception $e) {
+
             $this->logException($e, __FUNCTION__);
         }
     }
@@ -415,7 +440,9 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
      * @param $exception
      */
     private function logException($exception, $context) {
-        Shopware()->PluginLogger()->error("Boxalino Log [ERROR]: Exception on \"{$context}\" with message : " . $exception->getMessage());
+        $account = $this->Config()->get('boxalino_account');
+        $shop = Shopware()->Shop()->getName();
+        Shopware()->PluginLogger()->error("BxLog# [$account][$shop]: Exception on \"{$context}\" [line: {$exception->getLine()}, file: {$exception->getFile()}] with message : " . $exception->getMessage());
     }
 
     /**
@@ -430,6 +457,22 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
             Shopware()->PluginLogger()->error('can\'t create menu entry: ' . $e->getMessage());
             throw new Exception('can\'t create menu entry: ' . $e->getMessage());
         }
+    }
+
+    private function getShops() {
+        $shops = array();
+        $db = $this->Application()->Db();
+        $select = $db->select()
+            ->from(array('c_s' => 's_core_shops'))
+            ->joinLeft(array('c_l' => 's_core_locales'),
+                'c_l.id = c_s.locale_id',
+                array('c_l.locale', 'c_s.id', 'c_s.locale_id')
+            );
+        $stmt = $db->query($select);
+        while ($row = $stmt->fetch()) {
+            $shops[$row['id']] = $row;
+        }
+        return $shops;
     }
 
 }

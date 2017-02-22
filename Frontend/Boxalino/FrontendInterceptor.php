@@ -45,15 +45,15 @@ class Shopware_Plugins_Frontend_Boxalino_FrontendInterceptor
                     }
                 }
 
-                $this->View()->assign('sArticle', $sArticle);
                 if(count($choiceIds)){
                     foreach ($this->_productRecommendations as $articleKey => $configOption) {
                         if (array_key_exists($configOption, $choiceIds)) {
                             $articles = $this->Helper()->getRecommendation($choiceIds[$configOption]);
-                            $this->View()->assign($articleKey, $articles);
+                            $sArticle[$articleKey] = $articles;
                         }
                     }
                 }
+                $this->View()->assign('sArticle', $sArticle);
                 $script = Shopware_Plugins_Frontend_Boxalino_EventReporter::reportProductView($sArticle['articleDetailsID']);
                 break;
             case 'search':

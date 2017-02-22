@@ -7,7 +7,7 @@ use Doctrine\DBAL\Connection;
  */
 class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
     extends Shopware_Plugins_Frontend_Boxalino_Interceptor {
-    
+
     /**
      * @var Shopware\Components\DependencyInjection\Container
      */
@@ -53,7 +53,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         }
 
         $this->Benchmark()->startRecording(__FUNCTION__);
-        $with_blog =  $this->Config()->get('boxalino_blog_search_enabled');
+        $with_blog = $this->Config()->get('boxalino_blog_search_enabled');
         $this->Benchmark()->log("Start p13n autocomplete");
         $templateProperties = $this->Helper()->autocomplete($term, $with_blog);
         $this->Benchmark()->log("End p13n autocomplete");
@@ -165,10 +165,11 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
      */
     public function search(Enlight_Event_EventArgs $arguments) {
 
+
         if (!$this->Config()->get('boxalino_active') || !$this->Config()->get('boxalino_search_enabled')) {
             return null;
         }
-        
+
         $this->init($arguments);
 
         $this->Benchmark()->startRecording(__FUNCTION__);
@@ -200,6 +201,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         $pageOffset = $criteria->getOffset();
         $bxHasOtherItems = false;
         $this->Benchmark()->log("Initialize search request");
+
         $this->Helper()->addSearch($term, $pageOffset, $hitCount, 'product', $sort, $options);
         if($config->get('boxalino_blog_search_enabled')){
             $blogOffset = ($this->Request()->getParam('sBlogPage', 1) -1)*($hitCount);
@@ -224,21 +226,21 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             }
         }else {
             if ($totalHitCount = $this->Helper()->getTotalHitCount()) {
+                $this->Benchmark()->log("Stat getLocalArticles");
+                $articles = $this->Helper()->getLocalArticles($this->Helper()->getFieldsValues('product', 'products_ordernumber'));
+                $this->Benchmark()->log("End getLocalArticles");
                 $this->Benchmark()->log("Stat update facets with response");
                 $facets = $this->updateFacetsWithResult($facets, $facetIdsToOptionIds);
                 $this->Benchmark()->log("End update facets with response");
-                $this->Benchmark()->log("Stat getLocalArticles");
-                $articles = $this->Helper()->getLocalArticles($this->Helper()->getEntitiesIds());
-                $this->Benchmark()->log("End getLocalArticles");
             } else {
                 $this->Helper()->resetRequests();
                 $this->Helper()->flushResponses();
                 $this->Helper()->getRecommendation('search', 15, 15, 0, [], '', false);
                 $articles = $this->Helper()->getRecommendation('search');
+
                 $facets = array();
             }
         }
-
         $request = $this->Request();
         $params = $request->getParams();
         $params['sSearchOrginal'] = $term;
@@ -250,12 +252,13 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         $this->View()->extendsTemplate('frontend/plugins/boxalino/listing/actions/action-pagination.tpl');
         $this->View()->extendsTemplate('frontend/plugins/boxalino/search/fuzzy.tpl');
         $this->View()->extendsTemplate('frontend/plugins/boxalino/relaxation.tpl');
+        $no_result_title = Shopware()->Snippets()->getNamespace('boxalino/intelligence')->get('search/noresult');
 
         $templateProperties = array_merge(array(
             'term' => $term,
             'bxNoResult' => $totalHitCount == 0,
             'BxData' => [
-                'article_slider_title'=> 'No Result Recommendation',
+                'article_slider_title'=> $no_result_title,
                 'no_border'=> true,
                 'article_slider_type' => 'selected_article',
                 'values' => $articles,
@@ -275,7 +278,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             'sSearchResults' => array(
                 'sArticles' => $totalHitCount > 0 ? $articles : array(),
                 'sArticlesCount' => $totalHitCount,
-                'sSuggestions' => $suggestions,
+                'sSuggestions' => $suggestions
             ),
             'productBoxLayout' => $config->get('searchProductBoxLayout'),
             'bxHasOtherItemTypes' => $bxHasOtherItems,
@@ -287,10 +290,14 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         $this->Benchmark()->endRecording();
         return false;
     }
-    
-    private function getSearchTemplateProperties($hitCount) {
+
+    private function getSearchTemplateProperties($hitCount)
+    {
         $props = array();
         $total = $this->Helper()->getTotalHitCount('blog');
+        if ($total == 0) {
+            return $props;
+        }
         $sPage = $this->Request()->getParam('sBlogPage', 1);
         $entity_ids = $this->Helper()->getEntitiesIds('blog');
         $category_ids = $this->Helper()->getFieldsValues('blog', 'products_blog_category_id');
@@ -301,11 +308,11 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                 unset($entity_ids[$index]);
             }
         }
-        if(!count($entity_ids)){
+        if (!count($entity_ids)) {
             return $props;
         }
         $ids = array();
-        foreach ($entity_ids as $id){
+        foreach ($entity_ids as $id) {
             $ids[] = str_replace('blog_', '', $id);
         }
         $count = count($ids);
@@ -345,7 +352,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         $props['sBlogArticles'] = $blogArticles;
         return $props;
     }
-    
+
     private function assemble($params) {
         $p = $this->Request()->getBasePath() . $this->Request()->getPathInfo();
         if (empty($params)) return $p;
@@ -354,12 +361,12 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         $kv = [];
         array_walk($params, function($v, $k) use (&$kv, &$ignore) {
             if ($ignore[$k]) return;
-            
+
             $kv[] = $k . '=' . $v;
         });
         return $p . "?" . implode('&', $kv);
     }
-    
+
     private function extractAutocompleteTemplateProperties($responses, $hitCount) {
         $props = array();
         if ($this->Config()->get('boxalino_blogsearch_enabled')) {
@@ -375,7 +382,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             $searchResult = $response->prefixSearchResult;
         }
         if (!$searchResult) return array();
-        
+
         $router = $this->Controller()->Front()->Router();
         $blogs = array_map(function($blog) use ($router) {
             $id = preg_replace('/^blog_/', '', $blog->values['id'][0]);
@@ -393,7 +400,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             'bxBlogSuggestionTotal' => $total
         );
     }
-    
+
     // mostly copied from Frontend/Blog.php#indexAction
     private function enhanceBlogArticles($blogArticles) {
         $mediaIds = array_map(function ($blogArticle) {
@@ -403,35 +410,35 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         }, $blogArticles);
         $context = $this->Bootstrap()->get('shopware_storefront.context_service')->getShopContext();
         $medias = $this->Bootstrap()->get('shopware_storefront.media_service')->getList($mediaIds, $context);
-        
+
         foreach ($blogArticles as $key => $blogArticle) {
             //adding number of comments to the blog article
             $blogArticles[$key]["numberOfComments"] = count($blogArticle["comments"]);
-    
+
             //adding tags and tag filter links to the blog article
 //             $tagsQuery = $this->repository->getTagsByBlogId($blogArticle["id"]);
 //             $tagsData = $tagsQuery->getArrayResult();
 //             $blogArticles[$key]["tags"] = $this->addLinksToFilter($tagsData, "sFilterTags", "name", false);
-    
+
             //adding average vote data to the blog article
 //             $avgVoteQuery = $this->repository->getAverageVoteQuery($blogArticle["id"]);
 //             $blogArticles[$key]["sVoteAverage"] = $avgVoteQuery->getOneOrNullResult(\Doctrine\ORM\AbstractQuery::HYDRATE_SINGLE_SCALAR);
-    
+
             //adding thumbnails to the blog article
             if (empty($blogArticle["media"][0]['mediaId'])) {
                 continue;
             }
-    
+
             $mediaId = $blogArticle["media"][0]['mediaId'];
-    
+
             if (!isset($medias[$mediaId])) {
                 continue;
             }
-    
+
             /**@var $media \Shopware\Bundle\StoreFrontBundle\Struct\Media*/
             $media = $medias[$mediaId];
             $media = $this->get('legacy_struct_converter')->convertMediaStruct($media);
-    
+
             if (Shopware()->Shop()->getTemplate()->getVersion() < 3) {
                 $blogArticles[$key]["preview"]["thumbNails"] = array_column($media['thumbnails'], 'source');
             } else {
@@ -440,7 +447,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         }
         return $blogArticles;
     }
-    
+
     protected function getPropertyFacetOptionIds($facets) {
         $ids = array();
         foreach ($facets as $facet) {
@@ -461,7 +468,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         }
         return $facetToOption;
     }
-    
+
     protected function getValueIds($facet) {
         if ($facet instanceof Shopware\Bundle\SearchBundle\FacetResult\FacetResultGroup) {
             $ids = array();
@@ -473,7 +480,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             return array_map(function($value) { return $value->getId(); }, $facet->getValues());
         }
     }
-    
+
     /**
      * Get service from resource loader
      *
@@ -510,10 +517,10 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         if (!empty($search) && strlen($search) >= $minSearch) {
             $ordernumber = $db->quoteIdentifier('ordernumber');
             $sql = $db->select()
-                      ->distinct()
-                      ->from('s_articles_details', array('articleID'))
-                      ->where("$ordernumber = ?", $search)
-                      ->limit(2);
+                ->distinct()
+                ->from('s_articles_details', array('articleID'))
+                ->where("$ordernumber = ?", $search)
+                ->limit(2);
             $articles = $db->fetchCol($sql);
 
             if (empty($articles)) {
@@ -524,15 +531,15 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         }
         if (!empty($articles) && count($articles) == 1) {
             $sql = $db->select()
-                      ->from(array('ac' => 's_articles_categories_ro'), array('ac.articleID'))
-                      ->joinInner(
-                        array('c' => 's_categories'),
-                        $db->quoteIdentifier('c.id') . ' = ' . $db->quoteIdentifier('ac.categoryID') . ' AND ' .
-                        $db->quoteIdentifier('c.active') . ' = ' . $db->quote(1) . ' AND ' .
-                        $db->quoteIdentifier('c.id') . ' = ' . $db->quote(Shopware()->Shop()->get('parentID'))
-                      )
-                      ->where($db->quoteIdentifier('ac.articleID') . ' = ?', $articles[0])
-                      ->limit(1);
+                ->from(array('ac' => 's_articles_categories_ro'), array('ac.articleID'))
+                ->joinInner(
+                    array('c' => 's_categories'),
+                    $db->quoteIdentifier('c.id') . ' = ' . $db->quoteIdentifier('ac.categoryID') . ' AND ' .
+                    $db->quoteIdentifier('c.active') . ' = ' . $db->quote(1) . ' AND ' .
+                    $db->quoteIdentifier('c.id') . ' = ' . $db->quote(Shopware()->Shop()->get('parentID'))
+                )
+                ->where($db->quoteIdentifier('ac.articleID') . ' = ?', $articles[0])
+                ->limit(1);
             $articles = $db->fetchCol($sql);
         }
         if (!empty($articles) && count($articles) == 1) {
@@ -664,7 +671,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                         $peek = reset($facet->getValues());
                         if ($peek && array_key_exists($peek->getId(), $facetIdsToOptionIds)) {
                             $optionId = $facetIdsToOptionIds[$peek->getId()];
-                            $key = 'products_option_'. $optionId;//. '_' . $this->generateFacetName($facet->getLabel());
+                            $key = 'products_optionID_' . $optionId;//. '_' . $this->generateFacetName($facet->getLabel());
                         }
                     }
                     if (!array_key_exists($key, $options)) {
@@ -807,7 +814,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                                 unset($facets[$key]);
                                 break;
                             }
-                            $fieldName = 'products_option_' . $optionId;// . '_' . $this->generateFacetName($facet->getLabel());
+                            $fieldName = 'products_optionID_' . $optionId;// . '_' . $this->generateFacetName($facet->getLabel());
                         }
                     }else{
                         unset($facets[$key]);
@@ -815,32 +822,39 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                     }
 
                     $responseValues = $this->useValuesAsKeys($resultFacet->getFacetValues($fieldName));
-
                     $valueList = [];
                     $nbValues = 0;
+
+
                     foreach ($values as $valueKey => $value){
+                        $label = trim($value->getLabel());
+                        if(isset($responseValues[$label])){
+                            $nbValues++;
+                            $hitCount = $resultFacet->getFacetValueCount($fieldName, $responseValues[$label]);
+                            $active = $resultFacet->isFacetValueSelected($fieldName, trim($value->getLabel()));
+                            if(!$active && strpos($fieldName, "optionID") !== false) {
+                                try {
+                                    $active = $resultFacet->isFacetValueSelected($fieldName . "_id", $value->getId());
+                                } catch(\Exception $e) {
 
-                       if(isset($responseValues[$value->getLabel()])){
-                           $nbValues++;
-                           $hitCount = $resultFacet->getFacetValueCount($fieldName, $responseValues[$value->getLabel()]);
-                           $active = $value->isActive();
-                           if($hitCount > 0){
-                               $args = [];
-                               $args[] = $value->getId();
-                               $args[] = $value->getLabel() . ' (' . $hitCount . ')';
-                               $args[] = $active;
-                               if ($value instanceof Shopware\Bundle\SearchBundle\FacetResult\MediaListItem) {
-                                   $args[] = $value->getMedia();
-                               }
-                               $args[] = $value->getAttributes();
-                               if (!array_key_exists($valueKey, $valueList)) {
-                                   $r = new ReflectionClass(get_class($value));
-                                   $valueList[$valueKey] = $r->newInstanceArgs($args);
-                               }
-                           }
-                       }
+                                }
+                            }
+                            if($hitCount > 0){
+                                $args = [];
+                                $args[] = $value->getId();
+                                $args[] = $value->getLabel() . ' (' . $hitCount . ')';
+                                $args[] = $active;
+                                if ($value instanceof Shopware\Bundle\SearchBundle\FacetResult\MediaListItem) {
+                                    $args[] = $value->getMedia();
+                                }
+                                $args[] = $value->getAttributes();
+                                if (!array_key_exists($valueKey, $valueList)) {
+                                    $r = new ReflectionClass(get_class($value));
+                                    $valueList[$valueKey] = $r->newInstanceArgs($args);
+                                }
+                            }
+                        }
                     }
-
                     if ($nbValues > 0) {
                         usort($valueList, function($a, $b) {
                             $res = $b->isActive() - $a->isActive();
@@ -944,5 +958,5 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             'reverse' => ($sort->getDirection() == Shopware\Bundle\SearchBundle\SortingInterface::SORT_DESC)
         );
     }
-    
+
 }
