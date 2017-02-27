@@ -7,13 +7,13 @@ class Shopware_Plugins_Frontend_Boxalino_FrontendInterceptor
     extends Shopware_Plugins_Frontend_Boxalino_Interceptor {
     
     private $_productRecommendations = array(
-        'sSimilarArticles' => 'boxalino_related_recommendation',
-        'sRelatedArticles' => 'boxalino_upsell_recommendation'
+        'sRelatedArticles' => 'boxalino_accessories_recommendation',
+        'sSimilarArticles' => 'boxalino_similar_recommendation'
     );
     
     private $_productRecommendationsGeneric = array(
-      'boughtArticles' => 'boxalino_recommendation_bought_widget_name',
-      'viewedArticles' => 'boxalino_recommendation_viewed_widget_name',
+        'sCrossBoughtToo' => 'boxalino_complementary_recommendation',
+        'sCrossSimilarShown' => 'boxalino_related_recommendation'
     );
 
     /**
@@ -31,12 +31,21 @@ class Shopware_Plugins_Frontend_Boxalino_FrontendInterceptor
         $script = null;
         switch ($this->Request()->getParam('controller')) {
             case 'detail':
-                $id = trim(strip_tags(htmlspecialchars_decode(stripslashes($this->Request()->sArticle))));
                 $sArticle = $this->View()->sArticle;
+                if ($this->Config()->get('boxalino_detail_recommendation_ajax')) {
+                    $this->View()->addTemplateDir($this->Bootstrap()->Path() . 'Views/emotion/');
+                    $this->View()->extendsTemplate('frontend/plugins/boxalino/detail/index_ajax.tpl');
+                    break;
+                }
+
+                $id = trim(strip_tags(htmlspecialchars_decode(stripslashes($this->Request()->sArticle))));
+
                 // Replace similar & related products, if choice IDs given
                 $choiceIds = array();
-                foreach ($this->_productRecommendations as $configOption) {
+                $recommendations = array_merge($this->_productRecommendations, $this->_productRecommendationsGeneric);
+                foreach ($recommendations as $configOption) {
                     if($this->Config()->get("{$configOption}_enabled")){
+
                         $choiceId = $this->Config()->get("{$configOption}_name");
                         $max = $this->Config()->get("{$configOption}_max");
                         $min = $this->Config()->get("{$configOption}_min");
@@ -45,12 +54,24 @@ class Shopware_Plugins_Frontend_Boxalino_FrontendInterceptor
                     }
                 }
 
-                if(count($choiceIds)){
+                if (count($choiceIds)) {
                     foreach ($this->_productRecommendations as $articleKey => $configOption) {
                         if (array_key_exists($configOption, $choiceIds)) {
-                            $articles = $this->Helper()->getRecommendation($choiceIds[$configOption]);
-                            $sArticle[$articleKey] = $articles;
+                            $hitIds = $this->Helper()->getRecommendation($choiceIds[$configOption]);
+                            if (isset($sArticle[$articleKey]) && is_array($sArticle[$articleKey])) {
+                                $checkIds = array_flip($hitIds);
+                                foreach ($sArticle[$articleKey] as $article) {
+                                    if (isset($checkIds[$article['ordernumber']])) {
+                                        unset($hitIds[$checkIds[$article['ordernumber']]]);
+                                    }
+                                }
+                                $sArticle[$articleKey] = array_merge($sArticle[$articleKey], $this->Helper()->getLocalArticles($hitIds));
+                            } else {
+                                $sArticle[$articleKey] = $this->Helper()->getLocalArticles($hitIds);
+                            }
                         }
+
+
                     }
                 }
                 $this->View()->assign('sArticle', $sArticle);
@@ -62,6 +83,30 @@ class Shopware_Plugins_Frontend_Boxalino_FrontendInterceptor
             case 'cat':
                 $script = Shopware_Plugins_Frontend_Boxalino_EventReporter::reportCategoryView($this->Request()->sCategory);
                 break;
+            case 'recommendation':
+                $action = $this->Request()->getParam('action');
+                if ($action == 'viewed' || $action == 'bought') {
+                    $configOption = $action == 'viewed' ? $this->_productRecommendationsGeneric['sCrossSimilarShown'] :
+                        $this->_productRecommendationsGeneric['sCrossBoughtToo'];
+                    if ($this->Config()->get("{$configOption}_enabled")) {
+
+                        $assigned_data = $this->View()->getAssign();
+                        $articles = $assigned_data["{$action}Articles"];
+                        if ($space_left = ($assigned_data['maxPages'] * $assigned_data['perPage']) - count($articles)) {
+                            $hitIds = $this->Helper()->getRecommendation($this->Config()->get("{$configOption}_name"));
+                            $checkIds = array_flip($hitIds);
+                            foreach ($articles as $index => $article) {
+                                if (isset($checkIds[$index])) {
+                                    unset($hitIds[$checkIds[$index]]);
+                                }
+                            }
+                            $articles = array_merge($articles, $this->Helper()->getLocalArticles($hitIds));
+                        }
+                        $this->View()->assign("{$action}Articles", $articles);
+                    }
+                } else {
+                    return null;
+                }
             case 'checkout':
             case 'account':
                 if ($_SESSION['Shopware']['sUserId'] != null) {

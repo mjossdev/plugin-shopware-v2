@@ -93,7 +93,6 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         $viewData['sArticles'] = $articles;
         if ($listingCount) {
             $this->Controller()->Response()->setBody('{"totalCount":' . $this->Helper()->getTotalHitCount() . '}');
-
             $this->Benchmark()->log("End of listing count.");
             $this->Benchmark()->endRecording();
             return null;
@@ -132,7 +131,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         $pageCounts = array_values(explode('|', $config->get('fuzzySearchSelectPerPage')));
         $hitCount = $criteria->getLimit();
         $pageOffset = $criteria->getOffset();
-        $this->Benchmark()->log("Initialize search request");
+        $this->Benchmark()->log("Initialize search request with offset " . $pageOffset);
         $this->Helper()->addSearch('', $pageOffset, $hitCount, 'product', $sort, $options);
         $this->Benchmark()->log("Start update facets");
         $facets = $this->updateFacetsWithResult($facets, $facetIdsToOptionIds);
@@ -212,6 +211,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
 
         $suggestions = array();
         $articles = array();
+        $no_result_articles = array();
         $sub_phrases = false;
         $totalHitCount = 0;
 
@@ -224,6 +224,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                 $hitCount = $this->Helper()->getSubPhraseTotalHitCount($query);
                 $suggestions[] = array('count'=> $hitCount, 'text' => $query, 'articles' => $suggestion_articles);
             }
+            $facets = array();
         }else {
             if ($totalHitCount = $this->Helper()->getTotalHitCount()) {
                 $this->Benchmark()->log("Stat getLocalArticles");
@@ -236,8 +237,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                 $this->Helper()->resetRequests();
                 $this->Helper()->flushResponses();
                 $this->Helper()->getRecommendation('search', 15, 15, 0, [], '', false);
-                $articles = $this->Helper()->getRecommendation('search');
-
+                $no_result_articles = $this->Helper()->getRecommendation('search');
                 $facets = array();
             }
         }
@@ -261,8 +261,8 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                 'article_slider_title'=> $no_result_title,
                 'no_border'=> true,
                 'article_slider_type' => 'selected_article',
-                'values' => $articles,
-                'article_slider_max_number' => count($articles),
+                'values' => $no_result_articles,
+                'article_slider_max_number' => count($no_result_articles),
                 'article_slider_arrows' => 1
             ],
             'criteria' => $criteria,
@@ -276,7 +276,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             'pageSizes' => $pageCounts,
             'ajaxCountUrlParams' => ['sCategory' => $context->getShop()->getCategory()->getId()],
             'sSearchResults' => array(
-                'sArticles' => $totalHitCount > 0 ? $articles : array(),
+                'sArticles' => $articles,
                 'sArticlesCount' => $totalHitCount,
                 'sSuggestions' => $suggestions
             ),

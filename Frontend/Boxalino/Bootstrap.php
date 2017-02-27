@@ -31,7 +31,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
     }
 
     public function getVersion() {
-        return '1.3.5';
+        return '1.3.15';
     }
 
     public function getInfo() {
@@ -63,7 +63,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
             $this->registerEmotions();
             $this->registerSnippets();
         } catch (Exception $e) {
-            Shopware()->PluginLogger()->error('Plugin install error: '. $e->getMessage());
+            $this->logException($e, __FUNCTION__);
             return false;
         }
         return true;
@@ -74,9 +74,9 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
             $this->registerEvents();
             $this->createConfiguration();
             $this->registerEmotions();
-            $this->updateSnippets();
+            $this->registerSnippets();
         } catch (Exception $e) {
-            Shopware()->PluginLogger()->error('Plugin update error: '. $e->getMessage());
+            $this->logException($e, __FUNCTION__);
             return false;
         }
         return true;
@@ -87,7 +87,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
             $this->removeDatabase();
             $this->removeSnippets();
         } catch (Exception $e) {
-            Shopware()->PluginLogger()->error('Plugin uninstall error: '. $e->getMessage());
+            $this->logException($e, __FUNCTION__);
             return false;
         }
         return array('success' => true, 'invalidateCache' => array('frontend'));
@@ -99,19 +99,17 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
         $shops = $this->getShops();
         foreach ($shops as $shop_id => $shop) {
             $snippetHelper = new Shopware_Plugins_Frontend_Boxalino_Helper_SnippetHelper('boxalino/intelligence', $shop_id, $shop['locale_id']);
-            foreach ($fields[$shop['locale']] as $field) {
-                $key = key($field);
-                $snippetHelper->add($key, $field[$key]);
+            if (isset($fields[$shop['locale']])) {
+                foreach ($fields[$shop['locale']] as $field) {
+                    $key = key($field);
+                    $snippetHelper->add($key, $field[$key]);
+                }
             }
         }
     }
 
     public function removeSnippets($removeDirty = false) {
         Shopware_Plugins_Frontend_Boxalino_Helper_SnippetHelper::removeAll('boxalino/intelligence');
-    }
-
-    private function updateSnippets() {
-        $this->registerSnippets();
     }
 
     private function registerCronJobs() {
@@ -196,10 +194,14 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
     private function registerEvents() {
         
         // search results and autocompletion results
-        $this->subscribeEvent('Enlight_Controller_Action_PostDispatch_Frontend_Listing', 'onListing');
-        $this->subscribeEvent('Enlight_Controller_Action_PostDispatch_Widgets_Listing', 'onAjaxListing');
+        $this->subscribeEvent('Enlight_Controller_Action_PostDispatchSecure_Frontend_Listing', 'onListing');
+        $this->subscribeEvent('Enlight_Controller_Action_PostDispatchSecure_Widgets_Listing', 'onAjaxListing');
         $this->subscribeEvent('Enlight_Controller_Action_Frontend_Search_DefaultSearch', 'onSearch');
         $this->subscribeEvent('Enlight_Controller_Action_Frontend_AjaxSearch_Index', 'onAjaxSearch');
+        $this->subscribeEvent('Enlight_Controller_Action_PostDispatchSecure_Widgets_Recommendation', 'onRecommendation');
+
+        // service extension
+        $this->subscribeEvent('Enlight_Bootstrap_AfterInitResource_shopware_storefront.', 'onAjaxSearch');
 
         // all frontend views to inject appropriate tracking, product and basket recommendations
         $this->subscribeEvent('Enlight_Controller_Action_PostDispatch_Frontend', 'onFrontend');
@@ -214,7 +216,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
         $this->subscribeEvent('Theme_Compiler_Collect_Plugin_Javascript', 'addJsFiles');
         $this->subscribeEvent('Theme_Compiler_Collect_Plugin_Less', 'addLessFiles');
     }
-    
+
     private function registerEmotions() {
         $component = $this->createEmotionComponent(array(
             'name' => 'Boxalino Slider Recommendations',
@@ -312,6 +314,14 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
         return Shopware()->Plugins()->Frontend()->Boxalino()->Path() . "/Controllers/backend/BoxalinoExport.php";
     }
 
+    public function onRecommendation(Enlight_Event_EventArgs $arguments) {
+        try {
+            return $this->frontendInterceptor->intercept($arguments);
+        } catch (\Exception $e) {
+            $this->logException($e, __FUNCTION__);
+        }
+    }
+
     public function onSearch(Enlight_Event_EventArgs $arguments) {
         try {
             return $this->searchInterceptor->search($arguments);
@@ -324,7 +334,6 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
         try {
             return $this->searchInterceptor->listing($arguments);
         } catch (\Exception $e) {
-
             $this->logException($e, __FUNCTION__);
         }
     }
@@ -400,8 +409,8 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
                 $f['scope'] = $scopeShop;
             }
             $present = $form->getElement($name);
-            if ($present && array_key_exists('value', $present)) {
-                $f['value'] = $present['value'];
+            if ($present) {
+                $f['value'] = $present->getValue();
             }
             $form->setElement($type, $name, $f);
         }
@@ -418,7 +427,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
         $view = $args->getSubject()->View();
 
         // Add template directory
-        $args->getSubject()->View()->addTemplateDir($this->Path() . 'Views/');
+        $view->addTemplateDir($this->Path() . 'Views/');
 
         //if the controller action name equals "load" we have to load all application components
         if ($args->getRequest()->getActionName() === 'load') {
@@ -440,9 +449,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
      * @param $exception
      */
     private function logException($exception, $context) {
-        $account = $this->Config()->get('boxalino_account');
-        $shop = Shopware()->Shop()->getName();
-        Shopware()->PluginLogger()->error("BxLog# [$account][$shop]: Exception on \"{$context}\" [line: {$exception->getLine()}, file: {$exception->getFile()}] with message : " . $exception->getMessage());
+        Shopware()->PluginLogger()->error("BxExceptionLog: Exception on \"{$context}\" [line: {$exception->getLine()}, file: {$exception->getFile()}] with message : " . $exception->getMessage());
     }
 
     /**

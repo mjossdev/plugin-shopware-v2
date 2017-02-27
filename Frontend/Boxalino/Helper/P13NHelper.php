@@ -374,13 +374,13 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
      * @param bool $execute
      * @return array
      */
-    public function getRecommendation($choiceId, $max = 5, $min = 5, $offset = 0, $context = array(), $type = '', $execute = true) {
+    public function getRecommendation($choiceId, $max = 5, $min = 5, $offset = 0, $context = array(), $type = '', $execute = true, $excludes = array()) {
 
         if(!$execute){
             if ($max >= 0) {
                 $bxRequest = new \com\boxalino\bxclient\v1\BxRecommendationRequest($this->getShortLocale(), $choiceId, $max, $min);
                 $bxRequest->setGroupBy($this->getEntityIdFieldName());
-                $filters = $this->getSystemFilters('product', '', true);
+                $filters = array_merge($this->getSystemFilters('product', '', true), new \com\boxalino\bxclient\v1\BxFilter('products_ordernumber', $excludes));
                 $bxRequest->setReturnFields($this->getReturnFields());
                 $bxRequest->setOffset($offset);
                 if ($type === 'basket' && is_array($context)) {
@@ -402,13 +402,8 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
             return array();
         }
         $benchmark = Shopware_Plugins_Frontend_Boxalino_Benchmark::instance();
-        $benchmark->log("before get hit ids for recommendation");
-        $order_number = self::$bxClient->getResponse()->getHitIds($choiceId, true, 0, 10, 'products_ordernumber');
-        $benchmark->log("after get hit ids for recommendation");
-        $benchmark->log("before getLocalArticles");
-        $articles = $this->getLocalArticles($order_number);
-        $benchmark->log("after getLocalArticles");
-        return $articles;
+        $benchmark->log("return get hit ids for recommendation");
+        return  self::$bxClient->getResponse()->getHitIds($choiceId, true, 0, 10, 'products_ordernumber');
     }
 
     /**
@@ -547,14 +542,21 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
      * @param $ids
      * @return mixed
      */
-    public function getLocalArticles($ids) {
+    public function getLocalArticles($ids, $order = true) {
 
-        return Shopware()->Container()->get('legacy_struct_converter')->convertListProductStructList(
+        $articles = Shopware()->Container()->get('legacy_struct_converter')->convertListProductStructList(
             Shopware()->Container()->get('shopware_storefront.list_product_service')->getList(
                 $ids,
                 Shopware()->Container()->get('shopware_storefront.context_service')->getProductContext()
             )
         );
+        if ($order) {
+            foreach ($ids as $id) {
+                $articles[] = $articles[$id];
+                unset($articles[$id]);
+            }
+        }
+        return $articles;
     }
 
 }
