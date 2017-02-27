@@ -167,10 +167,10 @@ class Shopware_Plugins_Frontend_Boxalino_FrontendInterceptor
         $max = $this->Config()->get('boxalino_cart_recommendation_max');
         $min = $this->Config()->get('boxalino_cart_recommendation_min');
         $this->Helper()->getRecommendation($choiceId, $max, $min, 0, $contextItems, 'basket', false);
-        $recommendations = $this->Helper()->getRecommendation($choiceId);
+        $hitIds = $this->Helper()->getRecommendation($choiceId);
         $this->View()->addTemplateDir($this->Bootstrap()->Path() . 'Views/emotion/');
         $this->View()->extendsTemplate('frontend/plugins/boxalino/checkout/ajax_cart.tpl');
-        $this->View()->assign('sRecommendations', $recommendations);
+        $this->View()->assign('sRecommendations', $this->Helper()->getLocalArticles($hitIds));
         return null;
     }
 

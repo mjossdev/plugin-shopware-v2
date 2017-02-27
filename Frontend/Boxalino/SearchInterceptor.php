@@ -237,7 +237,8 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                 $this->Helper()->resetRequests();
                 $this->Helper()->flushResponses();
                 $this->Helper()->getRecommendation('search', 15, 15, 0, [], '', false);
-                $no_result_articles = $this->Helper()->getRecommendation('search');
+                $hitIds = $this->Helper()->getRecommendation('search');
+                $no_result_articles = $this->Helper()->getLocalArticles($hitIds);
                 $facets = array();
             }
         }

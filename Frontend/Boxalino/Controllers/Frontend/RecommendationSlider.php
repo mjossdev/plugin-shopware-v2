@@ -132,10 +132,10 @@ class Shopware_Controllers_Frontend_RecommendationSlider extends Enlight_Control
         $helper->getRecommendation($choiceId, $count, $count, 0, $context, 'category', false);
         $benchmark->log("after setRecommendation on p13n");
         $benchmark->log("before getRecommendation on p13n");
-        $articles = $helper->getRecommendation($choiceId);
+        $hitsIds = $helper->getRecommendation($choiceId);
         $benchmark->log("after getRecommendation on p13n");
         $this->View()->loadTemplate('frontend/_includes/product_slider_items.tpl');
-        $this->View()->assign('articles', $articles);
+        $this->View()->assign('articles', $helper->getLocalArticles($hitsIds));
         $this->View()->assign('productBoxLayout', "emotion");
         $benchmark->endRecording();
     }
