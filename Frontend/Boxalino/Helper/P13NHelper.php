@@ -301,16 +301,16 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
             $hits = $autocompleteResponse->getTextualSuggestionTotalHitCount($suggestion);
             $suggestions[] = array('text' => $suggestion, 'html' => $autocompleteResponse->getTextualSuggestionHighlighted($suggestion), 'hits' => $hits);
             if ($i == 0) {
-                if (count($autocompleteResponse->getBxSearchResponse()->getHitIds($choice, true, 0, 10, 'products_ordernumber')) == 0) {
-                    $hitIds = $autocompleteResponse->getBxSearchResponse($suggestion)->getHitIds($choice, true, 0, 10, 'products_ordernumber');
+                if (count($autocompleteResponse->getBxSearchResponse()->getHitIds($choice, true, 0, 10, $this->getEntityIdFieldName('product'))) == 0) {
+                    $hitIds = $autocompleteResponse->getBxSearchResponse($suggestion)->getHitIds($choice, true, 0, 10, $this->getEntityIdFieldName('product'));
                 }
             }
             if ($suggestion == $queryText) {
-                $hitIds = $autocompleteResponse->getBxSearchResponse($suggestion)->getHitIds($choice, true, 0, 10, 'products_ordernumber');
+                $hitIds = $autocompleteResponse->getBxSearchResponse($suggestion)->getHitIds($choice, true, 0, 10, $this->getEntityIdFieldName('product'));
             }
         }
         if (empty($hitIds)) {
-            $hitIds = $autocompleteResponse->getBxSearchResponse()->getHitIds($choice, true, 0, 10, 'products_ordernumber');
+            $hitIds = $autocompleteResponse->getBxSearchResponse()->getHitIds($choice, true, 0, 10, $this->getEntityIdFieldName('product'));
         }
 
         if($type == 'product'){
@@ -380,7 +380,8 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
             if ($max >= 0) {
                 $bxRequest = new \com\boxalino\bxclient\v1\BxRecommendationRequest($this->getShortLocale(), $choiceId, $max, $min);
                 $bxRequest->setGroupBy($this->getEntityIdFieldName());
-                $filters = array_merge($this->getSystemFilters('product', '', true), new \com\boxalino\bxclient\v1\BxFilter('products_group_id', $excludes));
+                $excludeFilter = !empty($excludes) ? [new \com\boxalino\bxclient\v1\BxFilter('products_group_id', $excludes, true)] : [];
+                $filters = array_merge($this->getSystemFilters('product', '', true), $excludeFilter);
                 $bxRequest->setReturnFields($this->getReturnFields());
                 $bxRequest->setOffset($offset);
                 if ($type === 'basket' && is_array($context)) {
