@@ -88,7 +88,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
                 $this->bxData = new \com\boxalino\bxclient\v1\BxData($bxClient, $this->_config->getAccountLanguages($account), $this->_config->isAccountDev($account), false);
                 $this->log->info("BxIndexLog: verify credentials for account: " . $account);
                 try {
-                    $token = $this->bxData->verifyCredentials();
+                    $this->bxData->verifyCredentials();
                 } catch (\Exception $e){
                     $this->log->error("BxIndexException: {$e->getMessage()}");
                     throw $e;
@@ -146,8 +146,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
                     try {
                         $this->bxData->pushData();
                     } catch (\Exception $e){
-                        $this->log->info($e->getMessage());
-                        throw $e;
+                        $this->log->info("BxIndexLog: pushData failed with exception: " . $e->getMessage());
                     }
                     $this->log->info('BxIndexLog: Finished account: ' . $account);
                 }
@@ -431,7 +430,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
                 ->where("r_u.main = ?", 1)
                 ->where("org_path like '%sArticle%'");
             if ($this->delta) {
-                $sql->where('a.id IN(?)', $this->deltaIds);
+                $sql->having('articleID IN(?)', $this->deltaIds);
             }
 
             $stmt = $db->query($sql);
@@ -695,14 +694,14 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
                 ->where('s_articles.mode = ?', 0)
                 ->limit($limit, ($page - 1) * $limit);
             if ($this->delta) {
-                $sql->where("s_articles.changetime > ?", $this->getLastDelta());
+                $sql->where('s_articles.changetime > ?', $this->getLastDelta());
             }
 
             $stmt = $db->query($sql);
             if ($stmt->rowCount()) {
                 while ($row = $stmt->fetch()) {
-                    if ($this->delta) {
-                        $this->deltaIds[] = $row['articleID'] ;
+                    if ($this->delta && !isset($this->deltaIds[$row['articleID']])) {
+                        $this->deltaIds[$row['articleID']] = $row['articleID'] ;
                     }
                     $row['group_id'] = $row['articleID'];
                     $data[] = $row;
@@ -720,7 +719,6 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
                 $data = array_merge(array(array_keys(end($data))), $data);
                 $header = false;
             }
-
             $files->savePartToCsv('products.csv', $data);
             $page++;
         }
@@ -921,11 +919,12 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
         );
 
         $header = true;
+        $data = array();
+        $countMax = 1000000;
+        $limit = 5000;
+        $totalCount = 0;
         foreach ($this->_config->getAccountLanguages($account) as $shop_id => $language) {
-            $data = array();
-            $countMax = 1000000;
-            $limit = 5000;
-            $totalCount = 0;
+
             $page = 1;
             while ($countMax > $totalCount + $limit) {
                 $sql = $db->select()

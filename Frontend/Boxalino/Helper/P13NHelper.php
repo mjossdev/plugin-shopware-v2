@@ -380,7 +380,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
             if ($max >= 0) {
                 $bxRequest = new \com\boxalino\bxclient\v1\BxRecommendationRequest($this->getShortLocale(), $choiceId, $max, $min);
                 $bxRequest->setGroupBy($this->getEntityIdFieldName());
-                $filters = array_merge($this->getSystemFilters('product', '', true), new \com\boxalino\bxclient\v1\BxFilter('products_ordernumber', $excludes));
+                $filters = array_merge($this->getSystemFilters('product', '', true), new \com\boxalino\bxclient\v1\BxFilter('products_group_id', $excludes));
                 $bxRequest->setReturnFields($this->getReturnFields());
                 $bxRequest->setOffset($offset);
                 if ($type === 'basket' && is_array($context)) {
@@ -403,7 +403,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         }
         $benchmark = Shopware_Plugins_Frontend_Boxalino_Benchmark::instance();
         $benchmark->log("return get hit ids for recommendation");
-        return  self::$bxClient->getResponse()->getHitIds($choiceId, true, 0, 10, 'products_ordernumber');
+        return  self::$bxClient->getResponse()->getHitIds($choiceId, true, 0, 10, $this->getEntityIdFieldName('product'));
     }
 
     /**
@@ -538,24 +538,33 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         return $basket;
     }
 
+    public function convertIds($ids){
+        $convertedIds = array();
+        $db = Shopware()->Db();
+        $sql = $db->select()->from(array('a_d' => 's_articles_details'), array('ordernumber'))
+            ->where('a_d.articleID IN(?)', $ids)
+            ->where('a_d.kind = ?', 1)
+            ->order(new Zend_Db_Expr('FIELD(a_d.articleID,' . implode(',', $ids).')'));
+        $stmt = $db->query($sql);
+        while($row = $stmt->fetch()) {
+            $convertedIds[] = $row['ordernumber'];
+        }
+        return $convertedIds;
+    }
+
     /**
      * @param $ids
      * @return mixed
      */
     public function getLocalArticles($ids, $order = true) {
 
+        $ids = $this->convertIds($ids);
         $articles = Shopware()->Container()->get('legacy_struct_converter')->convertListProductStructList(
             Shopware()->Container()->get('shopware_storefront.list_product_service')->getList(
                 $ids,
                 Shopware()->Container()->get('shopware_storefront.context_service')->getProductContext()
             )
         );
-        if ($order) {
-            foreach ($ids as $id) {
-                $articles[] = $articles[$id];
-                unset($articles[$id]);
-            }
-        }
         return $articles;
     }
 

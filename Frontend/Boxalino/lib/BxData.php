@@ -479,7 +479,7 @@ class BxData
 		curl_setopt($s, CURLOPT_RETURNTRANSFER, true);
 		curl_setopt($s, CURLOPT_POSTFIELDS, $fields);
 
-		$responseBody = curl_exec($s);
+		$responseBody = @curl_exec($s);
 
 		if($responseBody === false)
 		{

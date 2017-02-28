@@ -31,33 +31,44 @@ class Shopware_Controllers_Frontend_RecommendationSlider extends Enlight_Control
         $this->config = Shopware()->Config();
         $this->marketingModule = Shopware()->Modules()->Marketing();
         $id = $this->request->getParam('articleId');
-        $sArticles = Shopware()->Modules()->Articles()->sGetPromotionById('fix', 0, $id);
-        $viewedArticles = $this->getViewedRecommendations($id);
-        $boughtArticles = $this->getBoughtRecommendations($id);
+        $categoryId = $this->request->getParam('sCategory');
+        $number = $this->Request()->getParam('number', null);
+        $selection = $this->Request()->getParam('group', array());
+        if (!$this->isValidCategory($categoryId)) {
+            $categoryId = 0;
+        }
+        $this->config->offsetSet('similarLimit', 0);
+        $sArticles = Shopware()->Modules()->Articles()->sGetArticleById(
+            $id,
+            $categoryId,
+            $number,
+            $selection
+        );
+        $boughtArticles = [];
+        $viewedArticles = [];
         $sRelatedArticles = isset($sArticles['sRelatedArticles']) ? $sArticles['sRelatedArticles'] : [];
         $sSimilarArticles = isset($sArticles['sSimilarArticles']) ? $sArticles['sSimilarArticles'] : [];
 
         $helper = Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper::instance();
-        foreach ($this->_productRecommendations as $var_name => $recommendation){
-            if($this->config->get("{$recommendation}_enabled")){
+        foreach ($this->_productRecommendations as $var_name => $recommendation) {
+            if ($this->config->get("{$recommendation}_enabled")) {
                 $choiceId = $this->config->get("{$recommendation}_name");
                 $max = $this->config->get("{$recommendation}_max");
                 $min = $this->config->get("{$recommendation}_min");
-                $excludes = array_keys($$var_name);
+                $excludes = array();
+                if ($var_name == 'sRelatedArticles' ||$var_name == 'sSimilarArticles') {
+                    foreach ($$var_name as $article) {
+                        $excludes[] = $article['articleID'];
+                    }
+                }
                 $helper->getRecommendation($choiceId, $max, $min, 0, $id, 'product', false, $excludes);
                 $choiceIds[$recommendation] = $choiceId;
             }
         }
 
-        foreach ($this->_productRecommendations as $var_name => $recommendation){
+        foreach ($this->_productRecommendations as $var_name => $recommendation) {
             if (isset($choiceIds[$recommendation])) {
                 $hitIds = $helper->getRecommendation($choiceIds[$recommendation]);
-                $checkIds = array_flip($hitIds);
-                foreach ($$var_name as $index => $article) {
-                    if (isset($checkIds[$index])) {
-                        unset($hitIds[$checkIds[$index]]);
-                    }
-                }
                 $articles = array_merge($$var_name, $helper->getLocalArticles($hitIds));
                 $sArticles[$var_name] = $articles;
             }
@@ -67,52 +78,6 @@ class Shopware_Controllers_Frontend_RecommendationSlider extends Enlight_Control
         $this->View()->addTemplateDir($path . 'Views/emotion/');
         $this->View()->loadTemplate('frontend/plugins/boxalino/detail/recommendation.tpl');
         $this->View()->assign('sArticle', $sArticles);
-    }
-
-    private function getViewedRecommendations($id){
-
-        $maxPages = (int) $this->config->get('similarViewedMaxPages', 10);
-        $perPage = (int) $this->config->get('similarViewedPerPage', 4);
-
-        $this->marketingModule->sBlacklist[] = null;
-        $this->marketingModule->sBlacklist[] = (int) $id;
-        $articles = $this->marketingModule->sGetSimilaryShownArticles($id, $maxPages * $perPage);
-
-        $numbers = array_column($articles, 'number');
-        $result = $this->getPromotions($numbers);
-        return $result;
-    }
-
-    private function getBoughtRecommendations($id){
-
-        $maxPages = (int) $this->config->get('alsoBoughtMaxPages', 10);
-        $perPage = (int) $this->config->get('alsoBoughtPerPage', 4);
-
-        $this->marketingModule->sBlacklist[] = null;
-        $this->marketingModule->sBlacklist[] = $id;
-        $articles = $this->marketingModule->sGetAlsoBoughtArticles($id, $maxPages * $perPage);
-        $this->marketingModule->sBlacklist[] = null;
-
-        $numbers = array_column($articles, 'number');
-        $result = $this->getPromotions($numbers);
-        return $result;
-    }
-
-    /**
-     * @param string[] $numbers
-     * @return array[]
-     */
-    private function getPromotions($numbers)
-    {
-        if (empty($numbers)) {
-            return [];
-        }
-
-        $context = $this->get('shopware_storefront.context_service')->getShopContext();
-        $products = $this->get('shopware_storefront.list_product_service')
-            ->getList($numbers, $context);
-
-        return $this->get('legacy_struct_converter')->convertListProductStructList($products);
     }
 
     /**
@@ -138,6 +103,24 @@ class Shopware_Controllers_Frontend_RecommendationSlider extends Enlight_Control
         $this->View()->assign('articles', $helper->getLocalArticles($hitsIds));
         $this->View()->assign('productBoxLayout', "emotion");
         $benchmark->endRecording();
+    }
+
+    private function isValidCategory($categoryId) {
+        $defaultShopCategoryId = Shopware()->Shop()->getCategory()->getId();
+
+        /**@var $repository \Shopware\Models\Category\Repository*/
+        $repository = Shopware()->Models()->getRepository('Shopware\Models\Category\Category');
+        $categoryPath = $repository->getPathById($categoryId);
+
+        if (!$categoryPath) {
+            return true;
+        }
+
+        if (!array_key_exists($defaultShopCategoryId, $categoryPath)) {
+            return false;
+        }
+
+        return true;
     }
 
 }

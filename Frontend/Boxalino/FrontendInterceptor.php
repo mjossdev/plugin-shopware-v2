@@ -36,45 +36,38 @@ class Shopware_Plugins_Frontend_Boxalino_FrontendInterceptor
                     $this->View()->addTemplateDir($this->Bootstrap()->Path() . 'Views/emotion/');
                     $this->View()->extendsTemplate('frontend/plugins/boxalino/detail/index_ajax.tpl');
                     break;
-                }
-
-                $id = trim(strip_tags(htmlspecialchars_decode(stripslashes($this->Request()->sArticle))));
-
-                // Replace similar & related products, if choice IDs given
-                $choiceIds = array();
-                $recommendations = array_merge($this->_productRecommendations, $this->_productRecommendationsGeneric);
-                foreach ($recommendations as $configOption) {
-                    if($this->Config()->get("{$configOption}_enabled")){
-
-                        $choiceId = $this->Config()->get("{$configOption}_name");
-                        $max = $this->Config()->get("{$configOption}_max");
-                        $min = $this->Config()->get("{$configOption}_min");
-                        $this->Helper()->getRecommendation($choiceId, $max, $min, 0, $id, 'product', false);
-                        $choiceIds[$configOption] = $choiceId;
-                    }
-                }
-
-                if (count($choiceIds)) {
-                    foreach ($this->_productRecommendations as $articleKey => $configOption) {
-                        if (array_key_exists($configOption, $choiceIds)) {
-                            $hitIds = $this->Helper()->getRecommendation($choiceIds[$configOption]);
-                            if (isset($sArticle[$articleKey]) && is_array($sArticle[$articleKey])) {
-                                $checkIds = array_flip($hitIds);
-                                foreach ($sArticle[$articleKey] as $article) {
-                                    if (isset($checkIds[$article['ordernumber']])) {
-                                        unset($hitIds[$checkIds[$article['ordernumber']]]);
+                } else {
+                    $id = trim(strip_tags(htmlspecialchars_decode(stripslashes($this->Request()->sArticle))));
+                    $choiceIds = array();
+                    $recommendations = array_merge($this->_productRecommendations, $this->_productRecommendationsGeneric);
+                    foreach ($recommendations as $articleKey => $configOption) {
+                        if($this->Config()->get("{$configOption}_enabled")){
+                            $excludes = array();
+                            if ($articleKey == 'sRelatedArticles' || $articleKey == 'sSimilarArticles') {
+                                if (isset($sArticle[$articleKey]) && is_array($sArticle[$articleKey])) {
+                                    foreach ($sArticle[$articleKey] as $article) {
+                                        $excludes[] = $article['articleID'];
                                     }
                                 }
+                            }
+                            $choiceId = $this->Config()->get("{$configOption}_name");
+                            $max = $this->Config()->get("{$configOption}_max");
+                            $min = $this->Config()->get("{$configOption}_min");
+                            $this->Helper()->getRecommendation($choiceId, $max, $min, 0, $id, 'product', false, $excludes);
+                            $choiceIds[$configOption] = $choiceId;
+                        }
+                    }
+
+                    if (count($choiceIds)) {
+                        foreach ($this->_productRecommendations as $articleKey => $configOption) {
+                            if (array_key_exists($configOption, $choiceIds)) {
+                                $hitIds = $this->Helper()->getRecommendation($choiceIds[$configOption]);
                                 $sArticle[$articleKey] = array_merge($sArticle[$articleKey], $this->Helper()->getLocalArticles($hitIds));
-                            } else {
-                                $sArticle[$articleKey] = $this->Helper()->getLocalArticles($hitIds);
                             }
                         }
-
-
                     }
+                    $this->View()->assign('sArticle', $sArticle);
                 }
-                $this->View()->assign('sArticle', $sArticle);
                 $script = Shopware_Plugins_Frontend_Boxalino_EventReporter::reportProductView($sArticle['articleDetailsID']);
                 break;
             case 'search':
@@ -89,24 +82,13 @@ class Shopware_Plugins_Frontend_Boxalino_FrontendInterceptor
                     $configOption = $action == 'viewed' ? $this->_productRecommendationsGeneric['sCrossSimilarShown'] :
                         $this->_productRecommendationsGeneric['sCrossBoughtToo'];
                     if ($this->Config()->get("{$configOption}_enabled")) {
-
-                        $assigned_data = $this->View()->getAssign();
-                        $articles = $assigned_data["{$action}Articles"];
-                        if ($space_left = ($assigned_data['maxPages'] * $assigned_data['perPage']) - count($articles)) {
-                            $hitIds = $this->Helper()->getRecommendation($this->Config()->get("{$configOption}_name"));
-                            $checkIds = array_flip($hitIds);
-                            foreach ($articles as $index => $article) {
-                                if (isset($checkIds[$index])) {
-                                    unset($hitIds[$checkIds[$index]]);
-                                }
-                            }
-                            $articles = array_merge($articles, $this->Helper()->getLocalArticles($hitIds));
-                        }
-                        $this->View()->assign("{$action}Articles", $articles);
+                        $hitIds = $this->Helper()->getRecommendation($this->Config()->get("{$configOption}_name"));
+                        $this->View()->assign("{$action}Articles", $this->Helper()->getLocalArticles($hitIds));
                     }
                 } else {
                     return null;
                 }
+                break;
             case 'checkout':
             case 'account':
                 if ($_SESSION['Shopware']['sUserId'] != null) {

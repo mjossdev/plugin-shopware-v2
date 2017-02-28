@@ -89,7 +89,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         $this->Benchmark()->log("Initialize search request");
         $this->Helper()->addSearch($queryText, $pageOffset, $hitCount, 'product', $sort, $options);
         $viewData = $this->View()->getAssign();
-        $articles = $this->Helper()->getLocalArticles($this->Helper()->getFieldsValues('product', 'products_ordernumber'));
+        $articles = $this->Helper()->getLocalArticles($this->Helper()->getEntitiesIds());
         $viewData['sArticles'] = $articles;
         if ($listingCount) {
             $this->Controller()->Response()->setBody('{"totalCount":' . $this->Helper()->getTotalHitCount() . '}');
@@ -137,7 +137,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         $facets = $this->updateFacetsWithResult($facets, $facetIdsToOptionIds);
         $this->Benchmark()->log("Finish update facets");
         $this->Benchmark()->log("Start getLocalArticles");
-        $articles = $this->Helper()->getLocalArticles($this->Helper()->getFieldsValues('product', 'products_ordernumber'));
+        $articles = $this->Helper()->getLocalArticles($this->Helper()->getEntitiesIds());
         $this->Benchmark()->log("Finish getLocalArticles");
         $totalHitCount = $this->Helper()->getTotalHitCount();
         $request = $this->Request();
@@ -227,8 +227,9 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             $facets = array();
         }else {
             if ($totalHitCount = $this->Helper()->getTotalHitCount()) {
+                $ids = $this->Helper()->getEntitiesIds();
                 $this->Benchmark()->log("Stat getLocalArticles");
-                $articles = $this->Helper()->getLocalArticles($this->Helper()->getFieldsValues('product', 'products_ordernumber'));
+                $articles = $this->Helper()->getLocalArticles($ids);
                 $this->Benchmark()->log("End getLocalArticles");
                 $this->Benchmark()->log("Stat update facets with response");
                 $facets = $this->updateFacetsWithResult($facets, $facetIdsToOptionIds);
