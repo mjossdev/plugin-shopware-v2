@@ -85,7 +85,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
                 $files = new Shopware_Plugins_Frontend_Boxalino_Helper_BxFiles($this->dirPath, $account, $type);
 
                 $bxClient = new \com\boxalino\bxclient\v1\BxClient($account, $this->_config->getAccountPassword($account), "");
-                $this->bxData = new \com\boxalino\bxclient\v1\BxData($bxClient, $this->_config->getAccountLanguages($account), $this->_config->isAccountDev($account), false);
+                $this->bxData = new \com\boxalino\bxclient\v1\BxData($bxClient, $this->_config->getAccountLanguages($account), $this->_config->isAccountDev($account), $this->delta);
                 $this->log->info("BxIndexLog: verify credentials for account: " . $account);
                 try {
                     $this->bxData->verifyCredentials();
