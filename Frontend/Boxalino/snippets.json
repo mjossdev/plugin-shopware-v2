@@ -1,5 +1,6 @@
 {
   "en_GB": [{"relaxation/didyoumean": "Did you mean..."}, {"search/noresult": "No Result Recommendation"}],
   "de_DE": [{"relaxation/didyoumean": "Meinten Sie..."}, {"search/noresult": "Kein Resultat Empfehlungen"}],
+  "de_CH": [{"relaxation/didyoumean": "Meinten Sie..."}, {"search/noresult": "Kein Resultat Empfehlungen"}],
   "fr_CH": [{"relaxation/didyoumean": "Vouliez-vous dire..."}, {"search/noresult": "Non Résultat Recommandation"}]
 }

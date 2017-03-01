@@ -73,7 +73,9 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
 
         $this->init($arguments);
         $viewData = $this->View()->getAssign();
-        if (!isset($viewData['sArticles']) || count($viewData['sArticles']) == 0) {
+        $catId = $this->Request()->getParam('sCategory');
+        $streamId = $this->findStreamIdByCategoryId($catId);
+        if ($streamId != null || !isset($viewData['sArticles']) || count($viewData['sArticles']) == 0) {
             return null;
         }
 
@@ -114,10 +116,11 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
 
         $this->init($arguments);
         $viewData = $this->View()->getAssign();
-        if (!isset($viewData['sArticles']) || count($viewData['sArticles']) == 0) {
+        $catId = $this->Request()->getParam('sCategory');
+        $streamId = $this->findStreamIdByCategoryId($catId);
+        if ($streamId != null || !isset($viewData['sArticles']) || count($viewData['sArticles']) == 0) {
             return null;
         }
-
         $this->Benchmark()->startRecording(__FUNCTION__);
         $this->Benchmark()->log("Prepare facets and conditions");
         $context  = $this->get('shopware_storefront.context_service')->getProductContext();
@@ -305,14 +308,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         }
         $sPage = $this->Request()->getParam('sBlogPage', 1);
         $entity_ids = $this->Helper()->getEntitiesIds('blog');
-        $category_ids = $this->Helper()->getFieldsValues('blog', 'products_blog_category_id');
-        $shop_category = Shopware()->Shop()->getCategory();
-        foreach ($category_ids as $index => $category_id) {
-            $category = Shopware()->Models()->getReference('Shopware\Models\Category\Category', $category_id);
-            if (!$category->isChildOf($shop_category)) {
-                unset($entity_ids[$index]);
-            }
-        }
+
         if (!count($entity_ids)) {
             return $props;
         }
@@ -839,7 +835,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                             $active = $resultFacet->isFacetValueSelected($fieldName, trim($value->getLabel()));
                             if(!$active && strpos($fieldName, "optionID") !== false) {
                                 try {
-                                    $active = $resultFacet->isFacetValueSelected($fieldName . "_id", $value->getId());
+                                    $active = $resultFacet->isFacetValueSelected($fieldName, $value->getId());
                                 } catch(\Exception $e) {
 
                                 }
@@ -962,6 +958,25 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             'field' => $field,
             'reverse' => ($sort->getDirection() == Shopware\Bundle\SearchBundle\SortingInterface::SORT_DESC)
         );
+    }
+
+
+    /**
+     * @param int $categoryId
+     * @return int|null
+     */
+    private function findStreamIdByCategoryId($categoryId)
+    {
+        $streamId = $this->get('dbal_connection')->fetchColumn(
+            'SELECT stream_id FROM s_categories WHERE id = :id',
+            ['id' => $categoryId]
+        );
+
+        if ($streamId) {
+            return (int)$streamId;
+        }
+
+        return null;
     }
 
 }
