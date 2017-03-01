@@ -70,7 +70,6 @@ class BxChooseResponse
 	}
 	
 	public function getSearchResultHitIds($searchResult, $fieldId='id') {
-
 		$ids = array();
 		if($searchResult) {
 			if($searchResult->hits){
@@ -79,10 +78,6 @@ class BxChooseResponse
 				}
 			}elseif(isset($searchResult->hitsGroups)){
 				foreach ($searchResult->hitsGroups as $hitGroup){
-				    if ($fieldId != 'id' && $fieldId != '') {
-				        $ids[] = $hitGroup->hits[0]->values[$fieldId][0];
-				        continue;
-                    }
 					$ids[] = $hitGroup->groupValue;
 				}
 			}
@@ -91,6 +86,7 @@ class BxChooseResponse
 	}
 
     public function getHitIds($choice=null, $considerRelaxation=true, $count=0, $maxDistance=10, $fieldId='id', $discardIfSubPhrases = true) {
+
 		$variant = $this->getChoiceResponseVariant($choice, $count);
 		return $this->getSearchResultHitIds($this->getVariantSearchResult($variant, $considerRelaxation, $maxDistance, $discardIfSubPhrases), $fieldId);
     }
@@ -148,7 +144,7 @@ class BxChooseResponse
 		$facets = $this->getRequestFacets($choice);
 
 		if(empty($facets) || $searchResult == null){
-			return null;
+			return new \com\boxalino\bxclient\v1\BxFacets();;
 		}
 		$facets->setFacetResponse($searchResult->facetResponses);
 		return $facets;
@@ -208,9 +204,9 @@ class BxChooseResponse
 		return null;
 	}
 	
-	public function areThereSubPhrases($choice=null, $count=0) {
+	public function areThereSubPhrases($choice=null, $count=0, $maxBaseResults=0) {
 		$variant = $this->getChoiceResponseVariant($choice, $count);
-		return isset($variant->searchRelaxation->subphrasesResults) && sizeof($variant->searchRelaxation->subphrasesResults) > 0;
+		return isset($variant->searchRelaxation->subphrasesResults) && sizeof($variant->searchRelaxation->subphrasesResults) > 0 && $this->getTotalHitCount($choice, false, $count) <= $maxBaseResults;
 	}
 	
 	public function getSubPhrasesQueries($choice=null, $count=0) {

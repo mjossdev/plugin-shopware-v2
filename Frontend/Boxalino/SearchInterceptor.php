@@ -72,6 +72,11 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         }
 
         $this->init($arguments);
+        $viewData = $this->View()->getAssign();
+        if (!isset($viewData['sArticles']) || count($viewData['sArticles']) == 0) {
+            return null;
+        }
+
         $this->Benchmark()->startRecording(__FUNCTION__);
         $this->Benchmark()->log("Prepare facets and conditions");
         $listingCount = $this->Request()->getActionName() == 'listingCount';
@@ -88,7 +93,6 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         $options = $this->getFacetConfig($facets, $facetIdsToOptionIds);
         $this->Benchmark()->log("Initialize search request");
         $this->Helper()->addSearch($queryText, $pageOffset, $hitCount, 'product', $sort, $options);
-        $viewData = $this->View()->getAssign();
         $articles = $this->Helper()->getLocalArticles($this->Helper()->getEntitiesIds());
         $viewData['sArticles'] = $articles;
         if ($listingCount) {
@@ -109,12 +113,11 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         }
 
         $this->init($arguments);
-
-        $cat = $this->Request()->getParam('sCategory');
-        $products = Shopware()->Models()->getReference('Shopware\Models\Category\Category', $cat)->getArticles();
-        if (count($products) == 0) {
+        $viewData = $this->View()->getAssign();
+        if (!isset($viewData['sArticles']) || count($viewData['sArticles']) == 0) {
             return null;
         }
+
         $this->Benchmark()->startRecording(__FUNCTION__);
         $this->Benchmark()->log("Prepare facets and conditions");
         $context  = $this->get('shopware_storefront.context_service')->getProductContext();

@@ -35,7 +35,6 @@ class Shopware_Plugins_Frontend_Boxalino_FrontendInterceptor
                 if ($this->Config()->get('boxalino_detail_recommendation_ajax')) {
                     $this->View()->addTemplateDir($this->Bootstrap()->Path() . 'Views/emotion/');
                     $this->View()->extendsTemplate('frontend/plugins/boxalino/detail/index_ajax.tpl');
-                    break;
                 } else {
                     $id = trim(strip_tags(htmlspecialchars_decode(stripslashes($this->Request()->sArticle))));
                     $choiceIds = array();

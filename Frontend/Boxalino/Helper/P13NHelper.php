@@ -557,8 +557,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
      * @param $ids
      * @return mixed
      */
-    public function getLocalArticles($ids, $order = true) {
-
+    public function getLocalArticles($ids) {
         $ids = $this->convertIds($ids);
         $articles = Shopware()->Container()->get('legacy_struct_converter')->convertListProductStructList(
             Shopware()->Container()->get('shopware_storefront.list_product_service')->getList(
