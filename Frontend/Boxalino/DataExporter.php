@@ -207,33 +207,49 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
                 array('d' => 's_articles_details'),
                 $this->qi('d.articleID') . ' = ' . $this->qi('a.id') . ' AND ' .
                 $this->qi('d.kind') . ' <> ' . $db->quote(3),
-                array('d.id')
+                array('d.id', 'd.articleID')
             )
             ->join(array('a_p' => 's_articles_prices'), 'a_p.articledetailsID = d.id', array('price', 'pseudoprice'))
             ->join(array('c_c' => 's_core_customergroups'), 'c_c.groupkey = a_p.pricegroup',array())
             ->join(array('c_t' => 's_core_tax'), 'c_t.id = a.taxID', array('tax'))
             ->where('a_p.pricegroup = ?', 'EK')
             ->where('a_p.from = ?', 1)
-            ->where($this->qi('a.active') . ' = ?', 1);
+            ->where($this->qi('a.active') . ' = ?', 1)
+            ->where($this->qi('d.active') . ' = ?', 1);
         if ($this->delta) {
             $sql->where('a.id IN(?)', $this->deltaIds);
         }
 
+        $grouped_price = array();
+        $data = array();
         $stmt = $db->query($sql);
         while ($row = $stmt->fetch()) {
-
             $taxFactor = ((floatval($row['tax']) + 100.0) /100);
             $pseudo = floatval($row['pseudoprice']) * $taxFactor;
             $discount = floatval($row['price']) * $taxFactor;
             $price = $pseudo > $discount ? $pseudo : $discount;
-            $data[$row['id']] = array("id" => $row['id'], "price" => number_format($price,2), "discounted" => number_format($discount,2));
+            $data[$row['id']] = array("id" => $row['id'], "price" => number_format($price,2), "discounted" => number_format($discount,2), "articleID" => $row['articleID']);
 
+            if(isset($grouped_price[$row['articleID']]) && $grouped_price[$row['articleID']] < number_format($discount,2)) {
+                continue;
+            }
+            $grouped_price[$row['articleID']] = number_format($discount,2);
         }
+        foreach ($data as $index => $d) {
+            if(isset($grouped_price[$d['articleID']])){
+                $data[$index]['grouped_price'] = $grouped_price[$d['articleID']];
+                continue;
+            }
+            $data[$index]['grouped_price'] = $data[$index]['discounted'];
+        }
+        $grouped_price = null;
         $data = array_merge(array(array_keys(end($data))), $data);
         $files->savepartToCsv('product_price.csv', $data);
         $sourceKey = $this->bxData->addCSVItemFile($files->getPath('product_price.csv'), 'id');
         $this->bxData->addSourceDiscountedPriceField($sourceKey, 'discounted');
         $this->bxData->addSourceListPriceField($sourceKey, 'price');
+        $this->bxData->addSourceNumberField($sourceKey, 'bx_grouped_price', 'grouped_price');
+        $this->bxData->addFieldParameter($sourceKey,'bx_grouped_price', 'multiValued', 'false');
     }
 
     /**
@@ -301,7 +317,8 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
                     'f_a.articleID = a.id  AND f_v.id = f_a.valueID',
                     array()
                 )
-                ->where($this->qi('a.active') . ' = ?', 1);
+                ->where($this->qi('a.active') . ' = ?', 1)
+                ->where($this->qi('d.active') . ' = ?', 1);
             if ($this->delta) {
                 $sql->where('a.id IN(?)', $this->deltaIds);
             }
@@ -471,7 +488,8 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
                 $this->qi('d.kind') . ' <> ' . $db->quote(3),
                 array('id', 'articleID')
             )
-            ->where($this->qi('a.active') . ' = ?', 1);
+            ->where($this->qi('a.active') . ' = ?', 1)
+            ->where($this->qi('d.active') . ' = ?', 1);
         if ($this->delta) {
             $sql->where('a.id IN(?)', $this->deltaIds);
         }
@@ -517,7 +535,8 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
                 $this->qi('d.kind') . ' <> ' . $db->quote(3),
                 array('id')
             )
-            ->where($this->qi('a.active') . ' = ?', 1);
+            ->where($this->qi('a.active') . ' = ?', 1)
+            ->where($this->qi('d.active') . ' = ?', 1);
         if ($this->delta) {
             $sql->where('a.id IN(?)', $this->deltaIds);
         }
@@ -549,7 +568,8 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
                 $this->qi('asup.id') . ' = ' . $this->qi('a.supplierID'),
                 array('brand' => 'name')
             )
-            ->where($this->qi('a.active') . ' = ?', 1);
+            ->where($this->qi('a.active') . ' = ?', 1)
+            ->where($this->qi('d.active') . ' = ?', 1);
         if ($this->delta) {
             $sql->where('a.id IN(?)', $this->deltaIds);
         }
@@ -595,7 +615,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
                 $a_ref = $table == 's_articles' ? 'a.articleID' : 'a.id';
                 $b_ref = $table == 's_articles' ? 'b.id' : 'b.articledetailsID';
                 $innerSelect = $db->select()
-                    ->from(array('b'=> $table),array(new Zend_Db_Expr("CASE WHEN t.{$field} IS NULL THEN b.{$field} ELSE t.{$field} END as value")))
+                    ->from(array('b'=> $table),array(new Zend_Db_Expr("CASE WHEN t.{$field} IS NULL OR CHAR_LENGTH(t.{$field}) < 1 THEN b.{$field} ELSE t.{$field} END as value")))
                     ->joinLeft(array('t' => 's_articles_translations'),"t.articleID = b.id AND t.languageID = {$shop_id}", array())
                     ->where("{$a_ref} = {$b_ref}");
 
@@ -603,6 +623,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
             }
         }
         $selectFields[] = 'a.id';
+
         $sql = $db->select()
             ->from(array('a' => 's_articles_details'), $selectFields)
             ->where($this->qi('a.active') . ' = ?', 1);
@@ -614,6 +635,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
         while ($row = $stmt->fetch()) {
             $data[] = $row;
         }
+
         $data = array_merge(array(array_keys(end($data))), $data);
         $files->savepartToCsv('product_translations.csv', $data);
         $attributeSourceKey = $this->bxData->addCSVItemFile($files->getPath('product_translations.csv'), 'id');
@@ -692,6 +714,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
                 ->join(array('s_articles_attributes'), 's_articles_attributes.articledetailsID = s_articles_details.id', array())
                 ->where('s_articles.active = ?', 1)
                 ->where('s_articles.mode = ?', 0)
+                ->where('s_articles_details.active = ?', 1)
                 ->limit($limit, ($page - 1) * $limit);
             if ($this->delta) {
                 $sql->where('s_articles.changetime > ?', $this->getLastDelta());
@@ -724,9 +747,11 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
         }
 
         $mainSourceKey = $this->bxData->addMainCSVItemFile($files->getPath('products.csv'), 'id');
+
         $this->bxData->addSourceStringField($mainSourceKey, 'bx_type', 'id');
         $this->bxData->addFieldParameter($mainSourceKey,'bx_type', 'pc_fields', 'CASE WHEN group_id IS NULL THEN "blog" ELSE "product" END AS final_value');
         $this->bxData->addFieldParameter($mainSourceKey,'bx_type', 'multiValued', 'false');
+
 
         foreach ($main_properties as $property) {
 
@@ -735,11 +760,12 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
             }
             if ($property == 'sales') {
                 $this->bxData->addSourceNumberField($mainSourceKey, $property, $property);
+                $this->bxData->addFieldParameter($mainSourceKey, $property, 'multiValued', 'false');
                 continue;
             }
             $this->bxData->addSourceStringField($mainSourceKey, $property, $property);
-            if ($property == 'group_id') {
-                $this->bxData->addFieldParameter($mainSourceKey, 'group_id', 'multiValued', 'false');
+            if ($property == 'group_id' || $property == 'releasedate') {
+                $this->bxData->addFieldParameter($mainSourceKey, $property, 'multiValued', 'false');
             }
         }
         return true;

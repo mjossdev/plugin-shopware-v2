@@ -78,7 +78,11 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         if ($streamId != null || !isset($viewData['sArticles']) || count($viewData['sArticles']) == 0) {
             return null;
         }
-
+        $filter = array();
+        if($supplier = $this->Request()->getParam('sSupplier')) {
+            $supplier_name = $this->getSupplierName($supplier);
+            $filter['products_brand'] = [$supplier_name];
+        }
         $this->Benchmark()->startRecording(__FUNCTION__);
         $this->Benchmark()->log("Prepare facets and conditions");
         $listingCount = $this->Request()->getActionName() == 'listingCount';
@@ -94,21 +98,23 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         $queryText = $this->Request()->getParams()['q'];
         $options = $this->getFacetConfig($facets, $facetIdsToOptionIds);
         $this->Benchmark()->log("Initialize search request");
-        $this->Helper()->addSearch($queryText, $pageOffset, $hitCount, 'product', $sort, $options);
+        $this->Helper()->addSearch($queryText, $pageOffset, $hitCount, 'product', $sort, $options, $filter);
         $articles = $this->Helper()->getLocalArticles($this->Helper()->getEntitiesIds());
         $viewData['sArticles'] = $articles;
         if ($listingCount) {
             $this->Controller()->Response()->setBody('{"totalCount":' . $this->Helper()->getTotalHitCount() . '}');
             $this->Benchmark()->log("End of listing count.");
             $this->Benchmark()->endRecording();
-            return null;
+            return false;
         }
         $this->View()->assign($viewData);
         $this->Benchmark()->log("End of ajax listing");
         $this->Benchmark()->endRecording();
+        return false;
     }
 
     public function listing(Enlight_Event_EventArgs $arguments) {
+
 
         if (!$this->Config()->get('boxalino_active') || !$this->Config()->get('boxalino_navigation_enabled')) {
             return null;
@@ -120,6 +126,11 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         $streamId = $this->findStreamIdByCategoryId($catId);
         if ($streamId != null || !isset($viewData['sArticles']) || count($viewData['sArticles']) == 0) {
             return null;
+        }
+
+        $filter = array();
+        if(isset($viewData['manufacturer']) && !empty($viewData['manufacturer'])) {
+            $filter['products_brand'] = [$viewData['manufacturer']->getName()];
         }
         $this->Benchmark()->startRecording(__FUNCTION__);
         $this->Benchmark()->log("Prepare facets and conditions");
@@ -133,12 +144,10 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         $facetIdsToOptionIds = $this->getPropertyFacetOptionIds($facets);
         $options = $this->getFacetConfig($facets, $facetIdsToOptionIds);
         $sort =  $this->getSortOrder($criteria);
-        $config = $this->get('config');
-        $pageCounts = array_values(explode('|', $config->get('fuzzySearchSelectPerPage')));
         $hitCount = $criteria->getLimit();
         $pageOffset = $criteria->getOffset();
         $this->Benchmark()->log("Initialize search request with offset " . $pageOffset);
-        $this->Helper()->addSearch('', $pageOffset, $hitCount, 'product', $sort, $options);
+        $this->Helper()->addSearch('', $pageOffset, $hitCount, 'product', $sort, $options, $filter);
         $this->Benchmark()->log("Start update facets");
         $facets = $this->updateFacetsWithResult($facets, $facetIdsToOptionIds);
         $this->Benchmark()->log("Finish update facets");
@@ -146,22 +155,16 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         $articles = $this->Helper()->getLocalArticles($this->Helper()->getEntitiesIds());
         $this->Benchmark()->log("Finish getLocalArticles");
         $totalHitCount = $this->Helper()->getTotalHitCount();
-        $request = $this->Request();
         $templateProperties = array(
             'criteria' => $criteria,
             'facets' => $facets,
-            'sPage' => $request->getParam('sPage', 1),
-            'sSort' => $request->getParam('sSort', 7),
-            'sTemplate' => $request->getParam('sTemplate'),
-            'ajaxCountUrlParams' => $request->getParam('sCategory'),
-            'sPerPage' => $pageCounts,
-            'pageSizes' => $pageCounts,
-            'shortParameters' => $this->get('query_alias_mapper')->getQueryAliases(),
             'sNumberArticles' => $totalHitCount,
             'sArticles' => $articles,
         );
+        $templateProperties = array_merge($viewData, $templateProperties);
         $this->Benchmark()->endRecording();
         $this->View()->assign($templateProperties);
+        return false;
     }
     /**
      * perform search
@@ -942,7 +945,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                 $field = 'products_sales';
                 break;
             case 'prices':
-                $field = 'discountedPrice';
+                $field = 'products_bx_grouped_price';
                 break;
             case 'product_name':
                 $field = 'title';
@@ -960,12 +963,24 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         );
     }
 
+    protected function getSupplierName($supplier) {
+        $supplier = $this->get('dbal_connection')->fetchColumn(
+            'SELECT name FROM s_articles_supplier WHERE id = :id',
+            ['id' => $supplier]
+        );
+
+        if ($supplier) {
+            return $supplier;
+        }
+
+        return null;
+    }
 
     /**
      * @param int $categoryId
      * @return int|null
      */
-    private function findStreamIdByCategoryId($categoryId)
+    protected function findStreamIdByCategoryId($categoryId)
     {
         $streamId = $this->get('dbal_connection')->fetchColumn(
             'SELECT stream_id FROM s_categories WHERE id = :id',

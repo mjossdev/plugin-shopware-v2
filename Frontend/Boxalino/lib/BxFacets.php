@@ -46,7 +46,7 @@ class BxFacets
 	public function addFacet($fieldName, $selectedValue=null, $type='string', $label=null, $order=2, $boundsOnly=false, $maxCount=-1) {
 		$selectedValues = array();
 		if($selectedValue) {
-			$selectedValues[] = $selectedValue;
+			$selectedValues = is_array($selectedValue) ? $selectedValue : [$selectedValue];
 		}
 		$this->facets[$fieldName] = array('label'=>$label, 'type'=>$type, 'order'=>$order, 'selectedValues'=>$selectedValues, 'boundsOnly'=>$boundsOnly, 'maxCount'=>$maxCount);
 	}

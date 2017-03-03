@@ -66,6 +66,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         $domain = $this->config->get('boxalino_domain');
         self::$bxClient = new \com\boxalino\bxclient\v1\BxClient($account, $password, $domain, $isDev, $host, null, null, null, $p13n_username, $p13n_password);
         self::$bxClient->setTimeout(5000);
+        self::$bxClient->setTestMode(false);
     }
 
     /**
@@ -101,6 +102,13 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         return $choice;
     }
 
+    protected function extractFilter($filters) {
+        $bxFilters = array();
+        foreach ($filters as $field => $filter) {
+            $bxFilters[] = new \com\boxalino\bxclient\v1\BxFilter($field, $filter);
+        }
+        return $bxFilters;
+    }
     /**
      * @param $queryText
      * @param int $pageOffset
@@ -109,22 +117,23 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
      * @param null $sort
      * @param array $options
      */
-    public function addSearch($queryText = "", $pageOffset = 0, $hitCount = 10, $type = "product", $sort = null, $options = array()){
+    public function addSearch($queryText = "", $pageOffset = 0, $hitCount = 10, $type = "product", $sort = null, $options = array(), $filters = array()){
 
         $this->benchmark->log("Start of addSearch");
         $choiceId = $this->getSearchChoice($queryText);
         $returnFields = $this->getReturnFields($type);
         $lang = $this->getShortLocale();
         $bxRequest = new \com\boxalino\bxclient\v1\BxSearchRequest($lang, $queryText, $hitCount, $choiceId);
-        $filters = $this->getSystemFilters($type, $queryText);
-        $bxRequest->setFilters($filters);
+        $requestFilters = $this->getSystemFilters($type, $queryText);
+        $requestFilters = array_merge($requestFilters, $this->extractFilter($filters));
+        $bxRequest->setFilters($requestFilters);
         $bxRequest->setGroupBy($this->getEntityIdFieldName($type));
         $bxRequest->setReturnFields($returnFields);
         $bxRequest->setOffset($pageOffset);
         $facets = $this->prepareFacets($options);
         $bxRequest->setFacets($facets);
 
-        if($sort != null && isset($sort['field'])){
+        if ($sort != null && isset($sort['field'])) {
             $sortFields = new \com\boxalino\bxclient\v1\BxSortFields($sort['field'], $sort['reverse']);
             $bxRequest->setSortFields($sortFields);
         }
@@ -167,7 +176,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
 
         $count = array_search($type, self::$choiceContexts[$this->currentSearchChoice]);
         $facets = self::$bxClient->getResponse()->getFacets($this->currentSearchChoice, true, $count);
-        if(empty($facets)){
+        if (empty($facets)) {
             return null;
         }
         return $facets;
@@ -177,15 +186,15 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
      * @param string $type
      * @return array
      */
-    protected function getReturnFields($type = "product"){
+    protected function getReturnFields($type = "product") {
         $returnFields = array($this->getEntityIdFieldName($type));
-        if($type == 'product'){
-            $returnFields = array_merge($returnFields, ['id', 'score', 'products_brand', 'products_bx_type', 'title', 'discountedPrice', 'products_ordernumber']);
-        }else{
+        if ($type == 'product') {
+            $returnFields = array_merge($returnFields, ['id', 'score', 'products_brand', 'products_bx_type', 'title', 'discountedPrice', 'products_bx_grouped_price']);
+        } else {
             $returnFields = array_merge($returnFields, ['id', 'score', 'products_bx_type', 'products_blog_title', 'products_blog_id', 'products_blog_category_id']);
         }
         $additionalFields = explode(',', $this->config->get('boxalino_returned_fields'));
-        if(isset($additionalFields) && $additionalFields[0] != ''){
+        if (isset($additionalFields) && $additionalFields[0] != '') {
             $returnFields = array_merge($returnFields, $additionalFields);
         }
         return $returnFields;
@@ -546,6 +555,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
             ->where('a_d.articleID IN(?)', $ids)
             ->where('a_d.kind = ?', 1)
             ->order(new Zend_Db_Expr('FIELD(a_d.articleID,' . implode(',', $ids).')'));
+
         $stmt = $db->query($sql);
         while($row = $stmt->fetch()) {
             $convertedIds[] = $row['ordernumber'];
@@ -559,12 +569,16 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
      */
     public function getLocalArticles($ids) {
         $ids = $this->convertIds($ids);
-        $articles = Shopware()->Container()->get('legacy_struct_converter')->convertListProductStructList(
+        $unsortedArticles = Shopware()->Container()->get('legacy_struct_converter')->convertListProductStructList(
             Shopware()->Container()->get('shopware_storefront.list_product_service')->getList(
                 $ids,
                 Shopware()->Container()->get('shopware_storefront.context_service')->getProductContext()
             )
         );
+        $articles = array();
+        foreach ($ids as $id) {
+            $articles[] = $unsortedArticles[$id];
+        }
         return $articles;
     }
 
