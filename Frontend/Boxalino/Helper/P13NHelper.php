@@ -241,21 +241,22 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
 
     /**
      * @param $queryText
-     * @param $with_blog
+     * @param bool $with_blog
+     * @param bool $no_result
      * @return array
      */
-    public function autocomplete($queryText, $with_blog){
+    public function autocomplete($queryText, $with_blog = false, $no_result = false) {
         $this->benchmark->log("Start autocomplete p13nHelper");
-        $choice = $this->getSearchChoice($queryText);
+        $search_choice = $no_result === true ? "noresults" : $this->getSearchChoice($queryText);
         $auto_complete_choice = $this->config->get('boxalino_autocomplete_widget_name');
         $textual_Limit = $this->config->get('boxalino_textual_suggestion_limit', 3);
         $product_limit = $this->config->get('boxalino_product_suggestion_limit', 3);
-        $searches = !$with_blog ? array('product') : array('product','blog');
+        $searches = ($with_blog === false) ? array('product') : array('product','blog');
         $bxRequests = array();
         foreach ($searches as $search){
             $bxRequest = new \com\boxalino\bxclient\v1\BxAutocompleteRequest($this->getShortLocale(),
                 $queryText, $textual_Limit, $product_limit, $auto_complete_choice,
-                $choice
+                $search_choice
             );
 
             $searchRequest = $bxRequest->getBxSearchRequest();
@@ -271,9 +272,17 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         self::$bxClient->autocomplete();
 
         $template_properties = array();
+        $bxAutocompleteResponses = self::$bxClient->getAutocompleteResponses();
+
         foreach ($searches as $index => $search) {
-            $bxAutocompleteResponse = self::$bxClient->getAutocompleteResponse($index);
-            $template_properties = array_merge($template_properties, $this->createAjaxData($bxAutocompleteResponse, $queryText, $search));
+            $bxAutocompleteResponse = $bxAutocompleteResponses[$index];
+
+            if ($bxAutocompleteResponse->getResponse()->prefixSearchResult->totalHitCount == 0 && $index == 0) {
+                self::$bxClient->flushResponses();
+                $template_properties = $this->autocomplete("", false, true);
+            } else {
+                $template_properties = array_merge($template_properties, $this->createAjaxData($bxAutocompleteResponse, $queryText, $search, $no_result));
+            }
         }
         $this->benchmark->log("End autocomplete p13nHelper");
         return $template_properties;
@@ -283,7 +292,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
      * @param $ids
      * @return array
      */
-    protected function getBlogs($ids){
+    protected function getBlogs($ids) {
         $blogs = array();
         foreach ($ids as $id) {
             $blogArticleQuery = Shopware()->Models()->getRepository('Shopware\Models\Blog\Blog')->getDetailQuery($id);
@@ -299,10 +308,20 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
      * @param $autocompleteResponse
      * @param $queryText
      * @param string $type
+     * @param bool $no_result
      * @return array
      */
-    protected function createAjaxData($autocompleteResponse, $queryText, $type = 'product'){
+    protected function createAjaxData($autocompleteResponse, $queryText, $type = 'product', $no_result = false) {
 
+        if ($no_result === true) {
+            $sResults = $this->getLocalArticles($autocompleteResponse->getBxSearchResponse()->getHitIds("noresults", true, 0, 10, $this->getEntityIdFieldName('product')));
+            return array(
+                'bxNoResult' => true,
+                'sSearchResults' => array(
+                    'sResults' => $sResults
+                )
+            );
+        }
         $choice = $this->getSearchChoice($queryText);
         $suggestions = array();
         $hitIds = array();
@@ -322,7 +341,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
             $hitIds = $autocompleteResponse->getBxSearchResponse()->getHitIds($choice, true, 0, 10, $this->getEntityIdFieldName('product'));
         }
 
-        if($type == 'product'){
+        if ($type == 'product') {
             $sResults = $this->getLocalArticles($hitIds);
             $router = Shopware()->Front()->Router();
             foreach ($sResults as $key => $result) {
@@ -342,8 +361,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
                     'sSuggestions' => $suggestions
                 )
             );
-        }else{
-
+        } else {
             $blog_ids = array();
             foreach ($hitIds as $index => $id){
                 $blog_ids[$index] = preg_replace('/^blog_/', '', $id);
@@ -358,10 +376,9 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
                     ))
                 );
             }, $this->getBlogs($blog_ids));
-            $total = count($blog_ids);
             return array(
                 'bxBlogSuggestions' => $blogs,
-                'bxBlogSuggestionTotal' => $total
+                'bxBlogSuggestionTotal' => $autocompleteResponse->getBxSearchResponse()->getTotalHitCount()
             );
         }
     }
@@ -431,6 +448,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
     }
 
     public function getFieldsValues($type = "product", $field = 'id') {
+
         $count = array_search($type, self::$choiceContexts[$this->currentSearchChoice]);
         return self::$bxClient->getResponse()->getHitIds($this->currentSearchChoice, true, $count, 10, $field);
     }

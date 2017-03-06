@@ -397,6 +397,7 @@ class BxClient
 	}
 	
 	public function flushResponses() {
+		$this->autocompleteResponses = null;
 		$this->chooseResponses = null;
 	}
 	
