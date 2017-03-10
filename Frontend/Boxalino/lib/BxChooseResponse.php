@@ -102,7 +102,14 @@ class BxChooseResponse
 	public function getSearchHitFieldValues($searchResult, $fields=null) {
 		$fieldValues = array();
 		if($searchResult) {
-			foreach ($searchResult->hits as $item) {
+			$hits = $searchResult->hits;
+			if($searchResult->hits == null){
+				$hits = array();
+				foreach ($searchResult->hitsGroups as $hitGroup){
+					$hits[] = $hitGroup->hits[0];
+				}
+			}
+			foreach ($hits as $item) {
 				$finalFields = $fields;
 				if($finalFields == null) {
 					$finalFields = array_keys($item->values);

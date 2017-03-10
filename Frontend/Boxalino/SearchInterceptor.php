@@ -218,43 +218,67 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             $bxHasOtherItems = $this->Helper()->getTotalHitCount('blog') > 0;
         }
 
-        $suggestions = array();
+        $corrected = false;
         $articles = array();
         $no_result_articles = array();
-        $sub_phrases = false;
+        $sub_phrases = array();
         $totalHitCount = 0;
-
-        if($this->Helper()->areThereSubPhrases()){
-            $sub_phrases = true;
-            foreach ($this->Helper()->getSubPhrasesQueries() as $query){
+        $sub_phrase_limit = $config->get('boxalino_search_subphrase_result_limit');
+        if ($this->Helper()->areThereSubPhrases() && $sub_phrase_limit > 0) {
+            $sub_phrase_queries = array_slice(array_filter($this->Helper()->getSubPhrasesQueries()), 0, $sub_phrase_limit);
+            foreach ($sub_phrase_queries as $query){
                 $this->Benchmark()->log("Stat getLocalArticles for sub phrases with query: " . $query);
-                $suggestion_articles = $this->Helper()->getLocalArticles($this->Helper()->getSubPhraseEntitiesIds($query));
+                $ids = array_slice($this->Helper()->getSubPhraseEntitiesIds($query), 0, $config->get('boxalino_search_subphrase_product_limit'));
+                $suggestion_articles = [];
+                if (count($ids) > 0) {
+                    $suggestion_articles = $this->Helper()->getLocalArticles($ids);
+                }
                 $this->Benchmark()->log("End getLocalArticles for sub phrases with query: " . $query);
                 $hitCount = $this->Helper()->getSubPhraseTotalHitCount($query);
-                $suggestions[] = array('count'=> $hitCount, 'text' => $query, 'articles' => $suggestion_articles);
+                $sub_phrases[] = array('hitCount'=> $hitCount, 'query' => $query, 'articles' => $suggestion_articles);
             }
             $facets = array();
-        }else {
+        } else {
             if ($totalHitCount = $this->Helper()->getTotalHitCount()) {
+                if ($this->Helper()->areResultsCorrected()) {
+                    $corrected = true;
+                    $term = $this->Helper()->getCorrectedQuery();
+                }
                 $ids = $this->Helper()->getEntitiesIds();
                 $this->Benchmark()->log("Stat getLocalArticles");
                 $articles = $this->Helper()->getLocalArticles($ids);
                 $this->Benchmark()->log("End getLocalArticles");
                 $this->Benchmark()->log("Stat update facets with response");
+                $category = $this->Helper()->getFacets()->getParentCategories();
+                if (!empty($category)) {
+                    end($category);
+                    $id = (int) key($category);
+                    $this->Request()->setParam("sCategory", $id);
+                    $criteria = $this->get('shopware_search.store_front_criteria_factory')
+                        ->createSearchCriteria($this->Request(), $context);
+                    $facets = $this->createFacets($criteria, $context);
+                }
                 $facets = $this->updateFacetsWithResult($facets, $facetIdsToOptionIds);
                 $this->Benchmark()->log("End update facets with response");
             } else {
-                $this->Helper()->resetRequests();
-                $this->Helper()->flushResponses();
-                $this->Helper()->getRecommendation('search', 15, 15, 0, [], '', false);
-                $hitIds = $this->Helper()->getRecommendation('search');
-                $no_result_articles = $this->Helper()->getLocalArticles($hitIds);
+
+                if ($config->get('boxalino_noresults_recommendation_enabled')) {
+                    $this->Helper()->resetRequests();
+                    $this->Helper()->flushResponses();
+                    $min = $config->get('boxalino_noresults_recommendation_min');
+                    $max = $config->get('boxalino_noresults_recommendation_max');
+                    $choiceId = $config->get('boxalino_noresults_recommendation_name');
+                    $this->Helper()->getRecommendation($choiceId, $max, $min, 0, [], '', false);
+                    $hitIds = $this->Helper()->getRecommendation($choiceId);
+                    $no_result_articles = $this->Helper()->getLocalArticles($hitIds);
+                }
                 $facets = array();
             }
         }
         $request = $this->Request();
         $params = $request->getParams();
         $params['sSearchOrginal'] = $term;
+        $params['sSearch'] = $term;
 
         // Assign result to template
         $this->Benchmark()->log("Start preparing template and data");
@@ -262,12 +286,12 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         $this->View()->addTemplateDir($this->Bootstrap()->Path() . 'Views/emotion/');
         $this->View()->extendsTemplate('frontend/plugins/boxalino/listing/actions/action-pagination.tpl');
         $this->View()->extendsTemplate('frontend/plugins/boxalino/search/fuzzy.tpl');
-        $this->View()->extendsTemplate('frontend/plugins/boxalino/relaxation.tpl');
         $no_result_title = Shopware()->Snippets()->getNamespace('boxalino/intelligence')->get('search/noresult');
 
         $templateProperties = array_merge(array(
             'term' => $term,
-            'bxNoResult' => $totalHitCount == 0,
+            'corrected' => $corrected,
+            'bxNoResult' => count($no_result_articles) > 0,
             'BxData' => [
                 'article_slider_title'=> $no_result_title,
                 'no_border'=> true,
@@ -288,13 +312,12 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             'ajaxCountUrlParams' => ['sCategory' => $context->getShop()->getCategory()->getId()],
             'sSearchResults' => array(
                 'sArticles' => $articles,
-                'sArticlesCount' => $totalHitCount,
-                'sSuggestions' => $suggestions
+                'sArticlesCount' => $totalHitCount
             ),
             'productBoxLayout' => $config->get('searchProductBoxLayout'),
             'bxHasOtherItemTypes' => $bxHasOtherItems,
             'bxActiveTab' => $request->getParam('bxActiveTab', 'article'),
-            'bxSubPhraseResult' => $sub_phrases
+            'bxSubPhraseResults' => $sub_phrases
         ), $this->getSearchTemplateProperties($hitCount));
         $this->View()->assign($templateProperties);
         $this->Benchmark()->log("End preparing template and data");
@@ -369,40 +392,6 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             $kv[] = $k . '=' . $v;
         });
         return $p . "?" . implode('&', $kv);
-    }
-
-    private function extractAutocompleteTemplateProperties($responses, $hitCount) {
-        $props = array();
-        if ($this->Config()->get('boxalino_blogsearch_enabled')) {
-            $response = array_shift($responses);
-            $props = array_merge($props, $this->extractBlogAutocompleteProperties($response, $hitCount));
-        }
-        return $props;
-    }
-
-    private function extractBlogAutocompleteProperties($response, $hitCount) {
-        $searchResult = $response->hits[0]->searchResult;
-        if (!$searchResult) {
-            $searchResult = $response->prefixSearchResult;
-        }
-        if (!$searchResult) return array();
-
-        $router = $this->Controller()->Front()->Router();
-        $blogs = array_map(function($blog) use ($router) {
-            $id = preg_replace('/^blog_/', '', $blog->values['id'][0]);
-            return array(
-                'id' => $id,
-                'title' => $blog->values['products_blog_title'][0],
-                'link' => $router->assemble(array(
-                    'sViewport' => 'blog', 'action' => 'detail', 'blogArticle' => $id
-                ))
-            );
-        }, $searchResult->hits);
-        $total = $searchResult->totalHitCount;
-        return array(
-            'bxBlogSuggestions' => $blogs,
-            'bxBlogSuggestionTotal' => $total
-        );
     }
 
     // mostly copied from Frontend/Blog.php#indexAction
@@ -603,9 +592,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         foreach ($criteria->getFacets() as $facet) {
             $handler = $this->getFacetHandler($facet);
             if ($handler === null) continue;
-
             $result = $handler->generateFacet($facet, $criteria, $context);
-
             if (!$result) {
                 continue;
             }
@@ -696,17 +683,6 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
     }
 
     /**
-     * @param $name
-     * @return mixed
-     */
-    private function generateFacetName($name) {
-        $facet_name = preg_replace('/[\{\}\(\)]/', '',  trim($name));
-        $facet_name = str_replace(' ', '_', $facet_name);
-        $facet_name = preg_replace('/[^äöü ÄÖÜ A-Za-z0-9\_\&]/', '_', strtolower($facet_name));
-        return $facet_name;
-    }
-
-    /**
      * @param Shopware\Bundle\SearchBundle\FacetResult\TreeItem[] $values
      * @return null|Shopware\Bundle\SearchBundle\FacetResult\TreeItem
      */
@@ -780,16 +756,8 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                     if ($this->Request()->getControllerName() == 'search') {
                         /* @var Shopware\Bundle\SearchBundle\FacetResult\TreeFacetResult $facet */
                         $fieldName = 'categories';
-                        $bxFacets = $resultFacet->getCategoryResponse();
-                        $facetValues = [];
-                        foreach ($bxFacets->values as $bxFacet) {
+                        $updatedFacetValues = $this->updateTreeItemsWithFacetValue($facet->getValues(), $resultFacet);
 
-                            $facetId = $bxFacet->hierarchyId;
-                            if($bxFacet->hitCount){
-                                $facetValues[$facetId] = $bxFacet;
-                            }
-                        }
-                        $updatedFacetValues = $this->updateTreeItemsWithFacetValue($facet->getValues(), $facetValues);
                         if ($updatedFacetValues) {
                             $facets[$key] = new Shopware\Bundle\SearchBundle\FacetResult\TreeFacetResult(
                                 $facet->getFacetName(),
@@ -902,7 +870,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
      * @param com\boxalino\p13n\api\thrift\FacetValue[] $FacetValues
      * @return Shopware\Bundle\SearchBundle\FacetResult\TreeItem[]
      */
-    protected function updateTreeItemsWithFacetValue($values, $facetValues) {
+    protected function updateTreeItemsWithFacetValue($values, $resultFacet) {
         /* @var Shopware\Bundle\SearchBundle\FacetResult\TreeItem $value */
         $finalVals = array();
         foreach ($values as $key => $value) {
@@ -911,11 +879,12 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             $innerValues = $value->getValues();
 
             if (count($innerValues)) {
-                $innerValues = $this->updateTreeItemsWithFacetValue($innerValues, $facetValues);
+                $innerValues = $this->updateTreeItemsWithFacetValue($innerValues, $resultFacet);
             }
 
-            if (array_key_exists($id, $facetValues)) {
-                $label .= ' (' . $facetValues[$id]->hitCount . ')';
+			$category = $resultFacet->getCategoryById($id);
+            if ($category) {
+                $label .= ' (' . $resultFacet->getCategoryValueCount($category) . ')';
             } else {
                 if (sizeof($innerValues)==0) {
                     continue;
@@ -963,6 +932,10 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         );
     }
 
+    /**
+     * @param $supplier
+     * @return null
+     */
     protected function getSupplierName($supplier) {
         $supplier = $this->get('dbal_connection')->fetchColumn(
             'SELECT name FROM s_articles_supplier WHERE id = :id',
@@ -980,7 +953,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
      * @param int $categoryId
      * @return int|null
      */
-    protected function findStreamIdByCategoryId($categoryId)
+    private function findStreamIdByCategoryId($categoryId)
     {
         $streamId = $this->get('dbal_connection')->fetchColumn(
             'SELECT stream_id FROM s_categories WHERE id = :id',

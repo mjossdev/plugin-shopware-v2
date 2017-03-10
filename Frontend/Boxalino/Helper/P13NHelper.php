@@ -1,14 +1,19 @@
 <?php
-
+/**
+ * Class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper
+ */
 class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
 
+    /**
+     * @var null
+     */
     private static $instance = null;
 
     /**
      * @var null
      */
     private static $bxClient = null;
-    
+
     /**
      * @var Enlight_Controller_Request_Request
      */
@@ -102,6 +107,10 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         return $choice;
     }
 
+    /**
+     * @param $filters
+     * @return array
+     */
     protected function extractFilter($filters) {
         $bxFilters = array();
         foreach ($filters as $field => $filter) {
@@ -109,13 +118,15 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         }
         return $bxFilters;
     }
+
     /**
-     * @param $queryText
+     * @param string $queryText
      * @param int $pageOffset
-     * @param $hitCount
+     * @param int $hitCount
      * @param string $type
      * @param null $sort
      * @param array $options
+     * @param array $filters
      */
     public function addSearch($queryText = "", $pageOffset = 0, $hitCount = 10, $type = "product", $sort = null, $options = array(), $filters = array()){
 
@@ -189,7 +200,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
     protected function getReturnFields($type = "product") {
         $returnFields = array($this->getEntityIdFieldName($type));
         if ($type == 'product') {
-            $returnFields = array_merge($returnFields, ['id', 'score', 'products_brand', 'products_bx_type', 'title', 'discountedPrice', 'products_bx_grouped_price']);
+            $returnFields = array_merge($returnFields, ['id', 'score', 'products_bx_type', 'title', 'products_ordernumber', 'discountedPrice', 'products_bx_grouped_price', 'products_active', 'products_bx_grouped_active']);
         } else {
             $returnFields = array_merge($returnFields, ['id', 'score', 'products_bx_type', 'products_blog_title', 'products_blog_id', 'products_blog_category_id']);
         }
@@ -201,6 +212,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
     }
 
     /**
+     * @param string $type
      * @return mixed|string
      */
     public function getEntityIdFieldName($type = 'product') {
@@ -221,6 +233,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
     /**
      * @param string $type
      * @param string $query
+     * @param bool $recommendation
      * @return array
      */
     private function getSystemFilters($type = 'product', $query = '', $recommendation = false){
@@ -235,6 +248,13 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         if ($type == 'blog') {
             $filters[] = new \com\boxalino\bxclient\v1\BxFilter('products_blog_active', array('1'));
             $filters[] = new \com\boxalino\bxclient\v1\BxFilter('products_blog_shop_id', array(Shopware()->Shop()->getCategory()->getId()));
+        }
+        if ($type == 'product') {
+            $filters[] = new \com\boxalino\bxclient\v1\BxFilter('products_active', array('1'));
+            $filters[] = new \com\boxalino\bxclient\v1\BxFilter('products_bx_parent_active', array('1'));
+        }
+        if ($recommendation === true) {
+            $filters[] = new \com\boxalino\bxclient\v1\BxFilter('products_bx_purchasable', array('1'));
         }
         return $filters;
     }
@@ -267,10 +287,8 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
             $bxRequests[] = $bxRequest;
         }
 
-
         self::$bxClient->setAutocompleteRequests($bxRequests);
         self::$bxClient->autocomplete();
-
         $template_properties = array();
         $bxAutocompleteResponses = self::$bxClient->getAutocompleteResponses();
 
@@ -383,9 +401,17 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         }
     }
 
+    /**
+     * @param $index
+     * @return mixed
+     */
     public function getRequest($index){
         return self::$bxClient->getRequest($index);
     }
+
+    /**
+     * @return mixed
+     */
     public function getResponse(){
         return self::$bxClient->getResponse();
     }
@@ -477,6 +503,35 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
      * @param string $type
      * @return mixed
      */
+    public function areResultsCorrectedAndAlsoProvideSubPhrases($type = "product"){
+        $count = array_search($type, self::$choiceContexts[$this->currentSearchChoice]);
+        return self::$bxClient->getResponse()->areResultsCorrectedAndAlsoProvideSubPhrases($this->currentSearchChoice, $count);
+    }
+
+    /**
+     * @param string $type
+     * @return mixed
+     */
+    public function getCorrectedQuery($type = "product") {
+
+        $count = array_search($type, self::$choiceContexts[$this->currentSearchChoice]);
+        return self::$bxClient->getResponse()->getCorrectedQuery($this->currentSearchChoice, $count);
+    }
+
+    /**
+     * @param string $type
+     * @return mixed
+     */
+    public function areResultsCorrected($type = "product") {
+
+        $count = array_search($type, self::$choiceContexts[$this->currentSearchChoice]);
+        return self::$bxClient->getResponse()->areResultsCorrected($this->currentSearchChoice, $count);
+    }
+
+    /**
+     * @param string $type
+     * @return mixed
+     */
     public function getSubPhrasesQueries($type = "product") {
 
         $count = array_search($type, self::$choiceContexts[$this->currentSearchChoice]);
@@ -547,17 +602,27 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         return $shortLocale;
     }
 
+    /**
+     * @return mixed
+     */
     public function getSearchLimit() {
         return $this->config->get('maxlivesearchresults', 6);
     }
 
+    /**
+     * @return mixed|string
+     */
     public static function getAccount() {
         $config = Shopware()->Config();
         return $config->get('boxalino_dev') == 1 ?
             $config->get('boxalino_account') . '_dev' :
             $config->get('boxalino_account');
     }
-    
+
+    /**
+     * @param null $arguments
+     * @return array
+     */
     public function getBasket($arguments = null) {
         $basket = Shopware()->Modules()->Basket()->sGetBasket();
         if ($arguments !== null && (!$basket || !$basket['content'])) {
@@ -566,6 +631,11 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         return $basket;
     }
 
+    /**
+     * @param $ids
+     * @return array
+     * @throws Zend_Db_Statement_Exception
+     */
     public function convertIds($ids){
         $convertedIds = array();
         $db = Shopware()->Db();

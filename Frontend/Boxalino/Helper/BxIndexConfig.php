@@ -48,12 +48,15 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxIndexConfig{
     protected function getConfigurationByShopId($id) {
 
         $shop = Shopware()->Models()->find('Shopware\\Models\\Shop\\Shop', $id);
+        $customer = $shop->getCustomerGroup();
         $config = array(
             'store_id' => $id,
             'shop' => $shop,
             'db'   => $this->db,
+            'customer_group_key' => $customer->getKey(),
+            'customer_group_id' => $customer->getId()
         );
-        
+
         $scopeConfig = new \Shopware_Components_Config($config);
         $children = $shop->getChildren();
         $languages[$shop->getId()] = substr($shop->getLocale()->toString(), 0, 2);
@@ -118,13 +121,36 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxIndexConfig{
      */
     public function getStore($account) {
 
-        $array = $this->getAccountConfig($account);
-        return $array['shop'];
+        $config = $this->getAccountConfig($account);
+        return $config['shop'];
+    }
+
+    /**
+     * @param $account
+     * @return mixed
+     * @throws Exception
+     */
+    public function getCustomerGroupId($account) {
+
+        $config = $this->getAccountConfig($account);
+        return $config['customer_group_id'];
+    }
+    
+    /**
+     * @param $account
+     * @return mixed
+     * @throws Exception
+     */
+    public function getCustomerGroupKey($account) {
+
+        $config = $this->getAccountConfig($account);
+        return $config['customer_group_key'];
     }
 
     /**
      * @param $account
      * @return bool
+     * @throws Exception
      */
     public function isCustomersExportEnabled($account) {
         $config = $this->getAccountConfig($account);
@@ -134,10 +160,21 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxIndexConfig{
     /**
      * @param $account
      * @return bool
+     * @throws Exception
      */
     public function isTransactionsExportEnabled($account) {
         $config = $this->getAccountConfig($account);
         return $config['export_transaction_enable'] == 1;
+    }
+
+    /**
+     * @param $account
+     * @return string
+     * @throws Exception
+     */
+    public function getTransactionMode($account) {
+        $config = $this->getAccountConfig($account);
+        return $config['export_transaction_mode'];
     }
 
     /**

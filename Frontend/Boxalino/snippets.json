@@ -1,6 +1,38 @@
 {
-  "en_GB": [{"relaxation/didyoumean": "Did you mean..."}, {"search/noresult": "No Result Recommendation"}],
-  "de_DE": [{"relaxation/didyoumean": "Meinten Sie..."}, {"search/noresult": "Kein Resultat Empfehlungen"}],
-  "de_CH": [{"relaxation/didyoumean": "Meinten Sie..."}, {"search/noresult": "Kein Resultat Empfehlungen"}],
-  "fr_CH": [{"relaxation/didyoumean": "Vouliez-vous dire..."}, {"search/noresult": "Non Résultat Recommandation"}]
+  "en_GB": [
+    {"relaxation/didyoumean": "Did you mean..."},
+    {"search/noresult": "Our recommendation for you"},
+    {"search/resultsfor": "Search results for"},
+    {"search/correctedresultsfor": "Corrected search results for"}
+  ],
+  "en_US": [
+    {"relaxation/didyoumean": "Did you mean..."},
+    {"search/noresult": "Our recommendation for you"},
+    {"search/resultsfor": "Search results for"},
+    {"search/correctedresultsfor": "Corrected search results for"}
+  ],
+  "de_DE": [
+    {"relaxation/didyoumean": "Meinten Sie..."},
+    {"search/noresult": "Unsere Empfehlung für Sie"},
+    {"search/resultsfor": "Suchergebnis für"},
+    {"search/correctedresultsfor": "Korrigiertes Suchergebnis für"}
+  ],
+  "de_CH": [
+    {"relaxation/didyoumean": "Meinten Sie..."},
+    {"search/noresult": "Unsere Empfehlung für Sie"},
+    {"search/resultsfor": "Suchergebnis für"},
+    {"search/correctedresultsfor": "Korrigiertes Suchergebnis für"}
+  ],
+  "fr_CH": [
+    {"relaxation/didyoumean": "Vouliez-vous dire..."},
+    {"search/noresult": "Notre recommandation pour vous"},
+    {"search/resultsfor": "Résultats recherche pour"},
+    {"search/correctedresultsfor": "Résultats de recherche corrigés pour"}
+  ],
+  "fr_FR": [
+    {"relaxation/didyoumean": "Vouliez-vous dire..."},
+    {"search/noresult": "Notre recommandation pour vous"},
+    {"search/resultsfor": "Résultats recherche pour"},
+    {"search/correctedresultsfor": "Résultats de recherche corrigés pour"}
+  ]
 }

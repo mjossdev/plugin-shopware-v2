@@ -425,7 +425,16 @@ class BxClient
 	
 	private function p13nautocomplete($autocompleteRequest) {
 		try {
-			return $this->getP13n($this->_timeout)->autocomplete($autocompleteRequest);
+			$choiceResponse = $this->getP13n($this->_timeout)->autocomplete($autocompleteRequest);
+			if(isset($this->requestMap['dev_bx_disp']) && $this->requestMap['dev_bx_disp'] == 'true') {
+				echo "<pre><h1>Autocomplete Request</h1>";
+				var_dump($autocompleteRequest);
+				echo "<br><h1>Choice Response</h1>";
+				var_dump($choiceResponse);
+				echo "</pre>";
+				exit;
+			}
+			return $choiceResponse;
 		} catch(\Exception $e) {
 			$this->throwCorrectP13nException($e);
 		}
@@ -458,7 +467,16 @@ class BxClient
 		$requestBundle = new \com\boxalino\p13n\api\thrift\AutocompleteRequestBundle();
 		$requestBundle->requests = $requests;
 		try {
-			return $this->getP13n($this->_timeout)->autocompleteAll($requestBundle)->responses;
+			$choiceResponse = $this->getP13n($this->_timeout)->autocompleteAll($requestBundle)->responses;
+			if(isset($this->requestMap['dev_bx_disp']) && $this->requestMap['dev_bx_disp'] == 'true') {
+				echo "<pre><h1>Request bundle</h1>";
+				var_dump($requestBundle);
+				echo "<br><h1>Choice Response</h1>";
+				var_dump($choiceResponse);
+				echo "</pre>";
+				exit;
+			}
+			return $choiceResponse;
 		} catch(\Exception $e) {
 			$this->throwCorrectP13nException($e);
 		}

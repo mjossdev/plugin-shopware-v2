@@ -27,7 +27,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxFiles{
 
     private function init(){
 
-        $this->_dir = $this->_mainDir . $this->account . '_' . $this->type . microtime(true);
+        $this->_dir = $this->_mainDir . $this->account . '_' . $this->type . '_' . microtime(true);
         if (!file_exists($this->_dir)) {
             mkdir($this->_dir, 0777, true);
         }else{
@@ -75,4 +75,5 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxFiles{
 
         return $this->_dir . '/' . $file;
     }
+
 }
