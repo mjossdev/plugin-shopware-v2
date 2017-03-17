@@ -333,6 +333,15 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
 
         if ($no_result === true) {
             $sResults = $this->getLocalArticles($autocompleteResponse->getBxSearchResponse()->getHitIds("noresults", true, 0, 10, $this->getEntityIdFieldName('product')));
+            $router = Shopware()->Front()->Router();
+            foreach ($sResults as $key => $result) {
+                $sResults[$key]['name'] = $result['articleName'];
+                $sResults[$key]['link'] = $router->assemble(array(
+                    'controller' => 'detail',
+                    'sArticle' => $result['articleID'],
+                    'title' => $result['articleName']
+                ));
+            }
             return array(
                 'bxNoResult' => true,
                 'sSearchResults' => array(

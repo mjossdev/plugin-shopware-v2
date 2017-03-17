@@ -23,9 +23,10 @@
                 url: controller
             }).done(function(res) {
                 $('.tab-menu--cross-selling').html(res);
-                el.hide();
+                StateManager.updatePlugin('*[data-product-slider="true"]','swProductSlider');
+                StateManager.destroyPlugin('.tab-menu--cross-selling','swTabMenu');
+                StateManager.addPlugin('.tab-menu--cross-selling','swTabMenu', {}, ['xs','s','m','l','xl']);
             }, function (err) {
-                console.log(err);
             });
         });
     </script>

@@ -1,8 +1,4 @@
 {* Crossselling tab panel *}
-{compileJavascript timestamp={themeTimestamp} output="javascriptFiles"}
-{foreach $javascriptFiles as $file}
-    <script src="{$file}"></script>
-{/foreach}
 {block name="frontend_detail_index_tabs_cross_selling"}
 
     {$showAlsoViewed = true}
@@ -20,8 +16,8 @@
                                 <a href="#content--related-products" title="{s namespace="frontend/detail/tabs" name='DetailTabsAccessories'}{/s}" class="tab--link">
                                     {s namespace="frontend/detail/tabs" name='DetailTabsAccessories'}{/s}
                                     <span class="product--rating-count-wrapper">
-                                                <span class="product--rating-count">{$sArticle.sRelatedArticles|@count}</span>
-                                            </span>
+                                        <span class="product--rating-count">{$sArticle.sRelatedArticles|@count}</span>
+                                    </span>
                                 </a>
                             {/if}
                         {/block}

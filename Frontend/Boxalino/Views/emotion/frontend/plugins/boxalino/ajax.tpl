@@ -1,7 +1,9 @@
 {block name='search_ajax_inner' prepend}
     {if $bxNoResult === true}
         <ul class="results--list suggestion--no-result">
-            <strong>{s namespace="boxalino/intelligence" name="search/noresult"}{/s}</strong>
+            <li class="list--entry block-group result--item">
+                <strong class="search-result--link" style="text-align: center;">{s namespace="boxalino/intelligence" name="search/noresult"}{/s}</strong>
+            </li>
             {foreach $sSearchResults.sResults as $search_result}
                 {block name="search_ajax_list_entry"}
                     <li class="list--entry block-group result--item">
