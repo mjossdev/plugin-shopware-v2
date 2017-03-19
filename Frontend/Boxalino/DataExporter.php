@@ -760,8 +760,6 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
         $header = true;
         $main_properties = array();
         $data = array();
-
-        $test = array();
         while ($countMax > $totalCount + $limit) {
             $sql = $db->select()
                 ->from(array('s_articles'), $product_properties)
@@ -827,6 +825,41 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
                 $this->bxData->addFieldParameter($mainSourceKey, $property, 'multiValued', 'false');
             }
         }
+
+        //export shop id
+        $categoryShopIds = $this->_config->getShopCategoryIds($account);
+        $header = true;
+        foreach ($this->_config->getAccountLanguages($account) as $shop_id => $language) {
+            $category_id = $categoryShopIds[$shop_id];
+            $sql = $db->select()
+                ->from(array('a' => 's_articles'), array())
+                ->join(array('a_d' => 's_articles_details'), 'a_d.articleID = a.id', array('id'))
+                ->join(array('a_c' => 's_articles_categories'), 'a_c.articleID = a.id', array())
+                ->joinLeft(array('c' => 's_categories'), 'c.id = a_c.categoryID', array('c.path'))
+                ->where('c.path LIKE \'%|' . $category_id . '|%\'')
+                ->where('a.mode = ?', 0);
+            if ($this->delta) {
+                $sql->where('a.id IN(?)', $this->deltaIds);
+            }
+            $data = array();
+            $stmt = $db->query($sql);
+            if ($stmt->rowCount()) {
+                while ($row = $stmt->fetch()) {
+                    $data[$row['id']] = ['id' => $row['id'], 'shop_id' => $shop_id];
+                }
+            }
+            if ($header) {
+                if(sizeof($data) < 1) {
+                    $data = (array(array('shop_id', 'id')));
+                } else {
+                    $data = array_merge(array(array_keys(end($data))), $data);
+                }
+                $header = false;
+            }
+            $files->savepartToCsv('product_shop.csv', $data);
+        }
+        $attributeSourceKey = $this->bxData->addCSVItemFile($files->getPath('product_shop.csv'), 'id');
+        $this->bxData->addSourceStringField($attributeSourceKey, "shop_id", "shop_id");
         return true;
     }
 

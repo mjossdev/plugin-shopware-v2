@@ -721,7 +721,6 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                 );
                 continue;
             }
-            $productPropertyName = 'property_values';
             switch ($facet->getFacetName()) {
 
                 case 'price':
@@ -849,7 +848,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                     }
                     break;
                 default:
-                    Shopware()->PluginLogger()->debug("unrecognized facet name for facet", json_encode($facet));
+                    Shopware()->PluginLogger()->debug("unrecognized facet name for facet: " . json_encode($facet));
                     break;
             }
         }

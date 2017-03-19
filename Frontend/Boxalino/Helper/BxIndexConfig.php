@@ -60,14 +60,15 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxIndexConfig{
         $scopeConfig = new \Shopware_Components_Config($config);
         $children = $shop->getChildren();
         $languages[$shop->getId()] = substr($shop->getLocale()->toString(), 0, 2);
-
+        $category_id[$shop->getId()] = $shop->getCategory()->getId();
         foreach($children as $child){
             $languages[$child->getId()] = substr($child->getLocale()->toString(), 0, 2);
+            $category_id[$child->getId()] = $child->getCategory()->getId();
         }
-
         $dir = __DIR__ . '/../config.json';
         $fields = json_decode(file_get_contents($dir), true);
         $config['languages'] = $languages;
+        $config['category_ids'] = $category_id;
         foreach ($fields as $field){
             $name = $field['name'];
             $config[$name] = $scopeConfig->get('boxalino_' . $name);
@@ -135,7 +136,18 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxIndexConfig{
         $config = $this->getAccountConfig($account);
         return $config['customer_group_id'];
     }
-    
+
+    /**
+     * @param $account
+     * @return mixed
+     * @throws Exception
+     */
+    public function getShopCategoryIds($account) {
+
+        $config = $this->getAccountConfig($account);
+        return $config['category_ids'];
+    }
+
     /**
      * @param $account
      * @return mixed

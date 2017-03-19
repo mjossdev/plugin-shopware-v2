@@ -472,13 +472,13 @@ class BxData
         $s = curl_init();
 
         curl_setopt($s, CURLOPT_URL, $url);
-        curl_setopt($s, CURLOPT_TIMEOUT, 35000);
+        curl_setopt($s, CURLOPT_TIMEOUT, 60);
         curl_setopt($s, CURLOPT_POST, true);
         curl_setopt($s, CURLOPT_ENCODING, '');
         curl_setopt($s, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($s, CURLOPT_POSTFIELDS, $fields);
 
-        $responseBody = curl_exec($s);
+        $responseBody = @curl_exec($s);
 
         if($responseBody === false)
         {
@@ -494,7 +494,7 @@ class BxData
 
         curl_close($s);
         if (strpos($responseBody, 'Internal Server Error') !== false) {
-            throw new \Exception($this->getError($responseBody));;
+            throw new \Exception($this->getError($responseBody));
         }
         return $this->checkResponseBody($responseBody, $url);
     }

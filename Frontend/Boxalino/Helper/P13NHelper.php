@@ -238,12 +238,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
      */
     private function getSystemFilters($type = 'product', $query = '', $recommendation = false){
         $filters = array();
-        if ($query == "" && !$recommendation) {
-            $category_id = $this->Request()->getParam('sCategory');
-            if ($category_id != Shopware()->Shop()->getCategory()->getId()) {
-                $filters[] = new \com\boxalino\bxclient\v1\BxFilter('category_id', array($category_id));
-            }
-        }
+
         $filters[] = new \com\boxalino\bxclient\v1\BxFilter('products_bx_type', array($type));
         if ($type == 'blog') {
             $filters[] = new \com\boxalino\bxclient\v1\BxFilter('products_blog_active', array('1'));
@@ -252,7 +247,13 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         if ($type == 'product') {
             $filters[] = new \com\boxalino\bxclient\v1\BxFilter('products_active', array('1'));
             $filters[] = new \com\boxalino\bxclient\v1\BxFilter('products_bx_parent_active', array('1'));
+            $shop_id = Shopware()->Shop()->getId();
+            $filters[] = new \com\boxalino\bxclient\v1\BxFilter('products_shop_id', array($shop_id));
+            if ($query == '') {
+                $filters[] = new \com\boxalino\bxclient\v1\BxFilter('category_id', array($this->Request()->getParam('sCategory')));
+            }
         }
+
         if ($recommendation === true) {
             $filters[] = new \com\boxalino\bxclient\v1\BxFilter('products_bx_purchasable', array('1'));
         }
