@@ -547,19 +547,19 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
         $dot = $db->quote('.');
         $pipe = $db->quote('|');
         $fieldMain = $this->qi('s_articles_img.main');
+        $imagePath = $this->qi('s_media.path');
         $fieldPosition = $this->qi('s_articles_img.position');
-        $main_shopId = $this->_config->getAccountStoreId($account);
-        $repository = Shopware()->Container()->get('models')->getRepository('Shopware\Models\Shop\Shop');
-        $shop = $repository->getActiveById($main_shopId);
-        $imagePath = $db->quote('http://'. $shop->getHost() . $shop->getBasePath()  . '/media/image/');
 
+
+        $mediaService = Shopware()->Container()->get('shopware_media.media_service');
         $inner_select = $db->select()
             ->from('s_articles_img',
                 new Zend_Db_Expr("GROUP_CONCAT(
-                CONCAT($imagePath, img, $dot, extension)
+                CONCAT($imagePath)
                 ORDER BY $fieldMain, $fieldPosition
                 SEPARATOR $pipe)")
             )
+            ->join(array('s_media'), 's_media.id = s_articles_img.media_id', array())
             ->where('s_articles_img.articleID = a.id');
 
         $sql = $db->select()
@@ -575,6 +575,11 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
         }
         $stmt = $db->query($sql);
         while ($row = $stmt->fetch()) {
+            $images = explode('|', $row['images']);
+            foreach ($images as $index => $image) {
+                $images[$index] = $mediaService->getUrl($image);
+            }
+            $row['images'] = implode('|', $images);
             $data[] = $row;
         }
         $data = array_merge(array(array_keys(end($data))), $data);
