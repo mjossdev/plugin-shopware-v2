@@ -249,7 +249,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
             $filters[] = new \com\boxalino\bxclient\v1\BxFilter('products_bx_parent_active', array('1'));
             $shop_id = Shopware()->Shop()->getId();
             $filters[] = new \com\boxalino\bxclient\v1\BxFilter('products_shop_id', array($shop_id));
-            if ($query == '') {
+            if ($query == '' && !$recommendation) {
                 $filters[] = new \com\boxalino\bxclient\v1\BxFilter('category_id', array($this->Request()->getParam('sCategory')));
             }
         }

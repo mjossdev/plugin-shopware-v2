@@ -50,6 +50,7 @@ class Shopware_Controllers_Frontend_RecommendationSlider extends Enlight_Control
         $sSimilarArticles = isset($sArticles['sSimilarArticles']) ? $sArticles['sSimilarArticles'] : [];
 
         $helper = Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper::instance();
+        $helper->setRequest($this->Request());
         foreach ($this->_productRecommendations as $var_name => $recommendation) {
             if ($this->config->get("{$recommendation}_enabled")) {
                 $choiceId = $this->config->get("{$recommendation}_name");
