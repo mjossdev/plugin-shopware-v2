@@ -92,7 +92,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             ->createSearchCriteria($this->Request(), $context);
         $hitCount = $criteria->getLimit();
         $pageOffset = $criteria->getOffset();
-        $sort =  $this->getSortOrder($criteria);
+        $sort =  $this->getSortOrder($criteria, $viewData['sSort']);
         $facets = $this->createFacets($criteria, $context);
         $facetIdsToOptionIds = $this->getPropertyFacetOptionIds($facets);
         $queryText = $this->Request()->getParams()['q'];
@@ -143,7 +143,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         $facets = $this->createFacets($criteria, $context);
         $facetIdsToOptionIds = $this->getPropertyFacetOptionIds($facets);
         $options = $this->getFacetConfig($facets, $facetIdsToOptionIds);
-        $sort =  $this->getSortOrder($criteria);
+        $sort =  $this->getSortOrder($criteria, $viewData['sSort']);
         $hitCount = $criteria->getLimit();
         $pageOffset = $criteria->getOffset();
         $this->Benchmark()->log("Initialize search request with offset " . $pageOffset);
@@ -881,7 +881,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                 $innerValues = $this->updateTreeItemsWithFacetValue($innerValues, $resultFacet);
             }
 
-			$category = $resultFacet->getCategoryById($id);
+            $category = $resultFacet->getCategoryById($id);
             if ($category) {
                 $label .= ' (' . $resultFacet->getCategoryValueCount($category) . ')';
             } else {
@@ -905,9 +905,10 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
      * @param Shopware\Bundle\SearchBundle\Criteria $criteria
      * @return array
      */
-    public function getSortOrder(Shopware\Bundle\SearchBundle\Criteria $criteria) {
+    public function getSortOrder(Shopware\Bundle\SearchBundle\Criteria $criteria, $default_sort = null) {
         /* @var Shopware\Bundle\SearchBundle\Sorting\Sorting $sort */
         $sort = current($criteria->getSortings());
+        $dir = null;
         switch ($sort->getName()) {
             case 'popularity':
                 $field = 'products_sales';
@@ -922,12 +923,36 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                 $field = 'products_releasedate';
                 break;
             default:
+                switch ($default_sort) {
+                    case 1:
+                        $field = 'products_releasedate';
+                        break 2;
+                    case 2:
+                        $field = 'products_sales';
+                        break 2;
+                    case 3:
+                    case 4:
+                        if ($default_sort == 3) {
+                            $dir = false;
+                        }
+                        $field = 'products_bx_grouped_price';
+                        break 2;
+                    case 5:
+                    case 6:
+                        if ($default_sort == 5) {
+                            $dir = false;
+                        }
+                        $field = 'title';
+                        break 2;
+                    default:
+                        break;
+                }
                 return array();
         }
 
         return array(
             'field' => $field,
-            'reverse' => ($sort->getDirection() == Shopware\Bundle\SearchBundle\SortingInterface::SORT_DESC)
+            'reverse' => (is_null($dir) ? $sort->getDirection() == Shopware\Bundle\SearchBundle\SortingInterface::SORT_DESC : $dir)
         );
     }
 
