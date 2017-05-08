@@ -23,6 +23,9 @@
                 url: controller
             }).done(function(res) {
                 $('.tab-menu--cross-selling').html(res);
+                StateManager.addPlugin('.tab-menu--cross-selling .tab--header', 'swCollapsePanel', {
+                    'contentSiblingSelector': '.tab--content'
+                }, ['xs', 's']);
                 StateManager.updatePlugin('*[data-product-slider="true"]','swProductSlider');
                 StateManager.destroyPlugin('.tab-menu--cross-selling','swTabMenu');
                 StateManager.addPlugin('.tab-menu--cross-selling','swTabMenu', {}, ['xs','s','m','l','xl']);

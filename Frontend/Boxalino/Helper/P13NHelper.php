@@ -130,7 +130,6 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
      */
     public function addSearch($queryText = "", $pageOffset = 0, $hitCount = 10, $type = "product", $sort = null, $options = array(), $filters = array()){
 
-        $this->benchmark->log("Start of addSearch");
         $choiceId = $this->getSearchChoice($queryText);
         $returnFields = $this->getReturnFields($type);
         $lang = $this->getShortLocale();
@@ -151,7 +150,6 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
 
         self::$bxClient->addRequest($bxRequest);
         self::$choiceContexts[$choiceId][] = $type;
-        $this->benchmark->log("End of addSearch");
     }
 
     /**
@@ -267,7 +265,6 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
      * @return array
      */
     public function autocomplete($queryText, $with_blog = false, $no_result = false) {
-        $this->benchmark->log("Start autocomplete p13nHelper");
         $search_choice = $no_result === true ? "noresults" : $this->getSearchChoice($queryText);
         $auto_complete_choice = $this->config->get('boxalino_autocomplete_widget_name');
         $textual_Limit = $this->config->get('boxalino_textual_suggestion_limit', 3);
@@ -303,7 +300,6 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
                 $template_properties = array_merge($template_properties, $this->createAjaxData($bxAutocompleteResponse, $queryText, $search, $no_result));
             }
         }
-        $this->benchmark->log("End autocomplete p13nHelper");
         return $template_properties;
     }
 
@@ -464,8 +460,6 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
             }
             return array();
         }
-        $benchmark = Shopware_Plugins_Frontend_Boxalino_Benchmark::instance();
-        $benchmark->log("return get hit ids for recommendation");
         return  self::$bxClient->getResponse()->getHitIds($choiceId, true, 0, 10, $this->getEntityIdFieldName('product'));
     }
 

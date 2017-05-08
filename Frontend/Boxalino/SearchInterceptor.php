@@ -52,16 +52,12 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             return false;
         }
 
-        $this->Benchmark()->startRecording(__FUNCTION__);
         $with_blog = $this->Config()->get('boxalino_blog_search_enabled');
-        $this->Benchmark()->log("Start p13n autocomplete");
         $templateProperties = $this->Helper()->autocomplete($term, $with_blog);
-        $this->Benchmark()->log("End p13n autocomplete");
         $this->View()->loadTemplate('frontend/search/ajax.tpl');
         $this->View()->addTemplateDir($this->Bootstrap()->Path() . 'Views/emotion/');
         $this->View()->extendsTemplate('frontend/plugins/boxalino/ajax.tpl');
         $this->View()->assign($templateProperties);
-        $this->Benchmark()->endRecording();
         return false;
     }
 
@@ -83,8 +79,6 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             $supplier_name = $this->getSupplierName($supplier);
             $filter['products_brand'] = [$supplier_name];
         }
-        $this->Benchmark()->startRecording(__FUNCTION__);
-        $this->Benchmark()->log("Prepare facets and conditions");
         $listingCount = $this->Request()->getActionName() == 'listingCount';
         $context  = $this->get('shopware_storefront.context_service')->getProductContext();
         /* @var Shopware\Bundle\SearchBundle\Criteria $criteria */
@@ -92,24 +86,19 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             ->createSearchCriteria($this->Request(), $context);
         $hitCount = $criteria->getLimit();
         $pageOffset = $criteria->getOffset();
-        $sort =  $this->getSortOrder($criteria, $viewData['sSort']);
+        $sort =  $this->getSortOrder($criteria, $viewData['sSort'], true);
         $facets = $this->createFacets($criteria, $context);
         $facetIdsToOptionIds = $this->getPropertyFacetOptionIds($facets);
         $queryText = $this->Request()->getParams()['q'];
         $options = $this->getFacetConfig($facets, $facetIdsToOptionIds);
-        $this->Benchmark()->log("Initialize search request");
         $this->Helper()->addSearch($queryText, $pageOffset, $hitCount, 'product', $sort, $options, $filter);
         $articles = $this->Helper()->getLocalArticles($this->Helper()->getEntitiesIds());
         $viewData['sArticles'] = $articles;
         if ($listingCount) {
             $this->Controller()->Response()->setBody('{"totalCount":' . $this->Helper()->getTotalHitCount() . '}');
-            $this->Benchmark()->log("End of listing count.");
-            $this->Benchmark()->endRecording();
             return false;
         }
         $this->View()->assign($viewData);
-        $this->Benchmark()->log("End of ajax listing");
-        $this->Benchmark()->endRecording();
         return false;
     }
 
@@ -132,8 +121,6 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         if(isset($viewData['manufacturer']) && !empty($viewData['manufacturer'])) {
             $filter['products_brand'] = [$viewData['manufacturer']->getName()];
         }
-        $this->Benchmark()->startRecording(__FUNCTION__);
-        $this->Benchmark()->log("Prepare facets and conditions");
         $context  = $this->get('shopware_storefront.context_service')->getProductContext();
         /* @var Shopware\Bundle\SearchBundle\Criteria $criteria */
         $criteria = $this->get('shopware_search.store_front_criteria_factory')
@@ -143,17 +130,16 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         $facets = $this->createFacets($criteria, $context);
         $facetIdsToOptionIds = $this->getPropertyFacetOptionIds($facets);
         $options = $this->getFacetConfig($facets, $facetIdsToOptionIds);
-        $sort =  $this->getSortOrder($criteria, $viewData['sSort']);
+        $sort =  $this->getSortOrder($criteria, $viewData['sSort'], true);
         $hitCount = $criteria->getLimit();
         $pageOffset = $criteria->getOffset();
-        $this->Benchmark()->log("Initialize search request with offset " . $pageOffset);
         $this->Helper()->addSearch('', $pageOffset, $hitCount, 'product', $sort, $options, $filter);
-        $this->Benchmark()->log("Start update facets");
         $facets = $this->updateFacetsWithResult($facets, $facetIdsToOptionIds);
-        $this->Benchmark()->log("Finish update facets");
-        $this->Benchmark()->log("Start getLocalArticles");
         $articles = $this->Helper()->getLocalArticles($this->Helper()->getEntitiesIds());
-        $this->Benchmark()->log("Finish getLocalArticles");
+        $this->View()->addTemplateDir($this->Bootstrap()->Path() . 'Views/emotion/');
+        if ($this->Config()->get('boxalino_navigation_sorting') == true) {
+            $this->View()->extendsTemplate('frontend/plugins/boxalino/listing/actions/action-sorting.tpl');
+        }
         $totalHitCount = $this->Helper()->getTotalHitCount();
         $templateProperties = array(
             'criteria' => $criteria,
@@ -162,7 +148,6 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             'sArticles' => $articles,
         );
         $templateProperties = array_merge($viewData, $templateProperties);
-        $this->Benchmark()->endRecording();
         $this->View()->assign($templateProperties);
         return false;
     }
@@ -179,9 +164,6 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         }
 
         $this->init($arguments);
-
-        $this->Benchmark()->startRecording(__FUNCTION__);
-        $this->Benchmark()->log("Prepare facets and conditions");
         $term = $this->getSearchTerm();
 
         // Check if we have a one to one match for ordernumber, then redirect
@@ -208,12 +190,10 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         $hitCount = $criteria->getLimit();
         $pageOffset = $criteria->getOffset();
         $bxHasOtherItems = false;
-        $this->Benchmark()->log("Initialize search request");
 
         $this->Helper()->addSearch($term, $pageOffset, $hitCount, 'product', $sort, $options);
         if($config->get('boxalino_blog_search_enabled')){
             $blogOffset = ($this->Request()->getParam('sBlogPage', 1) -1)*($hitCount);
-            $this->Benchmark()->log("Add blog to search");
             $this->Helper()->addSearch($term, $blogOffset, $hitCount, 'blog');
             $bxHasOtherItems = $this->Helper()->getTotalHitCount('blog') > 0;
         }
@@ -227,13 +207,11 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         if ($this->Helper()->areThereSubPhrases() && $sub_phrase_limit > 0) {
             $sub_phrase_queries = array_slice(array_filter($this->Helper()->getSubPhrasesQueries()), 0, $sub_phrase_limit);
             foreach ($sub_phrase_queries as $query){
-                $this->Benchmark()->log("Stat getLocalArticles for sub phrases with query: " . $query);
                 $ids = array_slice($this->Helper()->getSubPhraseEntitiesIds($query), 0, $config->get('boxalino_search_subphrase_product_limit'));
                 $suggestion_articles = [];
                 if (count($ids) > 0) {
                     $suggestion_articles = $this->Helper()->getLocalArticles($ids);
                 }
-                $this->Benchmark()->log("End getLocalArticles for sub phrases with query: " . $query);
                 $hitCount = $this->Helper()->getSubPhraseTotalHitCount($query);
                 $sub_phrases[] = array('hitCount'=> $hitCount, 'query' => $query, 'articles' => $suggestion_articles);
             }
@@ -245,10 +223,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                     $term = $this->Helper()->getCorrectedQuery();
                 }
                 $ids = $this->Helper()->getEntitiesIds();
-                $this->Benchmark()->log("Stat getLocalArticles");
                 $articles = $this->Helper()->getLocalArticles($ids);
-                $this->Benchmark()->log("End getLocalArticles");
-                $this->Benchmark()->log("Stat update facets with response");
                 $category = $this->Helper()->getFacets()->getParentCategories();
                 if (!empty($category)) {
                     end($category);
@@ -259,7 +234,6 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                     $facets = $this->createFacets($criteria, $context);
                 }
                 $facets = $this->updateFacetsWithResult($facets, $facetIdsToOptionIds);
-                $this->Benchmark()->log("End update facets with response");
             } else {
 
                 if ($config->get('boxalino_noresults_recommendation_enabled')) {
@@ -281,7 +255,6 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         $params['sSearch'] = $term;
 
         // Assign result to template
-        $this->Benchmark()->log("Start preparing template and data");
         $this->View()->loadTemplate('frontend/search/fuzzy.tpl');
         $this->View()->addTemplateDir($this->Bootstrap()->Path() . 'Views/emotion/');
         $this->View()->extendsTemplate('frontend/plugins/boxalino/listing/actions/action-pagination.tpl');
@@ -320,8 +293,6 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             'bxSubPhraseResults' => $sub_phrases
         ), $this->getSearchTemplateProperties($hitCount));
         $this->View()->assign($templateProperties);
-        $this->Benchmark()->log("End preparing template and data");
-        $this->Benchmark()->endRecording();
         return false;
     }
 
@@ -905,7 +876,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
      * @param Shopware\Bundle\SearchBundle\Criteria $criteria
      * @return array
      */
-    public function getSortOrder(Shopware\Bundle\SearchBundle\Criteria $criteria, $default_sort = null) {
+    public function getSortOrder(Shopware\Bundle\SearchBundle\Criteria $criteria, $default_sort = null, $listing = false) {
         /* @var Shopware\Bundle\SearchBundle\Sorting\Sorting $sort */
         $sort = current($criteria->getSortings());
         $dir = null;
@@ -923,29 +894,36 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                 $field = 'products_releasedate';
                 break;
             default:
-                switch ($default_sort) {
-                    case 1:
-                        $field = 'products_releasedate';
-                        break 2;
-                    case 2:
-                        $field = 'products_sales';
-                        break 2;
-                    case 3:
-                    case 4:
-                        if ($default_sort == 3) {
-                            $dir = false;
-                        }
-                        $field = 'products_bx_grouped_price';
-                        break 2;
-                    case 5:
-                    case 6:
-                        if ($default_sort == 5) {
-                            $dir = false;
-                        }
-                        $field = 'title';
-                        break 2;
-                    default:
-                        break;
+                if ($listing == true) {
+                    $default_sort = is_null($default_sort) ? $this->getDefaultSort() : $default_sort;
+                    switch ($default_sort) {
+                        case 1:
+                            $field = 'products_releasedate';
+                            break 2;
+                        case 2:
+                            $field = 'products_sales';
+                            break 2;
+                        case 3:
+                        case 4:
+                            if ($default_sort == 3) {
+                                $dir = false;
+                            }
+                            $field = 'products_bx_grouped_price';
+                            break 2;
+                        case 5:
+                        case 6:
+                            if ($default_sort == 5) {
+                                $dir = false;
+                            }
+                            $field = 'title';
+                            break 2;
+                        default:
+                            if ($this->Config()->get('boxalino_navigation_sorting') == false) {
+                                $field = 'products_releasedate';
+                                break 2;
+                            }
+                            break;
+                    }
                 }
                 return array();
         }
@@ -954,6 +932,17 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             'field' => $field,
             'reverse' => (is_null($dir) ? $sort->getDirection() == Shopware\Bundle\SearchBundle\SortingInterface::SORT_DESC : $dir)
         );
+    }
+
+    protected function getDefaultSort(){
+        $db = Shopware()->Db();
+        $sql = $db->select()
+            ->from(array('c_e' => 's_core_config_elements', array('c_v.value')))
+            ->join(array('c_v' => 's_core_config_values'), 'c_v.element_id = c_e.id')
+            ->where("name = ?", "defaultListingSorting");
+        $result = $db->fetchRow($sql);
+        return isset($result) ? unserialize($result['value']) : null;
+
     }
 
     /**

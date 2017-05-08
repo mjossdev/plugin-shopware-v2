@@ -31,7 +31,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
     }
 
     public function getVersion() {
-        return '1.4.12';
+        return '1.4.15';
     }
 
     public function getInfo() {
@@ -215,6 +215,10 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
         $this->subscribeEvent('Enlight_Controller_Action_PostDispatch_Backend_Customer', 'onBackendCustomerPostDispatch');
         $this->subscribeEvent('Theme_Compiler_Collect_Plugin_Javascript', 'addJsFiles');
         $this->subscribeEvent('Theme_Compiler_Collect_Plugin_Less', 'addLessFiles');
+
+        // add relevance (boxalino sort option) to listing
+        $this->subscribeEvent('Enlight_Controller_Action_PostDispatchSecure_Backend_Performance', 'onBackendPerformance');
+        $this->subscribeEvent('Enlight_Controller_Dispatcher_ControllerPath_Backend_BoxalinoPerformance', 'boxalinoBackendControllerPerformance');
     }
 
     private function registerEmotions() {
@@ -312,6 +316,25 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
     public function boxalinoBackendControllerExport() {
         Shopware()->Template()->addTemplateDir(Shopware()->Plugins()->Frontend()->Boxalino()->Path() . 'Views/');
         return Shopware()->Plugins()->Frontend()->Boxalino()->Path() . "/Controllers/backend/BoxalinoExport.php";
+    }
+
+    public function boxalinoBackendControllerPerformance() {
+        Shopware()->Template()->addTemplateDir(Shopware()->Plugins()->Frontend()->Boxalino()->Path() . 'Views/');
+        return Shopware()->Plugins()->Frontend()->Boxalino()->Path() . "/Controllers/backend/BoxalinoPerformance.php";
+
+    }
+
+    public function onBackendPerformance(Enlight_Event_EventArgs $arguments){
+        try {
+            $controller = $arguments->getSubject();
+            $view = $controller->View();
+            $view->addTemplateDir($this->Path() . 'Views/');
+            if ($arguments->getRequest()->getActionName() === 'load') {
+                $view->extendsTemplate('backend/boxalino_performance/store/listing_sorting.js');
+            }
+        } catch (\Exception $e) {
+            $this->logException($e, __FUNCTION__);
+        }
     }
 
     public function onRecommendation(Enlight_Event_EventArgs $arguments) {

@@ -461,11 +461,13 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
         $defaultPath = 'http://'. $shop->getHost() . $shop->getBasePath() . '/';
         $languages = $this->_config->getAccountLanguages($account);
         $lang_header = array();
+        $lang_productPath = array();
         $data = array();
         foreach ($languages as $shopId => $language) {
             $lang_header[$language] = "value_$language";
             $shop = $repository->getActiveById($shopId);
-            $productPath = 'http://' . $shop->getHost() . $shop->getBasePath() . '/';
+            $productPath = 'http://' . $shop->getHost() . $shop->getBasePath()  . $shop->getBaseUrl() . '/' ;
+            $lang_productPath[$language] = $productPath;
             $shop = null;
 
             $sql = $db->select()
@@ -505,7 +507,30 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
                 }
             }
         }
-
+        $sql = $db->select()
+            ->from(array('a' => 's_articles'), array())
+            ->join(
+                array('d' => 's_articles_details'),
+                $this->qi('d.articleID') . ' = ' . $this->qi('a.id') . ' AND ' .
+                $this->qi('d.kind') . ' <> ' . $db->quote(3),
+                array('id', 'articleID')
+            );
+        if ($this->delta) {
+            $sql->where('a.id IN(?)', $this->deltaIds);
+        }
+        $stmt = $db->query($sql);
+        if ($stmt->rowCount()) {
+            while ($row = $stmt->fetch()) {
+                if(!isset($data[$row['articleID']])){
+                    $articleID = $row['articleID'];
+                    $item = ["articleID" => $articleID, "subshopID" => null];
+                    foreach ($lang_productPath as $language => $path) {
+                        $item["value_{$language}"] = "{$path}detail/index/sArticle/{$articleID}";
+                    }
+                    $data[$row['articleID']] = $item;
+                }
+            }
+        }
         if (count($data) > 0) {
             $data = array_merge(array(array_merge(array('articleID', 'subshopID'), $lang_header)), $data);
         } else {
