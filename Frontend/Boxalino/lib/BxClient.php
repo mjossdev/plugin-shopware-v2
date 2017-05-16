@@ -32,6 +32,11 @@ class BxClient
 	private $profileId = null;
 	
 	private $requestMap = array();
+	
+	private $socketHost = null;
+	private $socketPort = null;
+	private $socketSendTimeout = null;
+	private $socketRecvTimeout = null;
 
 	public function __construct($account, $password, $domain, $isDev=false, $host=null, $port=null, $uri=null, $schema=null, $p13n_username=null, $p13n_password=null) {
 		$this->account = $account;
@@ -67,6 +72,13 @@ class BxClient
 	
 	public function setTestMode($isTest) {
 		$this->isTest = $isTest;
+	}
+	
+	public function setSocket($socketHost, $socketPort=4040, $socketSendTimeout=1000, $socketRecvTimeout=1000) {
+		$this->socketHost = $socketHost;
+		$this->socketPort = $socketPort;
+		$this->socketSendTimeout = $socketSendTimeout;
+		$this->socketRecvTimeout = $socketRecvTimeout;
 	}
 	
 	public function setRequestMap($requestMap) {
@@ -163,6 +175,15 @@ class BxClient
 	}
 	
 	private function getP13n($timeout=2, $useCurlIfAvailable=true){
+		
+		if($this->socketHost != null) {
+			$transport = new \Thrift\Transport\TSocket($this->socketHost, $this->socketPort);
+			$transport->setSendTimeout($this->socketSendTimeout);
+			$transport->setRecvTimeout($this->socketRecvTimeout);
+			$client = new \com\boxalino\p13n\api\thrift\P13nServiceClient(new \Thrift\Protocol\TBinaryProtocol($transport));
+			$transport->open();
+			return $client;
+		}
 
 		if($useCurlIfAvailable && function_exists('curl_version')) {
 			$transport = new \Thrift\Transport\P13nTCurlClient($this->host, $this->port, $this->uri, $this->schema);

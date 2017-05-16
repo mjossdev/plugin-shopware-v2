@@ -59,19 +59,11 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxIndexConfig{
 
         $scopeConfig = new \Shopware_Components_Config($config);
         $children = $shop->getChildren();
-        $used_languages = array();
-        $main_lang = substr($shop->getLocale()->toString(), 0, 2);
-        $used_languages[$main_lang] = array();
-        $languages[$shop->getId()] = $main_lang;
+        $languages[$shop->getId()] = substr($shop->getLocale()->toString(), 0, 2);
         $category_id[$shop->getId()] = $shop->getCategory()->getId();
         foreach($children as $child){
-            $lang = substr($child->getLocale()->toString(), 0, 2);
-            if(!isset($used_languages[$lang])) {
-                $used_languages[$lang] = array();
-                $languages[$child->getId()] = $lang;
-                $category_id[$child->getId()] = $child->getCategory()->getId();
-            }
-
+            $languages[$child->getId()] = substr($child->getLocale()->toString(), 0, 2);
+            $category_id[$child->getId()] = $child->getCategory()->getId();
         }
         $dir = __DIR__ . '/../config.json';
         $fields = json_decode(file_get_contents($dir), true);

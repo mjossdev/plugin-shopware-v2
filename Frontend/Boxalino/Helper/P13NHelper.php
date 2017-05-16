@@ -248,7 +248,9 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
             $shop_id = Shopware()->Shop()->getId();
             $filters[] = new \com\boxalino\bxclient\v1\BxFilter('products_shop_id', array($shop_id));
             if ($query == '' && !$recommendation) {
-                $filters[] = new \com\boxalino\bxclient\v1\BxFilter('category_id', array($this->Request()->getParam('sCategory')));
+                if(Shopware()->Shop()->getCategory()->getId() != $this->Request()->getParam('sCategory')) {
+                    $filters[] = new \com\boxalino\bxclient\v1\BxFilter('category_id', array($this->Request()->getParam('sCategory')));
+                }
             }
         }
 
@@ -647,7 +649,6 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
             ->where('a_d.articleID IN(?)', $ids)
             ->where('a_d.kind = ?', 1)
             ->order(new Zend_Db_Expr('FIELD(a_d.articleID,' . implode(',', $ids).')'));
-
         $stmt = $db->query($sql);
         while($row = $stmt->fetch()) {
             $convertedIds[] = $row['ordernumber'];
@@ -660,6 +661,9 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
      * @return mixed
      */
     public function getLocalArticles($ids) {
+        if (empty($ids)) {
+            return array();
+        }
         $ids = $this->convertIds($ids);
         $unsortedArticles = Shopware()->Container()->get('legacy_struct_converter')->convertListProductStructList(
             Shopware()->Container()->get('shopware_storefront.list_product_service')->getList(

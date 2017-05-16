@@ -287,6 +287,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
     private function exportItemFacets($account, $files) {
 
         $db = $this->db;
+        $mapped_option_values = array();
         $option_values = array();
         $languages = $this->_config->getAccountLanguages($account);
 
@@ -317,15 +318,23 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
                     $value = $facet_value['objectdata'] == null ? $facet_value['value'] : reset(unserialize($facet_value['objectdata']));
                     if (isset($option_values[$facet_value['id']])) {
                         $option_values[$facet_value['id']]["value_{$language}"] = $value;
+                        $mapped_option_values[$facet_value['id']]["value_{$language}"] = "{$value}_bx_{$facet_value['id']}";
                         continue;
                     }
                     $option_values[$facet_value['id']] = array("{$facet_name}_id" => $facet_value['id'], "value_{$language}" => $value);
+                    $mapped_option_values[$facet_value['id']] = array("{$facet_name}_id" => $facet_value['id'], "value_{$language}" => "{$value}_bx_{$facet_value['id']}");
                 }
 
             }
+
             $option_values = array_merge(array(array_keys(end($option_values))), $option_values);
             $files->savepartToCsv("{$facet_name}.csv", $option_values);
+
+            $mapped_option_values = array_merge(array(array_keys(end($mapped_option_values))), $mapped_option_values);
+            $files->savepartToCsv("{$facet_name}_bx_mapped.csv", $mapped_option_values);
+
             $optionSourceKey = $this->bxData->addResourceFile($files->getPath("{$facet_name}.csv"), "{$facet_name}_id", $localized_columns);
+            $optionMappedSourceKey = $this->bxData->addResourceFile($files->getPath("{$facet_name}_bx_mapped.csv"), "{$facet_name}_id", $localized_columns);
 
             $sql = $db->select()
                 ->from(array('a' => 's_articles'),
@@ -358,10 +367,16 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
             }else{
                 $data = array(array("id", "{$facet_name}_id"));
             }
+            $second_reference = $data;
             $files->savepartToCsv("product_{$facet_name}.csv", $data);
             $attributeSourceKey = $this->bxData->addCSVItemFile($files->getPath("product_{$facet_name}.csv"), 'id');
             $this->bxData->addSourceLocalizedTextField($attributeSourceKey, "optionID_{$facet_id}", "{$facet_name}_id", $optionSourceKey);
             $this->bxData->addSourceStringField($attributeSourceKey, "optionID_{$facet_id}_id", "{$facet_name}_id");
+
+            $files->savepartToCsv("product_{$facet_name}_mapped.csv", $second_reference);
+            $secondAttributeSourceKey = $this->bxData->addCSVItemFile($files->getPath("product_{$facet_name}_mapped.csv"), 'id');
+            $this->bxData->addSourceLocalizedTextField($secondAttributeSourceKey, "optionID_mapped_{$facet_id}", "{$facet_name}_id", $optionMappedSourceKey);
+            $this->bxData->addSourceStringField($secondAttributeSourceKey, "optionID_{$facet_id}_id_mapped", "{$facet_name}_id");
         }
     }
 

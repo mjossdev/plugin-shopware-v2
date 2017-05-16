@@ -137,7 +137,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
             'onBoxalinoExportCronJobDelta'
         );
     }
-    
+
     public function addJsFiles(Enlight_Event_EventArgs $args) {
         $jsFiles = array(
             __DIR__ . '/Views/responsive/frontend/_resources/javascript/jquery.bx_register_add_article.js',
@@ -145,16 +145,16 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
         );
         return new Doctrine\Common\Collections\ArrayCollection($jsFiles);
     }
-    
+
     public function addLessFiles(Enlight_Event_EventArgs $args) {
         $less = array(
             new \Shopware\Components\Theme\LessDefinition(
-                array(), 
-                array(__DIR__ . '/Views/responsive/frontend/_resources/less/cart_recommendations.less'), 
+                array(),
+                array(__DIR__ . '/Views/responsive/frontend/_resources/less/cart_recommendations.less'),
                 __DIR__
             ), new \Shopware\Components\Theme\LessDefinition(
-                array(), 
-                array(__DIR__ . '/Views/responsive/frontend/_resources/less/search.less'), 
+                array(),
+                array(__DIR__ . '/Views/responsive/frontend/_resources/less/search.less'),
                 __DIR__
             )
         );
@@ -192,7 +192,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
     }
 
     private function registerEvents() {
-        
+
         // search results and autocompletion results
         $this->subscribeEvent('Enlight_Controller_Action_PostDispatchSecure_Frontend_Listing', 'onListing');
         $this->subscribeEvent('Enlight_Controller_Action_PostDispatchSecure_Widgets_Listing', 'onAjaxListing');
@@ -279,7 +279,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
         $this->registerController('Frontend', 'RecommendationSlider');
         $this->registerController('Frontend', 'BxDebug');
     }
-    
+
     public function convertRecommendationSlider($args) {
         $data = $args->getReturn();
         if ($args['element']['component']['name'] != "Boxalino Slider Recommendations") {
@@ -360,7 +360,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
             $this->logException($e, __FUNCTION__);
         }
     }
-    
+
     public function onAjaxListing(Enlight_Event_EventArgs $arguments){
         try {
             return $this->searchInterceptor->listingAjax($arguments);
@@ -471,8 +471,8 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
     /**
      * @param $exception
      */
-    private function logException($exception, $context) {
-        Shopware()->PluginLogger()->error("BxExceptionLog: Exception on \"{$context}\" [line: {$exception->getLine()}, file: {$exception->getFile()}] with message : " . $exception->getMessage());
+    private function logException(\Exception $exception, $context) {
+        Shopware()->PluginLogger()->error("BxExceptionLog: Exception on \"{$context}\" [line: {$exception->getLine()}, file: {$exception->getFile()}] with message : " . $exception->getMessage() . ', stack trace: ' . $exception->getTraceAsString());
     }
 
     /**
