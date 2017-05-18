@@ -297,9 +297,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
         foreach ($facets as $facet) {
 
             $facet_id = $facet['id'];
-//            $facet_name = preg_replace('/[\{\}\(\)]/', '',  trim($facet['name']));
-//            $facet_name = str_replace(' ', '_', $facet_name);
-            $facet_name = "option_{$facet_id}";// . preg_replace('/[^äöü ÄÖÜ A-Za-z0-9\_\&]/', '_', strtolower($facet_name));
+            $facet_name = "option_{$facet_id}";
 
             $data = array();
             $localized_columns = array();
@@ -315,7 +313,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
                     ->where('f_v.optionId = ?', $facet_id);
                 $stmt = $db->query($sql);
                 while ($facet_value = $stmt->fetch()) {
-                    $value = $facet_value['objectdata'] == null ? $facet_value['value'] : reset(unserialize($facet_value['objectdata']));
+                    $value = $facet_value['objectdata'] == null ? trim($facet_value['value']) : trim(reset(unserialize($facet_value['objectdata'])));
                     if (isset($option_values[$facet_value['id']])) {
                         $option_values[$facet_value['id']]["value_{$language}"] = $value;
                         $mapped_option_values[$facet_value['id']]["value_{$language}"] = "{$value}_bx_{$facet_value['id']}";
@@ -324,7 +322,6 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
                     $option_values[$facet_value['id']] = array("{$facet_name}_id" => $facet_value['id'], "value_{$language}" => $value);
                     $mapped_option_values[$facet_value['id']] = array("{$facet_name}_id" => $facet_value['id'], "value_{$language}" => "{$value}_bx_{$facet_value['id']}");
                 }
-
             }
 
             $option_values = array_merge(array(array_keys(end($option_values))), $option_values);
@@ -367,6 +364,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
             }else{
                 $data = array(array("id", "{$facet_name}_id"));
             }
+            
             $second_reference = $data;
             $files->savepartToCsv("product_{$facet_name}.csv", $data);
             $attributeSourceKey = $this->bxData->addCSVItemFile($files->getPath("product_{$facet_name}.csv"), 'id');
@@ -584,7 +582,6 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
 
         $db = $this->db;
         $data = array();
-        $dot = $db->quote('.');
         $pipe = $db->quote('|');
         $fieldMain = $this->qi('s_articles_img.main');
         $imagePath = $this->qi('s_media.path');
@@ -1089,7 +1086,6 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
         $oInvoiceShipping = $this->qi('s_order.invoice_shipping');
         $oCurrencyFactor = $this->qi('s_order.currencyFactor');
         $dPrice = $this->qi('s_order_details.price');
-        $header = true;
         $transaction_properties = array_merge($transaction_properties,
             array(
                 'total_order_value' => new Zend_Db_Expr(

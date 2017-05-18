@@ -637,13 +637,18 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                     if (!array_key_exists($key, $options)) {
                         $options[$key] = ['label' => $facet->getLabel()];
                     }
-                    $values = array();
+                    $selected_value = [];
                     foreach ($facet->getValues() as $value) {
                         if ($value->isActive()) {
-                            $values[] = $value->getLabel();
+                            $label = trim($value->getLabel());
+                            if($key != 'products_brand'){
+                                $selected_value[] = "{$label}_bx_{$value->getId()}";
+                            } else {
+                                $selected_value[] = "{$label}";
+                            }
                         }
                     }
-                    $options[$key]['value'] = $values;
+                    $options[$key]['value'] = $selected_value;
                     break;
             }
         }
@@ -714,7 +719,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                 $label .= ' (' . $bxFacets->getFacetValueCount($fieldName, $label) . ')';
             }
             $innerValues[trim($r['name'])] = new Shopware\Bundle\SearchBundle\FacetResult\MediaListItem(
-                $r['id'],
+                (int)$r['id'],
                 $label,
                 $selected
             );
@@ -798,7 +803,6 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             }
             $label = trim($r['value']);
             $key = $label . "_bx_{$r['id']}";
-
             if(!isset($values[$key])) {
                 continue;
             }
@@ -813,9 +817,9 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                 $media_class = true;
             }
             $values[$key] = new Shopware\Bundle\SearchBundle\FacetResult\MediaListItem(
-                $r['id'],
+                (int)$r['id'],
                 $label,
-                $selected,
+                (boolean)$selected,
                 $media
             );
         }
@@ -839,7 +843,6 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         $lang = substr(Shopware()->Shop()->getLocale()->getLocale(), 0, 2);
         $bxFacets = $this->Helper()->getFacets();
         $filters = array();
-//        var_dump($bxFacets->getLeftFacets());exit;
         foreach ($bxFacets->getLeftFacets() as $fieldName) {
 
             if ($bxFacets->isFacetHidden($fieldName)) {
@@ -899,7 +902,6 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                         $facet = reset($facets['property']->getFacetResults());
                         $filters[] = $this->generateListItem($fieldName, $bxFacets, $facet, $lang);
                     }
-
                     break;
             }
         }
@@ -1012,6 +1014,9 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         );
     }
 
+    /**
+     * @return mixed|null
+     */
     protected function getDefaultSort(){
         $db = Shopware()->Db();
         $sql = $db->select()
