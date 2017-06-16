@@ -38,6 +38,8 @@ class BxClient
 	private $socketSendTimeout = null;
 	private $socketRecvTimeout = null;
 
+    private $notifications = array();
+
 	public function __construct($account, $password, $domain, $isDev=false, $host=null, $port=null, $uri=null, $schema=null, $p13n_username=null, $p13n_password=null) {
 		$this->account = $account;
 		$this->password = $password;
@@ -513,5 +515,26 @@ class BxClient
 	public function setTimeout($timeout) {
 		$this->_timeout = $timeout;
 	}
+
+    public function notifyWarning($warning) {
+        $this->addNotification("warning", $warning);
+    }
+
+    public function addNotification($type, $notification) {
+        if(!isset($this->notifications[$type])) {
+            $this->notifications[$type] = array();
+        }
+        $this->notifications[$type][] = $notification;
+    }
+
+    public function finalNotificationCheck($force=false, $requestMapKey = 'dev_bx_notifications')
+    {
+        if ($force || (isset($this->requestMap[$requestMapKey]) && $this->requestMap[$requestMapKey] == 'true')) {
+            echo "<pre><h1>Notifications</h1>" ;
+            var_export($this->notifications, true);
+            echo "</pre>";
+            exit;
+        }
+    }
 	
 }

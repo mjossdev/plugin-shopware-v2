@@ -24,6 +24,11 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
     protected $facetHandlers;
 
     /**
+     * @var array
+     */
+    protected $facetOptions = [];
+
+    /**
      * constructor
      * @param Shopware_Plugins_Frontend_Boxalino_Bootstrap $bootstrap
      */
@@ -137,6 +142,8 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         if ($this->Config()->get('boxalino_navigation_sorting') == true) {
             $this->View()->extendsTemplate('frontend/plugins/boxalino/listing/actions/action-sorting.tpl');
         }
+        $this->View()->extendsTemplate('frontend/plugins/boxalino/listing/filter/facet-value-list.tpl');
+        $this->View()->extendsTemplate('frontend/plugins/boxalino/listing/index.tpl');
         $totalHitCount = $this->Helper()->getTotalHitCount();
         $templateProperties = array(
             'bxFacets' => $this->Helper()->getFacets(),
@@ -144,6 +151,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             'facets' => $facets,
             'sNumberArticles' => $totalHitCount,
             'sArticles' => $articles,
+            'facetOptions' => $this->facetOptions
         );
         $templateProperties = array_merge($viewData, $templateProperties);
         $this->View()->assign($templateProperties);
@@ -255,8 +263,9 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         $this->View()->addTemplateDir($this->Bootstrap()->Path() . 'Views/emotion/');
         $this->View()->extendsTemplate('frontend/plugins/boxalino/listing/actions/action-pagination.tpl');
         $this->View()->extendsTemplate('frontend/plugins/boxalino/search/fuzzy.tpl');
+        $this->View()->extendsTemplate('frontend/plugins/boxalino/listing/filter/facet-value-list.tpl');
+        $this->View()->extendsTemplate('frontend/plugins/boxalino/listing/index.tpl');
         $no_result_title = Shopware()->Snippets()->getNamespace('boxalino/intelligence')->get('search/noresult');
-
         $templateProperties = array_merge(array(
             'bxFacets' => $this->Helper()->getFacets(),
             'term' => $term,
@@ -287,7 +296,8 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             'productBoxLayout' => $config->get('searchProductBoxLayout'),
             'bxHasOtherItemTypes' => $bxHasOtherItems,
             'bxActiveTab' => $request->getParam('bxActiveTab', 'article'),
-            'bxSubPhraseResults' => $sub_phrases
+            'bxSubPhraseResults' => $sub_phrases,
+            'facetOptions' => $this->facetOptions
         ), $this->getSearchTemplateProperties($hitCount));
         $this->View()->assign($templateProperties);
         return false;
@@ -544,7 +554,6 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                 return $handler;
             }
         }
-        Shopware()->PluginLogger()->debug('Boxalino Search: Facet ' . get_class($facet) . ' not supported');
         return null;
     }
 
@@ -577,6 +586,18 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             }
             $facets[$result->getFacetName()] = $result;
         }
+        $facetOptions = $facets['property']->getFacetResults();
+        unset($facets['property']);
+        foreach ($facetOptions as $option) {
+            $peek = reset($option->getValues());
+            if ($peek){
+                $optionId = $this->getOptionIdFromValue($peek->getId());
+                if (is_null($optionId)) {
+                    break;
+                }
+                $facets["products_optionID_mapped_{$optionId}"] = $option;
+            }
+        }
         return $facets;
     }
 
@@ -586,12 +607,9 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
      */
     protected function getFacetConfig($facets) {
         $options = [];
-        foreach ($facets as $facet) {
-            if ($facet instanceof Shopware\Bundle\SearchBundle\FacetResult\FacetResultGroup) {
-                $options = array_merge($options, $this->getFacetConfig($facet->getFacetResults()));
-                break;
-            }
-            $key = 'property_values';
+
+        foreach ($facets as $fieldName => $facet) {
+            $key = '';
             switch ($facet->getFacetName()) {
                 case 'price':
                     $value = array();
@@ -620,19 +638,11 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                         $options['category']['value'] = $id;
                     }
                     break;
-                case 'manufacturer':
-                    $key = 'products_brand';
                 case 'property':
-
-                    if ($key != 'products_brand') {
-                        $peek = reset($facet->getValues());
-                        if ($peek){
-                            $optionId = $this->getOptionIdFromValue($peek->getId());
-                            if (is_null($optionId)) {
-                                break;
-                            }
-                            $key = "products_optionID_mapped_{$optionId}";
-                        }
+                    $key = $fieldName;
+                case 'manufacturer':
+                    if ($key == '') {
+                        $key = 'products_brand';
                     }
                     if (!array_key_exists($key, $options)) {
                         $options[$key] = ['label' => $facet->getLabel()];
@@ -649,6 +659,20 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                         }
                     }
                     $options[$key]['value'] = $selected_value;
+                    break;
+                case 'shipping_free':
+                    $key = 'products_shippingfree';
+                case 'immediate_delivery':
+
+                    if($key == '') {
+                        $key = 'products_bx_purchasable';
+                    }
+                    $options[$key] = ['label' => $facet->getLabel()];
+                    if($facet->isActive()) {
+                        $options[$key]['value'] = 1;
+                    }
+                    break;
+                default:
                     break;
             }
         }
@@ -786,7 +810,6 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
      * @return mixed
      */
     private function generateListItem($fieldName, $bxFacets, $facet, $lang) {
-
         $option_id = end(explode('_', $fieldName));
         $values = $bxFacets->getFacetValues($fieldName);
         $shop_id  = Shopware()->Shop()->getId();
@@ -844,13 +867,19 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         $bxFacets = $this->Helper()->getFacets();
         $filters = array();
         foreach ($bxFacets->getLeftFacets() as $fieldName) {
-
+            $key = '';
             if ($bxFacets->isFacetHidden($fieldName)) {
                 continue;
             }
+
             switch ($fieldName) {
                 case 'discountedPrice':
                     $facet = $facets['price'];
+                    $label = $bxFacets->getFacetLabel($fieldName,$lang);
+                    $this->facetOptions[$label] = [
+                        'fieldName' => $fieldName,
+                        'expanded' => $bxFacets->isFacetExpanded($fieldName, false)
+                    ];
                     $priceRange = explode('-', $bxFacets->getPriceRanges()[0]);
                     $from = (float) $priceRange[0];
                     $to = (float) $priceRange[1];
@@ -866,7 +895,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                     $filters[] = new Shopware\Bundle\SearchBundle\FacetResult\RangeFacetResult(
                         $facet->getFacetName(),
                         $bxFacets->isSelected($fieldName),
-                        $bxFacets->getFacetLabel($fieldName,$lang),
+                        $label,
                         $from,
                         $to,
                         $activeMin,
@@ -880,26 +909,55 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                 case 'categories':
                     if ($this->Request()->getControllerName() == 'search') {
                         $facet = $facets['category'];
+                        $label = $bxFacets->getFacetLabel($fieldName,$lang);
+                        $this->facetOptions[$label] = [
+                            'fieldName' => $fieldName,
+                            'expanded' => $bxFacets->isFacetExpanded($fieldName, false)
+                        ];
                         $updatedFacetValues = $this->updateTreeItemsWithFacetValue($facet->getValues(), $bxFacets);
 
                         $filters[] = new Shopware\Bundle\SearchBundle\FacetResult\TreeFacetResult(
                             $facet->getFacetName(),
                             $facet->getFieldName(),
                             $bxFacets->isSelected($fieldName),
-                            $bxFacets->getFacetLabel($fieldName,$lang),
+                            $label,
                             $updatedFacetValues,
                             $facet->getAttributes(),
                             $facet->getTemplate()
                         );
                     }
                     break;
+                case 'products_shippingfree':
+                    $key = 'shipping_free';
+                case 'products_bx_purchasable':
+                    if($key == '') {
+                        $key = 'immediate_delivery';
+                    }
+                    $facet = $facets[$key];
+                    $filters[] = new Shopware\Bundle\SearchBundle\FacetResult\BooleanFacetResult(
+                        $facet->getFacetName(),
+                        $facet->getFieldName(),
+                        $bxFacets->isSelected($fieldName),
+                        $bxFacets->getFacetLabel($fieldName,$lang),
+                        $facet->getAttributes(),
+                        $facet->getTemplate()
+                    );
+                    break;
                 case 'products_brand':
                     $facet = $facets['manufacturer'];
+                    $this->facetOptions[$bxFacets->getFacetLabel($fieldName,$lang)] = [
+                        'fieldName' => $fieldName,
+                        'expanded' => $bxFacets->isFacetExpanded($fieldName, false)
+                    ];
                     $filters[] = $this->generateManufacturerListItem($bxFacets, $facet, $lang);
                     break;
                 default:
                     if ((strpos($fieldName, 'products_optionID') !== false)) {
-                        $facet = reset($facets['property']->getFacetResults());
+                        $facet = $facets[$fieldName];
+                        $this->facetOptions[$bxFacets->getFacetLabel($fieldName,$lang)] = [
+                            'fieldName' => $fieldName,
+                            'expanded' => $bxFacets->isFacetExpanded($fieldName, false)
+                        ];
                         $filters[] = $this->generateListItem($fieldName, $bxFacets, $facet, $lang);
                     }
                     break;

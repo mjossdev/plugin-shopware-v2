@@ -31,6 +31,9 @@ class Shopware_Controllers_Frontend_RecommendationSlider extends Enlight_Control
         $this->config = Shopware()->Config();
         $this->marketingModule = Shopware()->Modules()->Marketing();
         $id = $this->request->getParam('articleId');
+        if($id == 'sCategory') {
+            return;
+        }
         $categoryId = $this->request->getParam('sCategory');
         $number = $this->Request()->getParam('number', null);
         $selection = $this->Request()->getParam('group', array());

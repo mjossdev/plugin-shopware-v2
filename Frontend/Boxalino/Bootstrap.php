@@ -204,7 +204,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
         $this->subscribeEvent('Enlight_Bootstrap_AfterInitResource_shopware_storefront.', 'onAjaxSearch');
 
         // all frontend views to inject appropriate tracking, product and basket recommendations
-        $this->subscribeEvent('Enlight_Controller_Action_PostDispatch_Frontend', 'onFrontend');
+        $this->subscribeEvent('Enlight_Controller_Action_PostDispatchSecure_Frontend', 'onFrontend');
 
         // add to basket and purchase tracking
         $this->subscribeEvent('Shopware_Modules_Basket_AddArticle_FilterSql', 'onAddToBasket');
@@ -341,7 +341,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
         try {
             return $this->frontendInterceptor->intercept($arguments);
         } catch (\Exception $e) {
-            $this->logException($e, __FUNCTION__);
+            $this->logException($e, __FUNCTION__, $arguments->getSubject()->Request()->getRequestUri());
         }
     }
 
@@ -349,7 +349,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
         try {
             return $this->searchInterceptor->search($arguments);
         } catch (\Exception $e) {
-            $this->logException($e, __FUNCTION__);
+            $this->logException($e, __FUNCTION__, $arguments->getSubject()->Request()->getRequestUri());
         }
     }
 
@@ -357,7 +357,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
         try {
             return $this->searchInterceptor->listing($arguments);
         } catch (\Exception $e) {
-            $this->logException($e, __FUNCTION__);
+            $this->logException($e, __FUNCTION__, $arguments->getSubject()->Request()->getRequestUri());
         }
     }
 
@@ -365,7 +365,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
         try {
             return $this->searchInterceptor->listingAjax($arguments);
         } catch (\Exception $e) {
-            $this->logException($e, __FUNCTION__);
+            $this->logException($e, __FUNCTION__, $arguments->getSubject()->Request()->getRequestUri());
         }
     }
 
@@ -373,7 +373,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
         try {
             return $this->searchInterceptor->ajaxSearch($arguments);
         } catch (\Exception $e) {
-            $this->logException($e, __FUNCTION__);
+            $this->logException($e, __FUNCTION__, $arguments->getSubject()->Request()->getRequestUri());
         }
     }
 
@@ -382,7 +382,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
             $this->onBasket($arguments);
             return $this->frontendInterceptor->intercept($arguments);
         } catch (\Exception $e) {
-            $this->logException($e, __FUNCTION__);
+            $this->logException($e, __FUNCTION__, $arguments->getSubject()->Request()->getRequestUri());
         }
     }
 
@@ -390,7 +390,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
         try {
             return $this->frontendInterceptor->basket($arguments);
         } catch (\Exception $e) {
-            $this->logException($e, __FUNCTION__);
+            $this->logException($e, __FUNCTION__, $arguments->getSubject()->Request()->getRequestUri());
         }
     }
 
@@ -398,7 +398,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
         try {
             return $this->frontendInterceptor->addToBasket($arguments);
         } catch (\Exception $e) {
-            $this->logException($e, __FUNCTION__);
+            $this->logException($e, __FUNCTION__, $arguments->getSubject()->Request()->getRequestUri());
         }
     }
 
@@ -406,7 +406,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
         try {
             return $this->frontendInterceptor->purchase($arguments);
         } catch (\Exception $e) {
-            $this->logException($e, __FUNCTION__);
+            $this->logException($e, __FUNCTION__, $arguments->getSubject()->Request()->getRequestUri());
         }
     }
 
@@ -471,8 +471,8 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
     /**
      * @param $exception
      */
-    private function logException(\Exception $exception, $context) {
-        Shopware()->PluginLogger()->error("BxExceptionLog: Exception on \"{$context}\" [line: {$exception->getLine()}, file: {$exception->getFile()}] with message : " . $exception->getMessage() . ', stack trace: ' . $exception->getTraceAsString());
+    public function logException(\Exception $exception, $context, $uri = null) {
+        Shopware()->PluginLogger()->error("BxExceptionLog: Exception on \"{$context}\" [uri: {$uri} line: {$exception->getLine()}, file: {$exception->getFile()}] with message : " . $exception->getMessage() . ', stack trace: ' . $exception->getTraceAsString());
     }
 
     /**
