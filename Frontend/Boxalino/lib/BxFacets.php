@@ -108,6 +108,10 @@ class BxFacets
 			if(!$returnHidden && $this->isFacetHidden($fieldName)) {
 				continue;
 			}
+			$facetValues = $this->getFacetValues($fieldName);
+			if($this->getTotalHitCount() > 0 && sizeof($facetValues) == 1 && (floatval($this->getFacetExtraInfo($fieldName, "limitOneValueCoverage")) >= floatval($this->getFacetValueCount($fieldName, $facetValues[0]) / $this->getTotalHitCount()))) {
+			    continue;
+            }
 			if($this->getFacetExtraInfo($fieldName, $extraInfoKey) == $extraInfoValue || ($this->getFacetExtraInfo($fieldName, $extraInfoKey) == null && $default)) {
 				$selectedFacets[] = $fieldName;
 			}
@@ -152,6 +156,9 @@ class BxFacets
 	}
 	
 	public function getFacetExtraInfo($fieldName, $extraInfoKey, $defaultExtraInfoValue = null) {
+		if ($fieldName == $this->getCategoryFieldName()) {
+			$fieldName = 'category_id';
+		}
 		try {
 			return $this->getFacetResponseExtraInfo($this->getFacetResponse($fieldName), $extraInfoKey, $defaultExtraInfoValue);
 		} catch(\Exception $e) {
@@ -203,6 +210,7 @@ class BxFacets
 	}
 	
 	public function isFacetExpanded($fieldName, $default=true) {
+	    $fieldName = $fieldName == $this->getCategoryFieldName() ? 'category_id' : $fieldName;
 		$defaultDisplay = $default ? 'expanded' : null;
 		return $this->getFacetDisplay($fieldName, $defaultDisplay) == 'expanded';
 	}
@@ -238,6 +246,9 @@ class BxFacets
 	
 	public function getFacetDisplay($fieldName, $defaultDisplay = 'expanded') {
 		try {
+		    if(sizeof($this->getFacetSelectedValues($fieldName)) > 0) {
+		        return 'expanded';
+            }
 			return $this->getFacetResponseDisplay($this->getFacetResponse($fieldName), $defaultDisplay);
 		} catch(\Exception $e) {
 			return $defaultDisplay;
@@ -465,9 +476,9 @@ class BxFacets
 			$facetValues = $finalFacetValues;
 		}
 
-		$enumDisplaySize = intval($this->getFacetExtraInfo($fieldName, "enumDisplaySize"));
+		$enumDisplaySize = intval($this->getFacetExtraInfo($fieldName, "enumDisplayMaxSize"));
 		if($enumDisplaySize > 0 && sizeof($facetValues) > $enumDisplaySize) {
-			$enumDisplaySizeMin = intval($this->getFacetExtraInfo($fieldName, "enumDisplaySizeMin"));
+			$enumDisplaySizeMin = intval($this->getFacetExtraInfo($fieldName, "enumDisplaySize"));
 			if($enumDisplaySizeMin == 0) {
 				$enumDisplaySizeMin = $enumDisplaySize;
 			}
