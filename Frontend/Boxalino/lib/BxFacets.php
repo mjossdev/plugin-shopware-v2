@@ -105,17 +105,17 @@ class BxFacets
 	public function getFacetExtraInfoFacets($extraInfoKey, $extraInfoValue, $default=false, $returnHidden=false) {
 		$selectedFacets = array();
 		foreach($this->getFieldNames() as $fieldName) {
-			if(!$returnHidden && $this->isFacetHidden($fieldName)) {
-				continue;
-			}
-			$facetValues = $this->getFacetValues($fieldName);
-			if($this->getTotalHitCount() > 0 && sizeof($facetValues) == 1 && (floatval($this->getFacetExtraInfo($fieldName, "limitOneValueCoverage")) >= floatval($this->getFacetValueCount($fieldName, $facetValues[0]) / $this->getTotalHitCount()))) {
-			    continue;
+            if (!$returnHidden && $this->isFacetHidden($fieldName)) {
+                continue;
             }
-			if($this->getFacetExtraInfo($fieldName, $extraInfoKey) == $extraInfoValue || ($this->getFacetExtraInfo($fieldName, $extraInfoKey) == null && $default)) {
-				$selectedFacets[] = $fieldName;
-			}
-		}
+            $facetValues = $this->getFacetValues($fieldName);
+            if ($this->getFacetType($fieldName) != 'ranged' && ($this->getTotalHitCount() > 0 && sizeof($facetValues) == 1) && (floatval($this->getFacetExtraInfo($fieldName, "limitOneValueCoverage")) >= floatval($this->getFacetValueCount($fieldName, $facetValues[0]) / $this->getTotalHitCount()))) {
+                continue;
+            }
+            if ($this->getFacetExtraInfo($fieldName, $extraInfoKey) == $extraInfoValue || ($this->getFacetExtraInfo($fieldName, $extraInfoKey) == null && $default)) {
+                $selectedFacets[] = $fieldName;
+            }
+        }
 		return $selectedFacets;
 	}
 	
