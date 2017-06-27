@@ -50,7 +50,7 @@
                     }
                 });
                 StateManager.destroyPlugin('.tab10-filter-in-sidebar', 'ttFis');
-                StateManager.updatePlugin('.tab10-filter-in-sidebar', 'ttFis');
+                StateManager.addPlugin('.tab10-filter-in-sidebar', 'ttFis', ['m', 'l', 'xl']);
             }
             var snippetValues = {
                 "more": '{s namespace="boxalino/intelligence" name="filter/morevalues"}{/s}',

@@ -1,5 +1,4 @@
-{extends file="frontend/listing/listing_actions"}
-
+{extends file="parent:frontend/listing/filter/facet-value-list.tpl"}
 {if $bxFacets}
     {block name="frontend_listing_filter_facet_value_list"}
         <div class="filter-panel filter--property facet--{$facet->getFacetName()|escape:'htmlall'}"
