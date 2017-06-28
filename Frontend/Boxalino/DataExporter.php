@@ -315,6 +315,9 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
                 while ($facet_value = $stmt->fetch()) {
                     $value = $facet_value['objectdata'] == null ? trim($facet_value['value']) : trim(reset(unserialize($facet_value['objectdata'])));
                     if (isset($option_values[$facet_value['id']])) {
+                        if($value == '') {
+                            $value = trim($facet_value['value']);
+                        }
                         $option_values[$facet_value['id']]["value_{$language}"] = $value;
                         $mapped_option_values[$facet_value['id']]["value_{$language}"] = "{$value}_bx_{$facet_value['id']}";
                         continue;

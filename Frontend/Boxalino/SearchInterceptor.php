@@ -645,7 +645,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                         $key = 'products_brand';
                     }
                     if (!array_key_exists($key, $options)) {
-                        $options[$key] = ['label' => $facet->getLabel()];
+                        $options[$key] = ['label' => trim($facet->getLabel())];
                     }
                     $selected_value = [];
                     foreach ($facet->getValues() as $value) {
@@ -875,7 +875,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             switch ($fieldName) {
                 case 'discountedPrice':
                     $facet = $facets['price'];
-                    $label = $bxFacets->getFacetLabel($fieldName,$lang);
+                    $label = trim($bxFacets->getFacetLabel($fieldName,$lang));
                     $this->facetOptions[$label] = [
                         'fieldName' => $fieldName,
                         'expanded' => $bxFacets->isFacetExpanded($fieldName, false)
@@ -954,7 +954,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                 default:
                     if ((strpos($fieldName, 'products_optionID') !== false)) {
                         $facet = $facets[$fieldName];
-                        $this->facetOptions[$bxFacets->getFacetLabel($fieldName,$lang)] = [
+                        $this->facetOptions[trim($bxFacets->getFacetLabel($fieldName,$lang))] = [
                             'fieldName' => $fieldName,
                             'expanded' => $bxFacets->isFacetExpanded($fieldName, false)
                         ];
