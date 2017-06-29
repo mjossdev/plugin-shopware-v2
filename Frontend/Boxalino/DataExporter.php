@@ -766,7 +766,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
         $db = $this->db;
         $data = array();
         $sql = $db->select()
-            ->from(array('ac' => 's_articles_categories'), array())
+            ->from(array('ac' => 's_articles_categories_ro'), array())
             ->join(
                 array('d' => 's_articles_details'),
                 $this->qi('d.articleID') . ' = ' . $this->qi('ac.articleID') . ' AND ' .
@@ -1169,29 +1169,15 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
         $db = $this->db;
         $categories = array();
         $languages = $this->_config->getAccountLanguages($account);
-        foreach ($languages as $store_id => $language) {
-            $sql = $db->select()
-                ->from(array('s' => 's_core_shops'), array('id', 'category_id'))
-                ->where('s.id = ?', $store_id);
-            $root_category_id = $db->fetchRow($sql)['category_id'];
-
-            $select = $db->select()
-                ->from(array('c' => 's_categories'), array('id', 'parent', 'description', 'path'))
-                ->where('c.path IS NOT NULL')
-                ->where('c.id <> ?', 1)
-                ->where('c.path LIKE \'%|'.$root_category_id.'|%\'');
-
-            $result = $db->fetchAll($select);
-
-            foreach ($result as $r) {
-                $value = $r['description'];
-                $categories[$r['id']] = array('category_id' => $r['id'], 'parent_id' => $r['parent'], 'language' => $language);
-                foreach ($languages as $language) {
-                    $categories[$r['id']]['value_'.$language] = $value;
-                }
+        $select = $db->select()->from(array('c' => 's_categories'), array('id', 'parent', 'description', 'path'));
+        $result = $db->fetchAll($select);
+        foreach ($result as $r) {
+            $value = $r['description'];
+            $categories[$r['id']] = array('category_id' => $r['id'], 'parent_id' => $r['parent']);
+            foreach ($languages as $language) {
+                $categories[$r['id']]['value_' . $language] = $value;
             }
         }
-
         return $categories;
     }
 

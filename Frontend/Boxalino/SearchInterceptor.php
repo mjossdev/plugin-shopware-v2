@@ -230,12 +230,14 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                 if (!empty($category)) {
                     end($category);
                     $id = (int) key($category);
-                    $this->Request()->setParam("sCategory", $id);
-                    $criteria = $this->get('shopware_search.store_front_criteria_factory')
-                        ->createSearchCriteria($this->Request(), $context);
-                    $criteria->removeCondition("term");
-                    $criteria->removeBaseCondition("search");
-                    $facets['category'] = $this->createFacets($criteria, $context)['category'];
+                    if($id != Shopware()->Shop()->getCategory()->getId()) {
+                        $this->Request()->setParam("sCategory", $id);
+                        $criteria = $this->get('shopware_search.store_front_criteria_factory')
+                            ->createSearchCriteria($this->Request(), $context);
+                        $criteria->removeCondition("term");
+                        $criteria->removeBaseCondition("search");
+                        $facets['category'] = $this->createFacets($criteria, $context, 'category');
+                    }
                 }
                 $facets = $this->updateFacetsWithResult($facets);
             } else {
@@ -574,17 +576,25 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
      * @param \Shopware\Bundle\StoreFrontBundle\Struct\ShopContext $context
      * @return array
      */
-    protected function createFacets(Shopware\Bundle\SearchBundle\Criteria $criteria, Shopware\Bundle\StoreFrontBundle\Struct\ShopContext $context) {
+    protected function createFacets(Shopware\Bundle\SearchBundle\Criteria $criteria, Shopware\Bundle\StoreFrontBundle\Struct\ShopContext $context, $facet_type = null) {
         $facets = array();
 
-        foreach ($criteria->getFacets() as $facet) {
+        foreach ($criteria->getFacets() as $type => $facet) {
+
             $handler = $this->getFacetHandler($facet);
             if ($handler === null) continue;
+
             $result = $handler->generateFacet($facet, $criteria, $context);
             if (!$result) {
                 continue;
             }
+            if(!is_null($facet_type) && $type == $facet_type) {
+                return $result;
+            }
             $facets[$result->getFacetName()] = $result;
+        }
+        if(!is_null($facet_type)) {
+            throw new \Exception("Couldn't create facet for type: " . $facet_type);
         }
         $facetOptions = $facets['property']->getFacetResults();
         unset($facets['property']);
@@ -634,6 +644,8 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                             if ($value instanceof Shopware\Bundle\SearchBundle\FacetResult\TreeItem) {
                                 $id = $value->getId();
                             }
+                        } else {
+                            $id = Shopware()->Shop()->getCategory()->getId();
                         }
                         $options['category']['value'] = $id;
                     }
