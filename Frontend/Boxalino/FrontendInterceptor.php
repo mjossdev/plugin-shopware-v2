@@ -32,6 +32,7 @@ class Shopware_Plugins_Frontend_Boxalino_FrontendInterceptor
         switch ($this->Request()->getParam('controller')) {
             case 'detail':
                 $sArticle = $this->View()->sArticle;
+                if(is_null($sArticle))break;
                 if ($this->Config()->get('boxalino_detail_recommendation_ajax')) {
                     $this->View()->addTemplateDir($this->Bootstrap()->Path() . 'Views/emotion/');
                     $this->View()->extendsTemplate('frontend/plugins/boxalino/detail/index_ajax.tpl');

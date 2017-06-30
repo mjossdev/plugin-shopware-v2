@@ -73,6 +73,9 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         }
 
         $this->init($arguments);
+        if($this->Request()->getActionName() == 'productNavigation'){
+            return null;
+        }
         $viewData = $this->View()->getAssign();
         $catId = $this->Request()->getParam('sCategory');
         $streamId = $this->findStreamIdByCategoryId($catId);

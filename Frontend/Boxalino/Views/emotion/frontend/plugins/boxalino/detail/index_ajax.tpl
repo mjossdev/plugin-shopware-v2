@@ -17,7 +17,7 @@
                 })
             });
             $('#bx-loader').append(el);
-            var controller  = '{url controller=RecommendationSlider action=detail articleId=$sArticle.articleID sCategory=$sCategory}';
+            var controller  = '{url controller=RecommendationSlider action=detail articleId=$sArticle.articleID sCategory=$sArticle.categoryID}';
             $.ajax({
                 type: "GET",
                 url: controller
