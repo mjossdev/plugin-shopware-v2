@@ -34,7 +34,7 @@ class Shopware_Controllers_Frontend_RecommendationSlider extends Enlight_Control
             $exception = new \Exception("Request with empty parameters from : " . $_SERVER['HTTP_REFERER']);
             Shopware()->Plugins()->Frontend()->Boxalino()->logException($exception, __FUNCTION__, $this->request->getRequestUri());
             return;
-        } else if($id = '') {
+        } else if($id == '') {
             return;
         }
         $categoryId = $this->request->getParam('sCategory');
