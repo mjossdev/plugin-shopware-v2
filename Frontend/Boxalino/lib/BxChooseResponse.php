@@ -68,7 +68,47 @@ class BxChooseResponse
 		}
 		return $searchResult;
 	}
-	
+
+	public function getSearchResultHitVariable($searchResult, $hitId, $field) {
+
+	    if($searchResult) {
+            if($searchResult->hits) {
+                foreach ($searchResult->hits as $item) {
+                    if($item->values['id'] == $hitId) {
+                        return $item->$$field;
+                    }
+                }
+            } else if(isset($searchResult->hitsGroups)) {
+                foreach($searchResult->hitsGroups as $hitGroup) {
+                    if($hitGroup->groupValue == $hitId) {
+                        return $hitGroup->hits[0]->$field;
+                    }
+                }
+            }
+        }
+	    return null;
+    }
+
+	public function getSearchResultHitFieldValue($searchResult, $hitId, $fieldName=''){
+
+	    if($searchResult && $fieldName != '') {
+	        if($searchResult->hits) {
+                foreach ($searchResult->hits as $item) {
+                    if($item->values['id'] == $hitId) {
+                        return isset($item->values[$fieldName]) ? $item->values[$fieldName][0] : null;
+                    }
+                }
+            } else if(isset($searchResult->hitsGroups)) {
+	            foreach($searchResult->hitsGroups as $hitGroup) {
+	                if($hitGroup->groupValue == $hitId) {
+	                    return isset($hitGroup->hits[0]->values[$fieldName]) ? $hitGroup->hits[0]->values[$fieldName][0] : null;
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
 	public function getSearchResultHitIds($searchResult, $fieldId='id') {
 		$ids = array();
 		if($searchResult) {
@@ -84,6 +124,22 @@ class BxChooseResponse
 		}
         return $ids;
 	}
+
+	public function getHitExtraInfo($choice=null, $hitId = 0, $info_key='', $default_value = '', $count=0, $considerRelaxation=true, $maxDistance=10, $discardIfSubPhrases = true) {
+        $variant = $this->getChoiceResponseVariant($choice, $count);
+        $extraInfo = $this->getSearchResultHitVariable($this->getVariantSearchResult($variant, $considerRelaxation, $maxDistance, $discardIfSubPhrases), $hitId, 'extraInfo');
+        return (isset($extraInfo[$info_key]) ? $extraInfo[$info_key] : ($default_value != '' ? $default_value :  null));
+    }
+
+    public function getHitVariable($choice=null, $hitId = 0, $field='',  $count=0, $considerRelaxation=true, $maxDistance=10, $discardIfSubPhrases = true){
+        $variant = $this->getChoiceResponseVariant($choice, $count);
+        return $this->getSearchResultHitVariable($this->getVariantSearchResult($variant, $considerRelaxation, $maxDistance, $discardIfSubPhrases), $hitId, $field);
+    }
+
+    public function getHitFieldValue($choice=null, $hitId = 0,  $fieldName='',  $count=0, $considerRelaxation=true, $maxDistance=10, $discardIfSubPhrases = true){
+	    $variant = $this->getChoiceResponseVariant($choice, $count);
+        return $this->getSearchResultHitFieldValue($this->getVariantSearchResult($variant, $considerRelaxation, $maxDistance, $discardIfSubPhrases), $hitId, $fieldName);
+    }
 
     public function getHitIds($choice=null, $considerRelaxation=true, $count=0, $maxDistance=10, $fieldId='id', $discardIfSubPhrases = true) {
 
