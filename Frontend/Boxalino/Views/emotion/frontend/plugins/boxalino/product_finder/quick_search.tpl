@@ -109,7 +109,6 @@
             for(var fieldName in fields) {
                 var select = $('.'+fieldName).empty();
                 var optionValues = fields[fieldName];
-                console.log("new values for field : " + fieldName, optionValues);
                 optionValues.forEach(function(optionValue) {
                     select.append($('<option></option>').attr("value", optionValue).text(optionValue));
                 });

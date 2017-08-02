@@ -393,7 +393,6 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             'facetOptions' => $this->facetOptions
         ), $this->getSearchTemplateProperties($hitCount));
         $this->View()->assign($templateProperties);
-//        var_dump($templateProperties);exit;
         return false;
     }
 
@@ -1206,9 +1205,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
     private function convertFacetsToJson(){
         $json = [];
         $bxFacets =  $this->Helper()->getFacets();
-//        var_dump($bxFacets);exit;
         $fieldNames = $bxFacets->getGiftFinderFacets();
-//        var_dump($fieldNames);exit;
         if(!empty($fieldNames)) {
             $facet_info = ['label', 'icon', 'iconMap', 'visualisation', 'jsonDependencies', 'position', 'isSoftFacet', 'isQuickSearch', 'order', 'finderQuestion'];
             foreach ($fieldNames as $fieldName) {
