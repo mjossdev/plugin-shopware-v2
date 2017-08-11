@@ -735,6 +735,9 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         $fieldName = 'products_brand';
         $where_statement = '';
         $values = $bxFacets->getFacetValues($fieldName);
+        if(sizeof($values) == 0){
+            return;
+        }
         foreach ($values as $index => $value) {
             if($index > 0) {
                 $where_statement .= ' OR ';
@@ -825,8 +828,14 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
      * @return mixed
      */
     private function generateListItem($fieldName, $bxFacets, $facet, $lang) {
+        if(is_null($facet)) {
+            return;
+        }
         $option_id = end(explode('_', $fieldName));
         $values = $bxFacets->getFacetValues($fieldName);
+        if(sizeof($values) == 0) {
+            return;
+        }
         $shop_id  = Shopware()->Shop()->getId();
         $useTranslation = $this->useTranslation($shop_id);
         $result = $this->getFacetValuesResult($option_id, $values, $useTranslation, $shop_id);
@@ -960,20 +969,26 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                     break;
                 case 'products_brand':
                     $facet = $facets['manufacturer'];
-                    $this->facetOptions[$bxFacets->getFacetLabel($fieldName,$lang)] = [
-                        'fieldName' => $fieldName,
-                        'expanded' => $bxFacets->isFacetExpanded($fieldName, false)
-                    ];
-                    $filters[] = $this->generateManufacturerListItem($bxFacets, $facet, $lang);
+                    $returnFacet = $this->generateManufacturerListItem($bxFacets, $facet, $lang);
+                    if($returnFacet) {
+                        $this->facetOptions[$bxFacets->getFacetLabel($fieldName,$lang)] = [
+                            'fieldName' => $fieldName,
+                            'expanded' => $bxFacets->isFacetExpanded($fieldName, false)
+                        ];
+                        $filters[] = $returnFacet;
+                    }
                     break;
                 default:
                     if ((strpos($fieldName, 'products_optionID') !== false)) {
                         $facet = $facets[$fieldName];
-                        $this->facetOptions[trim($bxFacets->getFacetLabel($fieldName,$lang))] = [
-                            'fieldName' => $fieldName,
-                            'expanded' => $bxFacets->isFacetExpanded($fieldName, false)
-                        ];
-                        $filters[] = $this->generateListItem($fieldName, $bxFacets, $facet, $lang);
+                        $returnFacet = $this->generateListItem($fieldName, $bxFacets, $facet, $lang);
+                        if($returnFacet) {
+                            $this->facetOptions[$bxFacets->getFacetLabel($fieldName, $lang)] = [
+                                'fieldName' => $fieldName,
+                                'expanded' => $bxFacets->isFacetExpanded($fieldName, false)
+                            ];
+                            $filters[] = $returnFacet;
+                        }
                     }
                     break;
             }

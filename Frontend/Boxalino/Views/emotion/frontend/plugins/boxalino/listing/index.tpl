@@ -91,13 +91,43 @@
                     iconElement.trigger('click');
                 } else {
                     var options = $(this).parent().next().find('.filter-panel--option');
-                    var regMatch = new RegExp(escapeRegExp(text), 'gi');
+                    var regMatch = new RegExp(escapeRegExp(text), 'gi'),
+                        regMatch2 = new RegExp(escapeRegExp(text.slice(0, text.length-1)), 'gi');
                     $(this).parent().next().find('.show-more-values').hide();
                     options.each(function(i, e) {
-                        var label = $(e).find('label').text();
-                        var match = label.match(regMatch);
+                        var label = $(e).find('label').text(),
+                            match = null,
+                            m = label.match(regMatch),
+                            m2 = label.match(/\'/g);
+                        if(Array.isArray(m2)){
+                            if(m){
+                                match = m;
+                            }else {
+                                if(text.length > 1){
+                                    var quoteMatches = [],
+                                        reg =  /(\')/g;
+                                    while((m2 = reg.exec(label)) !== null) {
+                                        quoteMatches.push(m2);
+                                    }
+                                    var label2 = label.replace(reg, '');
+                                    quoteMatches.forEach(function (m) {
+                                        if(match === null){
+                                            while((m2 = regMatch2.exec(label2)) !== null) {
+                                                if(m2.index < m.index && match === null){
+                                                    match = label.slice(m2.index, m2.index + text.length+1);
+                                                }
+                                            }
+                                        }
+                                    });
+                                }
+                            }
+                        } else {
+                            if(m){
+                                match = m[0];
+                            }
+                        }
                         if(match) {
-                            $(e).find('label').html(label.replace(match[0], '<strong>'+match[0]+'</strong>'));
+                            $(e).find('label').html(label.replace(match, '<strong>'+match+'</strong>'));
                             $(e).show();
                         } else {
                             $(e).hide();
@@ -111,7 +141,13 @@
                 }
             });
             function escapeRegExp(text) {
-                return text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
+                text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
+                text = text.replace(/[a|\u00E0|\u00E1|\u00E2|\u00E3|\u00E4](?![^[]*\])/gi, '[a|ä|\u00E0|\u00E1|\u00E2|\u00E3|\u00E4]');
+                text = text.replace(/[(e|\u00E8|\u00E9|\u00EA|\u00EB)](?![^[]*\])/gi, '[e|é|\u00E8|\u00E9|\u00EA|\u00EB]');
+                text = text.replace(/[i|\u00EC|\u00ED|\u00EE|\u00EF](?![^[]*\])/gi, '[i|\u00EC|\u00ED|\u00EE|\u00EF]');
+                text = text.replace(/[o|\u00F2|\u00F3|\u00F4|\u00F5|\u00F6](?![^[]*\])/gi, '[o|\u00F2|\u00F3|\u00F4|\u00F5|\u00F6]');
+                text = text.replace(/[u|\u00F9|\u00FA|\u00FB|\u00FC](?![^[]*\])/gi, '[u|\u00F9|\u00FA|\u00FB|\u00FC]');
+                return text;
             }
             function expandFacets(facetOptions) {
                 var filters = $('#filter').find('.filter-panel');
