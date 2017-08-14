@@ -800,60 +800,67 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
 
         $countMax = 1000000;
         $limit = 1000;
-        $totalCount = 0;
-        $page = 1;
         $header = true;
         $main_properties = array();
         $data = array();
-        while ($countMax > $totalCount + $limit) {
-            $sql = $db->select()
-                ->from(array('s_articles'), $product_properties)
-                ->join(array('s_articles_details'), 's_articles_details.articleID = s_articles.id', array())
-                ->join(array('s_articles_attributes'), 's_articles_attributes.articledetailsID = s_articles_details.id', array())
-                ->joinLeft(array('s_articles_prices'), 's_articles_prices.articledetailsID = s_articles_details.id', array('price'))
-                ->where('s_articles.mode = ?', 0)
-                ->limit($limit, ($page - 1) * $limit);
-            if ($this->delta) {
-                $sql->where('s_articles.changetime > ?', $this->getLastDelta());
-            }
-
-            $stmt = $db->query($sql);
-            if ($stmt->rowCount()) {
-                while ($row = $stmt->fetch()) {
-
-                    if (is_null($row['price'])) {
-                        continue;
-                    }
-                    unset($row['price']);
-                    $row['purchasable'] = ($row['laststock'] == 1 && $row['instock'] == 0) ? 0 : 1;
-                    if ($this->delta && !isset($this->deltaIds[$row['articleID']])) {
-                        $this->deltaIds[$row['articleID']] = $row['articleID'];
-                    }
-                    $row['group_id'] = $row['articleID'];
-                    $data[] = $row;
-                    $totalCount++;
+        $categoryShopIds = $this->_config->getShopCategoryIds($account);
+        $main_shop_id = $this->_config->getAccountStoreId($account);
+        foreach ($this->_config->getAccountLanguages($account) as $shop_id => $language) {
+            $totalCount = 0;
+            $page = 1;
+            $category_id = $categoryShopIds[$shop_id];
+            while ($countMax > $totalCount + $limit) {
+                $sql = $db->select()
+                    ->from(array('s_articles'), $product_properties)
+                    ->join(array('s_articles_details'), 's_articles_details.articleID = s_articles.id', array())
+                    ->join(array('s_articles_attributes'), 's_articles_attributes.articledetailsID = s_articles_details.id', array())
+                    ->join(array('s_articles_categories'), 's_articles_categories.articleID = s_articles.id', array())
+                    ->joinLeft(array('s_articles_prices'), 's_articles_prices.articledetailsID = s_articles_details.id', array('price'))
+                    ->joinLeft(array('s_categories'), 's_categories.id = s_articles_categories.categoryID', array())
+                    ->where('s_articles.mode = ?', 0)
+                    ->where('s_categories.path LIKE \'%|' . $category_id . '|%\'')
+                    ->limit($limit, ($page - 1) * $limit);
+                if ($this->delta) {
+                    $sql->where('s_articles.changetime > ?', $this->getLastDelta());
                 }
-            }else{
-                if ($totalCount == 0) {
-                    return false;
-                }
-                break;
-            }
 
-            if ($header && count($data) > 0) {
-                $main_properties = array_keys(end($data));
-                $data = array_merge(array(array_keys(end($data))), $data);
-                $header = false;
+                $stmt = $db->query($sql);
+                if ($stmt->rowCount()) {
+                    while ($row = $stmt->fetch()) {
+                        if (is_null($row['price'])) {
+                            continue;
+                        }
+                        unset($row['price']);
+                        $row['purchasable'] = ($row['laststock'] == 1 && $row['instock'] == 0) ? 0 : 1;
+                        if ($this->delta && !isset($this->deltaIds[$row['articleID']])) {
+                            $this->deltaIds[$row['articleID']] = $row['articleID'];
+                        }
+                        $row['group_id'] = $row['articleID'];
+                        $row['shop_id'] = $shop_id;
+                        $data[] = $row;
+                        $totalCount++;
+                    }
+                } else {
+                    if ($totalCount == 0 && $main_shop_id == $shop_id) {
+                        return false;
+                    }
+                    break;
+                }
+
+                if ($header && count($data) > 0) {
+                    $main_properties = array_keys(end($data));
+                    $data = array_merge(array(array_keys(end($data))), $data);
+                    $header = false;
+                }
+                $files->savePartToCsv('products.csv', $data);
+                $page++;
             }
-            $files->savePartToCsv('products.csv', $data);
-            $page++;
         }
-
         $mainSourceKey = $this->bxData->addMainCSVItemFile($files->getPath('products.csv'), 'id');
         $this->bxData->addSourceStringField($mainSourceKey, 'bx_purchasable', 'purchasable');
         $this->bxData->addSourceStringField($mainSourceKey, 'bx_type', 'id');
-        $this->bxData->addFieldParameter($mainSourceKey,'bx_type', 'pc_fields', 'CASE WHEN group_id IS NULL THEN "blog" ELSE "product" END AS final_value');
-        $this->bxData->addFieldParameter($mainSourceKey,'bx_type', 'multiValued', 'false');
+        $this->bxData->addFieldParameter($mainSourceKey, 'bx_type', 'pc_fields', 'CASE WHEN group_id IS NULL THEN "blog" ELSE "product" END AS final_value');
+        $this->bxData->addFieldParameter($mainSourceKey, 'bx_type', 'multiValued', 'false');
 
         foreach ($main_properties as $property) {
 
@@ -870,41 +877,6 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
                 $this->bxData->addFieldParameter($mainSourceKey, $property, 'multiValued', 'false');
             }
         }
-
-        //export shop id
-        $categoryShopIds = $this->_config->getShopCategoryIds($account);
-        $header = true;
-        foreach ($this->_config->getAccountLanguages($account) as $shop_id => $language) {
-            $category_id = $categoryShopIds[$shop_id];
-            $sql = $db->select()
-                ->from(array('a' => 's_articles'), array())
-                ->join(array('a_d' => 's_articles_details'), 'a_d.articleID = a.id', array('id'))
-                ->join(array('a_c' => 's_articles_categories'), 'a_c.articleID = a.id', array())
-                ->joinLeft(array('c' => 's_categories'), 'c.id = a_c.categoryID', array('c.path'))
-                ->where('c.path LIKE \'%|' . $category_id . '|%\'')
-                ->where('a.mode = ?', 0);
-            if ($this->delta) {
-                $sql->where('a.id IN(?)', $this->deltaIds);
-            }
-            $data = array();
-            $stmt = $db->query($sql);
-            if ($stmt->rowCount()) {
-                while ($row = $stmt->fetch()) {
-                    $data[$row['id']] = ['id' => $row['id'], 'shop_id' => $shop_id];
-                }
-            }
-            if ($header) {
-                if(sizeof($data) < 1) {
-                    $data = (array(array('shop_id', 'id')));
-                } else {
-                    $data = array_merge(array(array_keys(end($data))), $data);
-                }
-                $header = false;
-            }
-            $files->savepartToCsv('product_shop.csv', $data);
-        }
-        $attributeSourceKey = $this->bxData->addCSVItemFile($files->getPath('product_shop.csv'), 'id');
-        $this->bxData->addSourceStringField($attributeSourceKey, "shop_id", "shop_id");
         return true;
     }
 
