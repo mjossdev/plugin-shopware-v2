@@ -367,7 +367,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
             }else{
                 $data = array(array("id", "{$facet_name}_id"));
             }
-            
+
             $second_reference = $data;
             $files->savepartToCsv("product_{$facet_name}.csv", $data);
             $attributeSourceKey = $this->bxData->addCSVItemFile($files->getPath("product_{$facet_name}.csv"), 'id');
@@ -385,7 +385,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
      * @param $id
      * @return mixed
      */
-    protected function getShopCategoryIds($id) {
+    protected function getShopCategoryIdsQuery($id) {
 
         if (!array_key_exists($id, $this->rootCategories)) {
             $db = $this->db;
@@ -408,6 +408,21 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
         return $this->rootCategories[$id];
     }
 
+    protected function getShopCategoryIds($id) {
+        $shopCat = array();
+        $db = $this->db;
+        $sql = $db->select()
+            ->from('s_core_shops', array('id', 'category_id'))
+            ->where($this->qi('id') . ' = ?', $id)
+            ->orWhere($this->qi('main_id') . ' = ?', $id);
+        $stmt = $db->query($sql);
+        if($stmt->rowCount()) {
+            while($row = $stmt->fetch()) {
+                $shopCat[$row['id']] = $row['category_id'];
+            }
+        }
+        return $shopCat;
+    }
     /**
      * @param $account
      * @param $files
@@ -419,6 +434,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
             'display_date', 'category_id', 'template', 'meta_keywords', 'meta_description', 'meta_title',
             'assigned_articles', 'tags', 'shop_id');
         $id = $this->_config->getAccountStoreId($account);
+        $shopCategories = $this->getShopCategoryIds($id);
         $data = array();
         $sql = $db->select()
             ->from(array('b' => 's_blog'),
@@ -436,19 +452,23 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
             ->join(
                 array('c' => 's_categories'),
                 $this->qi('c.id') . ' = ' . $this->qi('b.category_id') .
-                $this->getShopCategoryIds($id),
+                $this->getShopCategoryIdsQuery($id),
                 array('path')
             )
             ->group('b.id');
-
         $stmt = $db->query($sql);
         while ($row = $stmt->fetch()) {
-            $id = explode('|', $row['path']);
+            $blog_shop_id = $id;
+            foreach ($shopCategories as $shop_id => $cat_id) {
+                if(strpos($row['path'], $cat_id) !== false) {
+                    $blog_shop_id = $shop_id;
+                    break;
+                }
+            }
             unset($row['path']);
-            $row['shop_id'] = $id[count($id) - 2];
+            $row['shop_id'] = $blog_shop_id;
             $data[] = $row;
         }
-
         if (count($data)) {
             $data = array_merge(array(array_keys(end($data))), $data);
         } else {

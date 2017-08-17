@@ -240,7 +240,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         $filters[] = new \com\boxalino\bxclient\v1\BxFilter('products_bx_type', array($type));
         if ($type == 'blog') {
             $filters[] = new \com\boxalino\bxclient\v1\BxFilter('products_blog_active', array('1'));
-            $filters[] = new \com\boxalino\bxclient\v1\BxFilter('products_blog_shop_id', array(Shopware()->Shop()->getCategory()->getId()));
+            $filters[] = new \com\boxalino\bxclient\v1\BxFilter('products_blog_shop_id', array(Shopware()->Shop()->getId()));
         }
         if ($type == 'product') {
             $filters[] = new \com\boxalino\bxclient\v1\BxFilter('products_active', array('1'));
