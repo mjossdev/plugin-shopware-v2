@@ -37,17 +37,24 @@ class Shopware_Plugins_Frontend_Boxalino_GenericRecommendations
      */
     public function getArticlesForChoice($choiceId, $amount = 5, $context = array(), $offset = 0)
     {
+
         $choiceIds = is_array($choiceId) ? $choiceId : array($choiceId);
         if (array_key_exists('contextItem', $context)) {
             $id = $context['contextItem'];
             unset($context['contextItem']);
         } else {
-            $id = 0;
+            $id = [];
         }
-        $result = $this->helper->findRecommendations(
-            $id, 'mainProduct', $choiceIds, $amount, $offset, $context
-        );
-        if (is_array($choiceId)) return $result;
-        return current($result);
+        foreach ($choiceIds as $choiceId){
+            $this->helper->getRecommendation($choiceId, $amount, $amount, $offset, $id, 'product', false);
+        }
+        $results = [];
+        foreach ($choiceIds as $choiceId){
+            $hitIds =  $this->helper->getRecommendation($choiceId);
+            $result = $this->helper->getLocalArticles($hitIds);
+            if(!is_array($choiceId)) return $result;
+            $results[] = $result;
+        }
+        return $results;
     }
 }
