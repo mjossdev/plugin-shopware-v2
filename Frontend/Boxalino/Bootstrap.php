@@ -410,7 +410,22 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
         }
     }
 
+    private function checkForOldConfig(){
+        $db = Shopware()->Db();
+        $sql = $db->select()->from(array('c_c_e'=> 's_core_config_elements'))
+            ->join(array('c_c_f' => 's_core_config_forms'), 'c_c_e.form_id = c_c_f.id')
+            ->where('c_c_f.name = ?', 'Boxalino')
+            ->where('c_c_e.name = ?', 'boxalino_form_username');
+        $stmt = $db->query($sql);
+        if($stmt->rowCount()) {
+            $row = $stmt->fetch();
+            $sql = 'DELETE FROM s_core_config_elements WHERE s_core_config_elements.form_id = ?';
+            $db->query($sql, array($row['form_id']));
+        }
+    }
+
     public function createConfiguration() {
+        $this->checkForOldConfig();
         $scopeShop = Shopware\Models\Config\Element::SCOPE_SHOP;
         $scopeLocale = Shopware\Models\Config\Element::SCOPE_LOCALE;
 
