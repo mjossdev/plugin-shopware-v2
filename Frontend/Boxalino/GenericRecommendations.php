@@ -37,28 +37,29 @@ class Shopware_Plugins_Frontend_Boxalino_GenericRecommendations
      */
     public function getArticlesForChoice($choiceId, $amount = 5, $context = array(), $offset = 0)
     {
-
-        $choiceIds = is_array($choiceId) ? $choiceId : array($choiceId);
-        
-        if (array_key_exists('contextItem', $context)) {
-            $id = $context['contextItem'];
-            $type = 'product';
-        } else if(array_key_exists('category_id', $context)) {
-            $id = $context['category_id'];
-            $type = 'category';
-        } else {
-            $id = null;
-            $type = '';
-        }
-        foreach ($choiceIds as $choiceId){
-            $this->helper->getRecommendation($choiceId, $amount, $amount, $offset, $id, $type, false);
-        }
         $results = [];
-        foreach ($choiceIds as $choiceId){
-            $hitIds =  $this->helper->getRecommendation($choiceId);
-            $result = $this->helper->getLocalArticles($hitIds);
-            if(!is_array($choiceId)) return $result;
-            $results[] = $result;
+        if(Shopware()->Config()->get('boxalino_active')) {
+            $choiceIds = is_array($choiceId) ? $choiceId : array($choiceId);
+            if (array_key_exists('contextItem', $context)) {
+                $id = $context['contextItem'];
+                $type = 'product';
+            } else if(array_key_exists('category_id', $context)) {
+                $id = $context['category_id'];
+                $type = 'category';
+            } else {
+                $id = null;
+                $type = '';
+            }
+            foreach ($choiceIds as $choiceId){
+                $this->helper->getRecommendation($choiceId, $amount, $amount, $offset, $id, $type, false);
+            }
+
+            foreach ($choiceIds as $choiceId){
+                $hitIds =  $this->helper->getRecommendation($choiceId);
+                $result = $this->helper->getLocalArticles($hitIds);
+                if(!is_array($choiceId)) return $result;
+                $results[] = $result;
+            }
         }
         return $results;
     }
