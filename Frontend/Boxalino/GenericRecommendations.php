@@ -39,14 +39,19 @@ class Shopware_Plugins_Frontend_Boxalino_GenericRecommendations
     {
 
         $choiceIds = is_array($choiceId) ? $choiceId : array($choiceId);
+        
         if (array_key_exists('contextItem', $context)) {
             $id = $context['contextItem'];
-            unset($context['contextItem']);
+            $type = 'product';
+        } else if(array_key_exists('category_id', $context)) {
+            $id = $context['category_id'];
+            $type = 'category';
         } else {
-            $id = [];
+            $id = null;
+            $type = '';
         }
         foreach ($choiceIds as $choiceId){
-            $this->helper->getRecommendation($choiceId, $amount, $amount, $offset, $id, 'product', false);
+            $this->helper->getRecommendation($choiceId, $amount, $amount, $offset, $id, $type, false);
         }
         $results = [];
         foreach ($choiceIds as $choiceId){
