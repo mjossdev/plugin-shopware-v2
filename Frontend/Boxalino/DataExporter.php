@@ -798,11 +798,30 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
         }
 
         $stmt = $db->query($sql);
+        $doneCases = array();
+        $header = true;
         while ($row = $stmt->fetch()) {
+            $key = $row['id'] . '_' . $row['categoryID'];
+            if(isset($doneCases[$key])) {
+                continue;
+            }
+            $doneCases[$key] = true;
+            if($header) {
+                $data[] = array_keys($row);
+                $header = false;
+            }
             $data[] = $row;
+            if(sizeof($data) > 1000) {
+                $files->savePartToCsv('product_categories.csv', $data);
+                $data = array();
+                $doneCases = array();
+            }
         }
-        $data = array_merge(array(array_keys(end($data))), $data);
-        $files->savePartToCsv('product_categories.csv', $data);
+        if(sizeof($data) > 0) {
+            $files->savePartToCsv('product_categories.csv', $data);
+            $data = array();
+            $doneCases = array();
+        }
         $productToCategoriesSourceKey = $this->bxData->addCSVItemFile($files->getPath('product_categories.csv'), 'id');
         $this->bxData->setCategoryField($productToCategoriesSourceKey, 'categoryID');
     }
@@ -825,7 +844,9 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
         $data = array();
         $categoryShopIds = $this->_config->getShopCategoryIds($account);
         $main_shop_id = $this->_config->getAccountStoreId($account);
+        $shopProductIds = array();
         foreach ($this->_config->getAccountLanguages($account) as $shop_id => $language) {
+
             $totalCount = 0;
             $page = 1;
             $category_id = $categoryShopIds[$shop_id];
@@ -839,7 +860,8 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
                     ->joinLeft(array('s_categories'), 's_categories.id = s_articles_categories.categoryID', array())
                     ->where('s_articles.mode = ?', 0)
                     ->where('s_categories.path LIKE \'%|' . $category_id . '|%\'')
-                    ->limit($limit, ($page - 1) * $limit);
+                    ->limit($limit, ($page - 1) * $limit)
+                    ->group('s_articles_details.id');
                 if ($this->delta) {
                     $sql->where('s_articles.changetime > ?', $this->getLastDelta());
                 }
@@ -847,6 +869,10 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
                 $stmt = $db->query($sql);
                 if ($stmt->rowCount()) {
                     while ($row = $stmt->fetch()) {
+                        if(isset($shopProductIds[$row['id']])) {
+                            continue;
+                        }
+                        $shopProductIds[$row['id']] = true;
                         if (is_null($row['price'])) {
                             continue;
                         }
@@ -876,6 +902,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
                 $page++;
             }
         }
+        $shopProductIds = array();
         $mainSourceKey = $this->bxData->addMainCSVItemFile($files->getPath('products.csv'), 'id');
         $this->bxData->addSourceStringField($mainSourceKey, 'bx_purchasable', 'purchasable');
         $this->bxData->addSourceStringField($mainSourceKey, 'bx_type', 'id');
