@@ -51,11 +51,13 @@ class Shopware_Plugins_Frontend_Boxalino_GenericRecommendations
                 $type = '';
             }
             foreach ($choiceIds as $choiceId){
+                $this->helper->flushResponses();
+                $this->helper->resetRequests();
                 $this->helper->getRecommendation($choiceId, $amount, $amount, $offset, $id, $type, false);
             }
 
             foreach ($choiceIds as $choiceId){
-                $hitIds =  $this->helper->getRecommendation($choiceId);
+                $hitIds = $this->helper->getRecommendation($choiceId);
                 $result = $this->helper->getLocalArticles($hitIds);
                 if(!is_array($choiceId)) return $result;
                 $results[] = $result;
