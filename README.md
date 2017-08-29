@@ -44,7 +44,7 @@ If you need more information on any of these topics, please don't hesitate to co
 
 ## Documentation
 
-http://documentation.boxalino.com/boxalino-shopware-plugin/
+The latest documentation is available upon request.
 
 ## Contact us!
 
