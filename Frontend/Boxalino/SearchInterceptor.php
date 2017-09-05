@@ -99,7 +99,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         $queryText = $this->Request()->getParams()['q'];
         $options = $this->getFacetConfig($facets);
         $this->Helper()->addSearch($queryText, $pageOffset, $hitCount, 'product', $sort, $options, $filter);
-        $articles = $this->Helper()->getLocalArticles($this->Helper()->getEntitiesIds());
+        $articles = $this->Helper()->getLocalArticles($this->Helper()->getHitFieldValues('products_ordernumber'));
         $viewData['sArticles'] = $articles;
         if ($listingCount) {
             $this->Controller()->Response()->setBody('{"totalCount":' . $this->Helper()->getTotalHitCount() . '}');
@@ -135,12 +135,12 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         $criteria->removeBaseCondition("search");
         $facets = $this->createFacets($criteria, $context);
         $options = $this->getFacetConfig($facets);
-        $sort =  $this->getSortOrder($criteria, $viewData['sSort'], true);
+        $sort = $this->getSortOrder($criteria, $viewData['sSort'], true);
         $hitCount = $criteria->getLimit();
         $pageOffset = $criteria->getOffset();
         $this->Helper()->addSearch('', $pageOffset, $hitCount, 'product', $sort, $options, $filter);
         $facets = $this->updateFacetsWithResult($facets);
-        $articles = $this->Helper()->getLocalArticles($this->Helper()->getEntitiesIds());
+        $articles = $this->Helper()->getLocalArticles($this->Helper()->getHitFieldValues('products_ordernumber'));
         $this->View()->addTemplateDir($this->Bootstrap()->Path() . 'Views/emotion/');
         if ($this->Config()->get('boxalino_navigation_sorting') == true) {
             $this->View()->extendsTemplate('frontend/plugins/boxalino/listing/actions/action-sorting.tpl');
@@ -227,7 +227,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                     $corrected = true;
                     $term = $this->Helper()->getCorrectedQuery();
                 }
-                $ids = $this->Helper()->getEntitiesIds();
+                $ids = $this->Helper()->getHitFieldValues('products_ordernumber');
                 $articles = $this->Helper()->getLocalArticles($ids);
                 $category = $this->Helper()->getFacets()->getParentCategories();
                 if (!empty($category)) {

@@ -31,7 +31,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
     }
 
     public function getVersion() {
-        return '1.4.15';
+        return '1.4.16';
     }
 
     public function getInfo() {
@@ -432,7 +432,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
         $dir = __DIR__ . '/config.json';
         $fields = json_decode(file_get_contents($dir), true);
         $form = $this->Form();
-        foreach($fields as $f) {
+        foreach($fields as $i => $f) {
             $type = 'text';
             $name = 'boxalino_' . $f['name'];
             if (array_key_exists('type', $f)) {
@@ -450,6 +450,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
             if ($present) {
                 $f['value'] = $present->getValue();
             }
+            $f['position'] = $i;
             $form->setElement($type, $name, $f);
         }
     }

@@ -151,7 +151,7 @@ class BxChooseResponse
 		$facets = $this->getRequestFacets($choice);
 
 		if(empty($facets) || $searchResult == null){
-			return new \com\boxalino\bxclient\v1\BxFacets();;
+			return new \com\boxalino\bxclient\v1\BxFacets();
 		}
 		$facets->setSearchResults($searchResult);
 		return $facets;

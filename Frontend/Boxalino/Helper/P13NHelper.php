@@ -246,6 +246,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
             $filters[] = new \com\boxalino\bxclient\v1\BxFilter('products_active', array('1'));
             $filters[] = new \com\boxalino\bxclient\v1\BxFilter('products_bx_parent_active', array('1'));
             $shop_id = Shopware()->Shop()->getId();
+            $shop_id = $this->config->get('boxalino_overwrite_shop', $shop_id);
             $filters[] = new \com\boxalino\bxclient\v1\BxFilter('products_shop_id', array($shop_id));
             if ($query == '' && !$recommendation) {
                 if(Shopware()->Shop()->getCategory()->getId() != $this->Request()->getParam('sCategory')) {
@@ -273,7 +274,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         $product_limit = $this->config->get('boxalino_product_suggestion_limit', 3);
         $searches = ($with_blog === false) ? array('product') : array('product','blog');
         $bxRequests = array();
-        foreach ($searches as $search){
+        foreach ($searches as $i => $search){
             $bxRequest = new \com\boxalino\bxclient\v1\BxAutocompleteRequest($this->getShortLocale(),
                 $queryText, $textual_Limit, $product_limit, $auto_complete_choice,
                 $search_choice
@@ -281,7 +282,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
 
             $searchRequest = $bxRequest->getBxSearchRequest();
             $return_fields = $this->getReturnFields($search);
-            $searchRequest->setReturnFields(array_merge(array($this->getEntityIdFieldName($search)), $return_fields));
+            $searchRequest->setReturnFields($return_fields);
             $searchRequest->setGroupBy($this->getEntityIdFieldName($search));
             $searchRequest->setFilters($this->getSystemFilters($search));
             $bxRequests[] = $bxRequest;
@@ -294,8 +295,10 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
 
         foreach ($searches as $index => $search) {
             $bxAutocompleteResponse = $bxAutocompleteResponses[$index];
-
             if ($bxAutocompleteResponse->getResponse()->prefixSearchResult->totalHitCount == 0 && $index == 0) {
+                if($no_result) {
+                    break;
+                }
                 self::$bxClient->flushResponses();
                 $template_properties = $this->autocomplete("", false, true);
             } else {
@@ -321,6 +324,19 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         return $blogs;
     }
 
+    protected function getHitIdsFromAutocompleteResponse($response, $type, $field = 'id', $choice = null) {
+        $ids = [];
+        if($type == 'product') {
+            $choice = is_null($choice) ? $this->currentSearchChoice : $choice;
+            $ids = $this->convertToFieldArray(
+                $response->getHitFieldValues([$field], $choice, true, 0),
+                $field);
+        } else {
+            $ids = $response->getHitIds($this->currentSearchChoice, true, 0, 10);
+        }
+        return $ids;
+    }
+
     /**
      * @param $autocompleteResponse
      * @param $queryText
@@ -331,7 +347,8 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
     protected function createAjaxData($autocompleteResponse, $queryText, $type = 'product', $no_result = false) {
 
         if ($no_result === true) {
-            $sResults = $this->getLocalArticles($autocompleteResponse->getBxSearchResponse()->getHitIds("noresults", true, 0, 10, $this->getEntityIdFieldName('product')));
+            $ids = $this->getHitIdsFromAutocompleteResponse($autocompleteResponse->getBxSearchResponse(), $type, 'products_ordernumber', 'noresults');
+            $sResults = $this->getLocalArticles($ids);
             $router = Shopware()->Front()->Router();
             foreach ($sResults as $key => $result) {
                 $sResults[$key]['name'] = $result['articleName'];
@@ -355,18 +372,17 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
             $hits = $autocompleteResponse->getTextualSuggestionTotalHitCount($suggestion);
             $suggestions[] = array('text' => $suggestion, 'html' => $autocompleteResponse->getTextualSuggestionHighlighted($suggestion), 'hits' => $hits);
             if ($i == 0) {
-                if (count($autocompleteResponse->getBxSearchResponse()->getHitIds($choice, true, 0, 10, $this->getEntityIdFieldName('product'))) == 0) {
-                    $hitIds = $autocompleteResponse->getBxSearchResponse($suggestion)->getHitIds($choice, true, 0, 10, $this->getEntityIdFieldName('product'));
+                if (count($autocompleteResponse->getBxSearchResponse()->getHitIds($choice, true, 0, 10)) == 0) {
+                    $hitIds = $this->getHitIdsFromAutocompleteResponse($autocompleteResponse->getBxSearchResponse($suggestion), $type, 'products_ordernumber');
                 }
             }
             if ($suggestion == $queryText) {
-                $hitIds = $autocompleteResponse->getBxSearchResponse($suggestion)->getHitIds($choice, true, 0, 10, $this->getEntityIdFieldName('product'));
+                $hitIds = $this->getHitIdsFromAutocompleteResponse($autocompleteResponse->getBxSearchResponse($suggestion), $type, 'products_ordernumber');
             }
         }
         if (empty($hitIds)) {
-            $hitIds = $autocompleteResponse->getBxSearchResponse()->getHitIds($choice, true, 0, 10, $this->getEntityIdFieldName('product'));
+            $hitIds = $this->getHitIdsFromAutocompleteResponse($autocompleteResponse->getBxSearchResponse(), $type, 'products_ordernumber');
         }
-
         if ($type == 'product') {
             $sResults = $this->getLocalArticles($hitIds);
             $router = Shopware()->Front()->Router();
@@ -423,7 +439,15 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
     public function getResponse(){
         return self::$bxClient->getResponse();
     }
-    
+
+    public function convertToFieldArray($values, $field) {
+        $returnValues = [];
+        foreach ($values as $value) {
+            $returnValues[] = $value[$field][0];
+        }
+        return $returnValues;
+    }
+
     /**
      * @param $choiceId
      * @param int $max
@@ -462,7 +486,10 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
             }
             return array();
         }
-        return  self::$bxClient->getResponse()->getHitIds($choiceId, true, 0, 10, $this->getEntityIdFieldName('product'));
+        $values = $this->convertToFieldArray(
+            self::$bxClient->getResponse()->getHitFieldValues(['products_ordernumber'], $choiceId, true, 0),
+            'products_ordernumber');
+        return $values;
     }
 
     /**
@@ -479,11 +506,6 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         self::$bxClient->resetRequests();
     }
 
-    public function getFieldsValues($type = "product", $field = 'id') {
-
-        $count = array_search($type, self::$choiceContexts[$this->currentSearchChoice]);
-        return self::$bxClient->getResponse()->getHitIds($this->currentSearchChoice, true, $count, 10, $field);
-    }
     /**
      * @param string $type
      * @return mixed
@@ -492,6 +514,19 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
 
         $count = array_search($type, self::$choiceContexts[$this->currentSearchChoice]);
         return self::$bxClient->getResponse()->getHitIds($this->currentSearchChoice, true, $count, 10, $this->getEntityIdFieldName($type));
+    }
+
+    /**
+     * @param $field
+     * @param string $type
+     * @return array
+     */
+    public function getHitFieldValues($field, $type = "product") {
+        $count = array_search($type, self::$choiceContexts[$this->currentSearchChoice]);
+        $values = $this->convertToFieldArray(
+            self::$bxClient->getResponse()->getHitFieldValues([$field], $this->currentSearchChoice, true, $count),
+            $field);
+        return $values;
     }
 
     /**
@@ -664,7 +699,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         if (empty($ids)) {
             return array();
         }
-        $ids = $this->convertIds($ids);
+//        $ids = $this->convertIds($ids);
         $unsortedArticles = Shopware()->Container()->get('legacy_struct_converter')->convertListProductStructList(
             Shopware()->Container()->get('shopware_storefront.list_product_service')->getList(
                 $ids,
