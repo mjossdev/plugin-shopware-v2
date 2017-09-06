@@ -807,7 +807,8 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
                     ->join(array('a_c' => 's_articles_categories'), 'a_c.articleID = a.articleID', array())
                     ->joinLeft(array('c' => 's_categories'), 'c.id = a_c.categoryID', array())
                     ->where('c.path LIKE \'%|' . $category_id . '|%\'')
-                    ->limit($limit, ($page - 1) * $limit);
+                    ->limit($limit, ($page - 1) * $limit)
+                    ->order('a.id');
                 if ($this->delta) {
                     $sql->where('a.articleID IN(?)', $this->deltaIds);
                 }
@@ -905,7 +906,8 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
                     )
                     ->joinLeft(array('c' => 's_categories'), 'ac.categoryID = c.id', array())
                     ->where('c.path LIKE \'%|' . $category_id . '|%\'')
-                    ->limit($limit, ($page -1) * $limit);
+                    ->limit($limit, ($page -1) * $limit)
+                    ->order('ac.id');
                 if ($this->delta) {
                     $sql->where('d.articleID IN(?)', $this->deltaIds);
                 }
@@ -971,7 +973,8 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
                     ->where('s_articles.mode = ?', 0)
                     ->where('s_categories.path LIKE \'%|' . $category_id . '|%\'')
                     ->limit($limit, ($page - 1) * $limit)
-                    ->group('s_articles_details.id');
+                    ->group('s_articles_details.id')
+                    ->order('s_articles.id');
                 if ($this->delta) {
                     $sql->where('s_articles.changetime > ?', $this->getLastDelta());
                 }
