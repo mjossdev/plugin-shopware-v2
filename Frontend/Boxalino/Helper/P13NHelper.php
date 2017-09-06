@@ -245,8 +245,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         if ($type == 'product') {
             $filters[] = new \com\boxalino\bxclient\v1\BxFilter('products_active', array('1'));
             $filters[] = new \com\boxalino\bxclient\v1\BxFilter('products_bx_parent_active', array('1'));
-            $shop_id = Shopware()->Shop()->getId();
-            $shop_id = $this->config->get('boxalino_overwrite_shop', $shop_id);
+            $shop_id = $this->config->get('boxalino_overwrite_shop') != '' ? (int) $this->config->get('boxalino_overwrite_shop') : Shopware()->Shop()->getId();
             $filters[] = new \com\boxalino\bxclient\v1\BxFilter('products_shop_id', array($shop_id));
             if ($query == '' && !$recommendation) {
                 if(Shopware()->Shop()->getCategory()->getId() != $this->Request()->getParam('sCategory')) {
