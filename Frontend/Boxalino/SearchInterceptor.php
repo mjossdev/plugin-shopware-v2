@@ -212,7 +212,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         if ($this->Helper()->areThereSubPhrases() && $sub_phrase_limit > 0) {
             $sub_phrase_queries = array_slice(array_filter($this->Helper()->getSubPhrasesQueries()), 0, $sub_phrase_limit);
             foreach ($sub_phrase_queries as $query){
-                $ids = array_slice($this->Helper()->getSubPhraseEntitiesIds($query), 0, $config->get('boxalino_search_subphrase_product_limit'));
+                $ids = array_slice($this->Helper()->getSubPhraseFieldValues($query, 'products_ordernumber'), 0, $config->get('boxalino_search_subphrase_product_limit'));
                 $suggestion_articles = [];
                 if (count($ids) > 0) {
                     $suggestion_articles = $this->Helper()->getLocalArticles($ids);

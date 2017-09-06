@@ -540,6 +540,21 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
     }
 
     /**
+     * @param $queryText
+     * @param $field
+     * @param string $type
+     * @return array
+     */
+    public function getSubPhraseFieldValues($queryText, $field, $type = "product"){
+        $count = array_search($type, self::$choiceContexts[$this->currentSearchChoice]);
+        $values = $this->convertToFieldArray(
+            self::$bxClient->getResponse()->getSubPhraseHitFieldValues($queryText, [$field], $this->currentSearchChoice, $count),
+            $field);
+        return $values;
+
+    }
+
+    /**
      * @param string $type
      * @return mixed
      */
