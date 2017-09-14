@@ -53,8 +53,8 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         Enlight()->Plugins()->Controller()->Json()->setPadding();
 
         $term = $this->getSearchTerm();
-        if (empty($term)) {
-            return false;
+        if (empty($term) || strlen($term) < $this->Config()->get('MinSearchLenght')) {
+            return;
         }
 
         $with_blog = $this->Config()->get('boxalino_blog_search_enabled');
