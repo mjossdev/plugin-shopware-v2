@@ -31,7 +31,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
     }
 
     public function getVersion() {
-        return '1.4.16';
+        return '1.5.0';
     }
 
     public function getInfo() {
@@ -286,7 +286,12 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
             return $data;
         }
         $emotionRepository = Shopware()->Models()->getRepository('Shopware\Models\Emotion\Emotion');
-        $categoryId = $args->getSubject()->getEmotion($emotionRepository)[0]['categories'][0]['id'];
+        if(version_compare(Shopware::VERSION, '5.3.0', '>=')){
+            $emotionModel = $emotionRepository->findOneBy(array('id' => $args['element']['emotionId']));
+            $categoryId = $emotionModel->getCategories()->first()->getId();
+        } else {
+            $categoryId = $args->getSubject()->getEmotion($emotionRepository)[0]['categories'][0]['id'];
+        }
         $query = array(
             'controller' => 'RecommendationSlider',
             'module' => 'frontend',
@@ -308,8 +313,6 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
             }
         }
         $data["ajaxFeed"] = $url;
-        Shopware()->PluginLogger()->info("component match:: " . var_export($args['element']['component'], true));
-        Shopware()->PluginLogger()->info("result data:: " . var_export($data, true));
         return $data;
     }
 

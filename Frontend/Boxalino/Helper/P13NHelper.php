@@ -267,13 +267,22 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
      * @return array
      */
     public function autocomplete($queryText, $with_blog = false, $no_result = false) {
+        if(!$this->config->get('boxalino_noresults_recommendation_enabled') && $no_result) {
+            return [];
+        }
         $search_choice = $no_result === true ? "noresults" : $this->getSearchChoice($queryText);
         $auto_complete_choice = $this->config->get('boxalino_autocomplete_widget_name');
         $textual_Limit = $this->config->get('boxalino_textual_suggestion_limit', 3);
         $product_limit = $this->config->get('boxalino_product_suggestion_limit', 3);
+        $blog_limit = $this->config->get('boxalino_blog_suggestion_limit', 3);
+
         $searches = ($with_blog === false) ? array('product') : array('product','blog');
         $bxRequests = array();
         foreach ($searches as $i => $search){
+            if($search == 'blog') {
+               $textual_Limit = $blog_limit;
+               $product_limit = $blog_limit;
+            }
             $bxRequest = new \com\boxalino\bxclient\v1\BxAutocompleteRequest($this->getShortLocale(),
                 $queryText, $textual_Limit, $product_limit, $auto_complete_choice,
                 $search_choice

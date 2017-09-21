@@ -45,7 +45,7 @@ class BxFacets
 
     public function addFacet($fieldName, $selectedValue=null, $type='string', $label=null, $order=2, $boundsOnly=false, $maxCount=-1) {
         $selectedValues = array();
-        if($selectedValue) {
+        if(!is_null($selectedValue)) {
             $selectedValues = is_array($selectedValue) ? $selectedValue : [$selectedValue];
         }
         $this->facets[$fieldName] = array('label'=>$label, 'type'=>$type, 'order'=>$order, 'selectedValues'=>$selectedValues, 'boundsOnly'=>$boundsOnly, 'maxCount'=>$maxCount);
@@ -489,7 +489,7 @@ class BxFacets
             }
             $facetValues = $finalFacetValues;
         }
-
+        $facetValues = $this->applyDependencies($fieldName, $facetValues);
         $enumDisplaySize = intval($this->getFacetExtraInfo($fieldName, "enumDisplayMaxSize"));
         if($enumDisplaySize > 0 && sizeof($facetValues) > $enumDisplaySize) {
             $enumDisplaySizeMin = intval($this->getFacetExtraInfo($fieldName, "enumDisplaySize"));
@@ -507,6 +507,35 @@ class BxFacets
         }
 
         return $facetValues;
+    }
+
+    protected function applyDependencies($fieldName, $values){
+        $dependencies = json_decode($this->getFacetExtraInfo($fieldName, "jsonDependencies"), true);
+        if(!is_null($dependencies) && !empty($dependencies)) {
+            foreach ($dependencies as $dependency) {
+                if(empty($dependency['values'])) continue;
+                if(empty($dependency['conditions'])) {
+                    $effect = $dependency['effect'];
+                    if($effect['hide'] == 'true'){
+                        foreach ($dependency['values'] as $value) {
+                            if(isset($values[$value])){
+                                unset($values[$value]);
+                            }
+                        }
+                    } else if($effect['hide'] == '') {
+                        $temp = array();
+                        foreach ($dependency['values'] as $key => $value) {
+                            if(isset($values[$value])){
+                                $temp[$key] = $values[$value];
+                                unset($values[$value]);
+                            }
+                        }
+                        array_splice($values, $effect['order'], 0, $temp);
+                    }
+                }
+            }
+        }
+        return $values;
     }
 
     public function getSelectedValues($fieldName) {
@@ -798,7 +827,7 @@ class BxFacets
             $order = $facet['order'];
             $maxCount = $facet['maxCount'];
 
-            if($fieldName == 'discountedPrice'){
+            if($fieldName == $this->priceFieldName){
                 $this->selectedPriceValues = $this->facetSelectedValue($fieldName, $type);
             }
 
@@ -825,7 +854,7 @@ class BxFacets
                 if ($option == 'ranged') {
                     $rangedValue = explode('-', $value);
                     if ($rangedValue[0] != '*') {
-                        $selectedFacet->rangeFromInclusive = $rangedValue[0];
+                        $selectedFacet->rangeFromInclusive = (float)$rangedValue[0];
                     }
                     if ($rangedValue[1] != '*') {
                         $selectedFacet->rangeToExclusive = $rangedValue[1] + 0.01;
