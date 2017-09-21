@@ -33,7 +33,9 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxIndexConfig{
                         "Configuration error detected: Boxalino Account Name cannot be null for any store where exporter is enabled."
                     );
                 }
-                $this->indexConfig[$config['account']] = $config;
+                if(!isset($this->indexConfig[$config['account']])) {
+                    $this->indexConfig[$config['account']] = $config;
+                }
             }
         }
     }

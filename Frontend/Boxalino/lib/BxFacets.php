@@ -45,7 +45,7 @@ class BxFacets
 
     public function addFacet($fieldName, $selectedValue=null, $type='string', $label=null, $order=2, $boundsOnly=false, $maxCount=-1) {
         $selectedValues = array();
-        if($selectedValue) {
+        if(!is_null($selectedValue)) {
             $selectedValues = is_array($selectedValue) ? $selectedValue : [$selectedValue];
         }
         $this->facets[$fieldName] = array('label'=>$label, 'type'=>$type, 'order'=>$order, 'selectedValues'=>$selectedValues, 'boundsOnly'=>$boundsOnly, 'maxCount'=>$maxCount);
@@ -73,7 +73,14 @@ class BxFacets
         if(sizeof($this->facets) !== sizeof($this->searchResult->facetResponses)) {
             foreach($this->searchResult->facetResponses as $facetResponse) {
                 if(!isset($this->facets[$facetResponse->fieldName])) {
-                    $this->facets[$facetResponse->fieldName] = ['label' => $facetResponse->fieldName];
+                    $this->facets[$facetResponse->fieldName] = [
+                        'label' => $facetResponse->fieldName,
+                        'type' => $facetResponse->numerical ? 'ranged' : 'list',
+                        'order' => sizeof($this->facets),
+                        'selectedValues' => [],
+                        'boundsOnly' => $facetResponse->range,
+                        'maxCount' => -1
+                    ];
                 }
             }
         }
@@ -109,17 +116,17 @@ class BxFacets
         return $selectedFacets;
     }
 
-    public function getFacetExtraInfoFacets($extraInfoKey, $extraInfoValue, $default=false, $returnHidden=false, $withSoftFacets=false) {
+    public function getFacetExtraInfoFacets($extraInfoKey, $extraInfoValue, $default=false, $returnHidden=false) {
         $selectedFacets = array();
         foreach($this->getFieldNames() as $fieldName) {
-            if(!$returnHidden && $this->isFacetHidden($fieldName)) {
+            if (!$returnHidden && $this->isFacetHidden($fieldName)) {
                 continue;
             }
-
-            if($this->getFacetExtraInfo($fieldName, $extraInfoKey) == $extraInfoValue || ($this->getFacetExtraInfo($fieldName, $extraInfoKey) == null && $default)) {
-                if(!$withSoftFacets && $this->getFacetExtraInfo($fieldName, 'isSoftFacet') == 'true'){
-                    continue;
-                }
+            $facetValues = $this->getFacetValues($fieldName);
+            if ($this->getFacetType($fieldName) != 'ranged' && ($this->getTotalHitCount() > 0 && sizeof($facetValues) == 1) && (floatval($this->getFacetExtraInfo($fieldName, "limitOneValueCoverage")) >= floatval($this->getFacetValueCount($fieldName, $facetValues[0]) / $this->getTotalHitCount()))) {
+                continue;
+            }
+            if ($this->getFacetExtraInfo($fieldName, $extraInfoKey) == $extraInfoValue || ($this->getFacetExtraInfo($fieldName, $extraInfoKey) == null && $default)) {
                 $selectedFacets[] = $fieldName;
             }
         }
@@ -140,17 +147,6 @@ class BxFacets
 
     public function getRightFacets($returnHidden=false) {
         return $this->getFacetExtraInfoFacets('position', 'right', false, $returnHidden);
-    }
-    public function getSoftFacets($returnHidden=false) {
-        return $this->getFacetExtraInfoFacets('isSoftFacet', 'true', false, $returnHidden, true);
-    }
-
-    public function getQuickSearchFacets($returnHidden=false) {
-        return $this->getFacetExtraInfoFacets('isQuickSearch', 'true', false, $returnHidden, true);
-    }
-
-    public function getGiftFinderFacets($returnHidden=false){
-        return array_unique(array_merge( $this->getQuickSearchFacets($returnHidden), $this->getSoftFacets($returnHidden)), SORT_REGULAR);
     }
 
     public function getFacetResponseExtraInfo($facetResponse, $extraInfoKey, $defaultExtraInfoValue = null) {
@@ -257,13 +253,16 @@ class BxFacets
         $defaultHideCoverageThreshold = $this->getHideCoverageThreshold($fieldName, $defaultHideCoverageThreshold);
         if($defaultHideCoverageThreshold > 0 && sizeof($this->getSelectedValues($fieldName)) == 0) {
             $ratio = $this->getFacetCoverage($fieldName) / $this->getTotalHitCount();
-            return $ratio < $defaultHideCoverageThreshold;
+            return floatval($ratio) < floatval($defaultHideCoverageThreshold);
         }
         return false;
     }
 
     public function getFacetDisplay($fieldName, $defaultDisplay = 'expanded') {
         try {
+            if(sizeof($this->getFacetSelectedValues($fieldName)) > 0) {
+                return 'expanded';
+            }
             return $this->getFacetResponseDisplay($this->getFacetResponse($fieldName), $defaultDisplay);
         } catch(\Exception $e) {
             return $defaultDisplay;
@@ -490,7 +489,7 @@ class BxFacets
             }
             $facetValues = $finalFacetValues;
         }
-
+        $facetValues = $this->applyDependencies($fieldName, $facetValues);
         $enumDisplaySize = intval($this->getFacetExtraInfo($fieldName, "enumDisplayMaxSize"));
         if($enumDisplaySize > 0 && sizeof($facetValues) > $enumDisplaySize) {
             $enumDisplaySizeMin = intval($this->getFacetExtraInfo($fieldName, "enumDisplaySize"));
@@ -506,19 +505,10 @@ class BxFacets
             }
             $facetValues = $finalFacetValues;
         }
-        $facetValues = $this->applyDependencies($fieldName, $facetValues);
-        foreach ($this->facets[$fieldName]['selectedValues'] as $value) {
-//            if(!isset($facetValues[$value])) {
-                $addValue = clone reset($facetValues);
-                $addValue->stringValue = $value;
-                $addValue->hitCount = 0;
-                $addValue->selected = true;
-//            }
-        }
+
         return $facetValues;
     }
 
-    //TODO Add ordering and condition checks
     protected function applyDependencies($fieldName, $values){
         $dependencies = json_decode($this->getFacetExtraInfo($fieldName, "jsonDependencies"), true);
         if(!is_null($dependencies) && !empty($dependencies)) {
@@ -532,6 +522,15 @@ class BxFacets
                                 unset($values[$value]);
                             }
                         }
+                    } else if($effect['hide'] == '') {
+                        $temp = array();
+                        foreach ($dependency['values'] as $key => $value) {
+                            if(isset($values[$value])){
+                                $temp[$key] = $values[$value];
+                                unset($values[$value]);
+                            }
+                        }
+                        array_splice($values, $effect['order'], 0, $temp);
                     }
                 }
             }
@@ -714,7 +713,8 @@ class BxFacets
             $to = round($this->selectedPriceValues[0]->rangeToExclusive, 2);
             $valueLabel = $from . ' - ' . $to;
             $paramValue = "$from-$to";
-            return array($valueLabel, $paramValue, null, true, false);
+            $hitCount = $this->getFacetResponse($fieldName)->values[0]->hitCount;
+            return array($valueLabel, $paramValue, $hitCount, true, false);
         }
 
         $keyValues = $this->getFacetKeysValues($fieldName, 'alphabetical', $this->lastSetMinCategoryLevel);
@@ -827,7 +827,7 @@ class BxFacets
             $order = $facet['order'];
             $maxCount = $facet['maxCount'];
 
-            if($fieldName == 'discountedPrice'){
+            if($fieldName == $this->priceFieldName){
                 $this->selectedPriceValues = $this->facetSelectedValue($fieldName, $type);
             }
 
@@ -854,7 +854,7 @@ class BxFacets
                 if ($option == 'ranged') {
                     $rangedValue = explode('-', $value);
                     if ($rangedValue[0] != '*') {
-                        $selectedFacet->rangeFromInclusive = $rangedValue[0];
+                        $selectedFacet->rangeFromInclusive = (float)$rangedValue[0];
                     }
                     if ($rangedValue[1] != '*') {
                         $selectedFacet->rangeToExclusive = $rangedValue[1] + 0.01;

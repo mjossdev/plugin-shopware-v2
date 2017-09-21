@@ -23,17 +23,4 @@ class Shopware_Controllers_Backend_BoxalinoPerformance extends Shopware_Controll
         ));
     }
 
-    public function getConfigOptionsAction(){
-        $data = [
-            ['id' => 1, 'widget_type' => 'QuickSearch'],
-            ['id' => 2, 'widget_type' => 'ProductFinder']
-        ];
-
-        $this->View()->assign(array(
-            'success' => true,
-            'data' => $data,
-            'total' => 3
-        ));
-    }
-
 }

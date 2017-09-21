@@ -1,9 +1,9 @@
 <?php
 
 use Doctrine\DBAL\Connection;
+
 /**
- * search interceptor for shopware 5 and following
- * uses SearchBundle
+ * Class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
  */
 class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
     extends Shopware_Plugins_Frontend_Boxalino_Interceptor {
@@ -29,7 +29,12 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
     protected $facetOptions = [];
 
     /**
-     * constructor
+     * @var bool
+     */
+    protected $shopCategorySelect = false;
+
+    /**
+     * Shopware_Plugins_Frontend_Boxalino_SearchInterceptor constructor.
      * @param Shopware_Plugins_Frontend_Boxalino_Bootstrap $bootstrap
      */
     public function __construct(Shopware_Plugins_Frontend_Boxalino_Bootstrap $bootstrap) {
@@ -39,9 +44,8 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
     }
 
     /**
-     * perform autocompletion suggestion
      * @param Enlight_Event_EventArgs $arguments
-     * @return boolean
+     * @return bool|null
      */
     public function ajaxSearch(Enlight_Event_EventArgs $arguments) {
 
@@ -53,8 +57,8 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         Enlight()->Plugins()->Controller()->Json()->setPadding();
 
         $term = $this->getSearchTerm();
-        if (empty($term)) {
-            return false;
+        if (empty($term) || strlen($term) < $this->Config()->get('MinSearchLenght')) {
+            return;
         }
 
         $with_blog = $this->Config()->get('boxalino_blog_search_enabled');
@@ -66,6 +70,10 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         return false;
     }
 
+    /**
+     * @param Enlight_Event_EventArgs $arguments
+     * @return bool|void
+     */
     public function listingAjax(Enlight_Event_EventArgs $arguments) {
 
         if (!$this->Config()->get('boxalino_active') || !$this->Config()->get('boxalino_navigation_enabled')) {
@@ -76,21 +84,26 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             return null;
         }
         $viewData = $this->View()->getAssign();
-        $catId = $this->Request()->getParam('sCategory');
+        $catId = $this->Request()->getParam('sCategory', null);
         $streamId = $this->findStreamIdByCategoryId($catId);
-        if ($streamId != null || !isset($viewData['sArticles']) || count($viewData['sArticles']) == 0) {
+        $listingCount = $this->Request()->getActionName() == 'listingCount';
+        if (!$listingCount && ($streamId != null || !isset($viewData['sArticles']) || count($viewData['sArticles']) == 0)) {
             return null;
         }
         $filter = array();
         if($supplier = $this->Request()->getParam('sSupplier')) {
-            $supplier_name = $this->getSupplierName($supplier);
-            $filter['products_brand'] = [$supplier_name];
+            if(strpos($supplier, '|') === false){
+                $supplier_name = $this->getSupplierName($supplier);
+                $filter['products_brand'] = [$supplier_name];
+            }
         }
-        $listingCount = $this->Request()->getActionName() == 'listingCount';
-        $context  = $this->get('shopware_storefront.context_service')->getProductContext();
+        $context  = $this->get('shopware_storefront.context_service')->getShopContext();
         /* @var Shopware\Bundle\SearchBundle\Criteria $criteria */
-        $criteria = $this->get('shopware_search.store_front_criteria_factory')
-            ->createSearchCriteria($this->Request(), $context);
+        if(is_null($this->Request()->getParam('sSort'))) {
+            $default = $this->get('config')->get('defaultListingSorting');
+            $this->Request()->setParam('sSort', $default);
+        }
+        $criteria = $this->get('shopware_search.store_front_criteria_factory')->createSearchCriteria($this->Request(), $context);
         $criteria->removeCondition("term");
         $criteria->removeBaseCondition("search");
         $hitCount = $criteria->getLimit();
@@ -100,114 +113,88 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         $queryText = $this->Request()->getParams()['q'];
         $options = $this->getFacetConfig($facets);
         $this->Helper()->addSearch($queryText, $pageOffset, $hitCount, 'product', $sort, $options, $filter);
-        $articles = $this->Helper()->getLocalArticles($this->Helper()->getEntitiesIds());
-        $viewData['sArticles'] = $articles;
-        if ($listingCount) {
-            $this->Controller()->Response()->setBody('{"totalCount":' . $this->Helper()->getTotalHitCount() . '}');
+        $this->View()->addTemplateDir($this->Bootstrap()->Path() . 'Views/emotion/');
+
+        if(version_compare(Shopware::VERSION, '5.3.0', '>=')) {
+            $body['totalCount'] = $this->Helper()->getTotalHitCount();
+            if ($this->Request()->getParam('loadFacets')) {
+                $facets = $this->updateFacetsWithResult($facets);
+                $body['facets'] = array_values($facets);
+            }
+            if ($this->Request()->getParam('loadProducts')) {
+                if ($this->Request()->has('productBoxLayout')) {
+                    $boxLayout = $this->Request()->get('productBoxLayout');
+                } else {
+                    $boxLayout = $catId ? Shopware()->Modules()->Categories()
+                        ->getProductBoxLayout($catId) : $this->get('config')->get('searchProductBoxLayout');
+                }
+
+                $this->View()->assign($this->Request()->getParams());
+                $this->View()->extendsTemplate('frontend/plugins/boxalino/listing/filter/_includes/filter-multi-selection.tpl');
+                $this->View()->extendsTemplate('frontend/plugins/boxalino/listing/index_5_3.tpl');
+                $this->loadThemeConfig();
+                $this->View()->assign([
+                    'sArticles' => $this->Helper()->getLocalArticles($this->Helper()->getHitFieldValues('products_ordernumber')),
+                    'pageIndex' => $this->Request()->getParam('sPage'),
+                    'productBoxLayout' => $boxLayout,
+                    'sCategoryCurrent' => $catId,
+                ]);
+                $body['listing'] = $this->View()->fetch('frontend/listing/listing_ajax.tpl');
+                $sPerPage = $this->Request()->getParam('sPerPage');
+                $this->View()->assign([
+                    'sPage' => $this->Request()->getParam('sPage'),
+                    'pages' => ceil($this->Helper()->getTotalHitCount() / $sPerPage),
+                    'baseUrl' => $this->Request()->getBaseUrl() . $this->Request()->getPathInfo(),
+                    'pageSizes' => explode('|', $this->container->get('config')->get('numberArticlesToShow')),
+                    'shortParameters' => $this->container->get('query_alias_mapper')->getQueryAliases(),
+                    'limit' => $sPerPage,
+                ]);
+                $body['pagination'] = $this->View()->fetch('frontend/listing/actions/action-pagination.tpl');
+            }
+            $this->Controller()->Front()->Plugins()->ViewRenderer()->setNoRender();
+            $this->Controller()->Response()->setBody(json_encode($body));
+            $this->Controller()->Response()->setHeader('Content-type', 'application/json', true);
+            return;
+        } else {
+            if ($listingCount) {
+                $this->Controller()->Response()->setBody('{"totalCount":' . $this->Helper()->getTotalHitCount() . '}');
+                return false;
+            }
+            $articles = $this->Helper()->getLocalArticles($this->Helper()->getHitFieldValues('products_ordernumber'));
+            $viewData['sArticles'] = $articles;
+            $this->View()->assign($viewData);
             return false;
         }
-        $this->View()->assign($viewData);
-        return false;
     }
 
-    public function checkParams(){
-        $address = $_SERVER['HTTP_REFERER'];
-        $params = explode('&', substr ($address,strpos($address, '?')+1, strlen($address)));
-        foreach ($params as $index => $param){
-            $keyValue = explode("=", $param);
-            $params[$keyValue[0]] = $keyValue[1];
-            unset($params[$index]);
-        }
-        $count = 0;
-        foreach ($params as $key => $value) {
-            if(strpos($key, 'bxrpw_') === 0) {
-                $count++;
-            }
-        }
-        return ($count == 0 ? 'question' : ($count == 2 ? 'present' : 'listing'));
-    }
-    public function productFinder(Enlight_Event_EventArgs $arguments, $contextParams) {
-        if (!$this->Config()->get('boxalino_active')) {
-            return null;
-        }
-
-        $this->init($arguments);
-        $data = [];
-        $return = $arguments->getReturn();
-        $choice_id = $return['choice_id'] == '' ? 'productfinder' : $return['choice_id'];
-        $hitCount = $return['cpo_finder_page_size'];
-        $this->Helper()->addFinder(array(),$hitCount, $choice_id, $contextParams);
-        $data['json_facets'] = $this->convertFacetsToJson();
-        if($return['widget_type'] == '2'){
-            $articles = $this->Helper()->getLocalArticles($this->Helper()->getEntitiesIds());
-            $type = $this->checkParams();
-            $highlighted_articles =  null;
-            $top_match = null;
-            $highlight_count = 0;
-            foreach($articles as $index => $article) {
-                //TODO Add highlighted from hit to article array
-                $id = $article['articleID'];
-                $score =  $this->Helper()->getHitVariable($id, 'score');
-
-                $highlighted =  false; // $this->Helper()->getHitVariable($id, 'highlighted');
-                if($type == 'listing' || $type== 'present'){
-                    if($index < 5){
-                        $highlighted = true;
-                    }
-                }
-                $article['bx_score'] = floatval((100 - $index) / 100);
-                $article['bx_score'] = $type == 'listing' ? $article['bx_score'] - 0.01 : $article['bx_score'];
-                $article['bx_score'] = $type == 'question' ? $article['bx_score'] - 0.31 : $article['bx_score'];
-                $article['bx_score'] = $index >= 5 ? $article['bx_score'] - 0.21 : $article['bx_score'];
-                $article['bx_highlighted'] = $highlighted;
-                if($highlighted){
-                    if($index == 0 && $type == 'present'){
-                        $top_match[] = $article;
-                    }else {
-                        $highlighted_articles[] = $article;
-                    }
-                    $highlight_count++;
-                    unset($articles[$index]);
-                } else {
-                    $articles[$index] = $article;
-                }
-            }
-            $data['sArticles'] = $articles;
-            $data['highlighted_articles'] = $highlighted_articles;
-            $data['top_match'] = $top_match;
-            $data['finderMode'] = $type;// $finderMode = ($highlight_count == 0 ? 'question' : ($highlight_count == 1 ? 'present' : 'listing'));
-            $data['slider_data'] = ['no_border' => true, 'article_slider_arrows' => 1, 'article_slider_type' => 'selected_article',
-                'article_slider_max_number' => count($highlighted_articles), 'values' => $highlighted_articles, 'article_slider_title' => 'Zu Ihnen passende Produkte'];
-
-        }
-         return $data;
-    }
-
+    /**
+     * @param Enlight_Event_EventArgs $arguments
+     * @return bool
+     */
     public function listing(Enlight_Event_EventArgs $arguments) {
 
         if (!$this->Config()->get('boxalino_active') || !$this->Config()->get('boxalino_navigation_enabled')) {
             return null;
         }
+
         $this->init($arguments);
         $viewData = $this->View()->getAssign();
         $catId = $this->Request()->getParam('sCategory');
         $streamId = $this->findStreamIdByCategoryId($catId);
-
-        if ($streamId != null || !isset($viewData['sArticles']) || count($viewData['sArticles']) == 0 || $this->checkForFinder($catId)){
+        if ($streamId != null || !isset($viewData['sArticles']) || count($viewData['sArticles']) == 0) {
             return null;
         }
-
         $filter = array();
         if(isset($viewData['manufacturer']) && !empty($viewData['manufacturer'])) {
             $filter['products_brand'] = [$viewData['manufacturer']->getName()];
         }
-
         $context  = $this->get('shopware_storefront.context_service')->getProductContext();
         /* @var Shopware\Bundle\SearchBundle\Criteria $criteria */
-
-        $criteria = $this->get('shopware_search.store_front_criteria_factory')
-            ->createSearchCriteria($this->Request(), $context);
-
+        if(is_null($this->Request()->getParam('sSort'))) {
+            $default = $this->get('config')->get('defaultListingSorting');
+            $this->Request()->setParam('sSort', $default);
+        }
+        $criteria = $this->get('shopware_search.store_front_criteria_factory')->createSearchCriteria($this->Request(), $context);
         $criteria->removeCondition("term");
         $criteria->removeBaseCondition("search");
         $facets = $this->createFacets($criteria, $context);
@@ -217,13 +204,18 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         $pageOffset = $criteria->getOffset();
         $this->Helper()->addSearch('', $pageOffset, $hitCount, 'product', $sort, $options, $filter);
         $facets = $this->updateFacetsWithResult($facets);
-        $articles = $this->Helper()->getLocalArticles($this->Helper()->getEntitiesIds());
+        $articles = $this->Helper()->getLocalArticles($this->Helper()->getHitFieldValues('products_ordernumber'));
         $this->View()->addTemplateDir($this->Bootstrap()->Path() . 'Views/emotion/');
-        if ($this->Config()->get('boxalino_navigation_sorting') == true) {
-            $this->View()->extendsTemplate('frontend/plugins/boxalino/listing/actions/action-sorting.tpl');
+        if(version_compare(Shopware::VERSION, '5.3.0', '<')) {
+            if ($this->Config()->get('boxalino_navigation_sorting') == true) {
+                $this->View()->extendsTemplate('frontend/plugins/boxalino/listing/actions/action-sorting.tpl');
+            }
+            $this->View()->extendsTemplate('frontend/plugins/boxalino/listing/filter/facet-value-list.tpl');
+            $this->View()->extendsTemplate('frontend/plugins/boxalino/listing/index.tpl');
+        } else {
+            $this->View()->extendsTemplate('frontend/plugins/boxalino/listing/filter/_includes/filter-multi-selection.tpl');
+            $this->View()->extendsTemplate('frontend/plugins/boxalino/listing/index_5_3.tpl');
         }
-        $this->View()->extendsTemplate('frontend/plugins/boxalino/listing/filter/facet-value-list.tpl');
-        $this->View()->extendsTemplate('frontend/plugins/boxalino/listing/index.tpl');
         $totalHitCount = $this->Helper()->getTotalHitCount();
         $templateProperties = array(
             'bxFacets' => $this->Helper()->getFacets(),
@@ -231,35 +223,22 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             'facets' => $facets,
             'sNumberArticles' => $totalHitCount,
             'sArticles' => $articles,
-            'facetOptions' => $this->facetOptions,
-//            'bxFacetJson' => $isFinder ? $this->convertFacetsToJson() : null,
-//            'bxFinderMode' => $finderMode
+            'facetOptions' => $this->facetOptions
         );
-//        if($isFinder && $this->Request()->getParam('sPage')) {
-//            $emotions = $this->get('emotion_device_configuration')->get($catId);
-//            $additional =  [
-//                'emotions' => $emotions,
-//                'hasEmotion' => !empty($emotions),
-//                'showListing' => empty($emotions) || (bool) max(array_column($emotions, 'showListing')),
-//            ];
-//            $templateProperties = array_merge($templateProperties, $additional);
-//        }
         $templateProperties = array_merge($viewData, $templateProperties);
         $this->View()->assign($templateProperties);
         return false;
     }
 
     /**
-     * perform search
      * @param Enlight_Event_EventArgs $arguments
-     * @return boolean
+     * @return bool
      */
     public function search(Enlight_Event_EventArgs $arguments) {
 
         if (!$this->Config()->get('boxalino_active') || !$this->Config()->get('boxalino_search_enabled')) {
             return null;
         }
-
         $this->init($arguments);
         $term = $this->getSearchTerm();
 
@@ -270,13 +249,19 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         }
 
         /* @var ProductContextInterface $context */
-        $context  = $this->get('shopware_storefront.context_service')->getProductContext();
+        $context  = $this->get('shopware_storefront.context_service')->getShopContext();
         /* @var Shopware\Bundle\SearchBundle\Criteria $criteria */
+        if(is_null($this->Request()->getParam('sSort'))) {
+            $default = $this->get('config')->get('defaultListingSorting');
+            $this->Request()->setParam('sSort', $default);
+        }
         $criteria = $this->get('shopware_search.store_front_criteria_factory')->createSearchCriteria($this->Request(), $context);
 
         // discard search / term conditions from criteria, such that _all_ facets are properly requested
         $criteria->removeCondition("term");
         $criteria->removeBaseCondition("search");
+
+        $this->get('shopware_search.product_search')->search($criteria, $context);
         $facets = $this->createFacets($criteria, $context);
         $options = $this->getFacetConfig($facets);
         $sort =  $this->getSortOrder($criteria);
@@ -291,6 +276,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             $this->Helper()->addSearch($term, $blogOffset, $hitCount, 'blog');
             $bxHasOtherItems = $this->Helper()->getTotalHitCount('blog') > 0;
         }
+
         $corrected = false;
         $articles = array();
         $no_result_articles = array();
@@ -300,7 +286,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         if ($this->Helper()->areThereSubPhrases() && $sub_phrase_limit > 0) {
             $sub_phrase_queries = array_slice(array_filter($this->Helper()->getSubPhrasesQueries()), 0, $sub_phrase_limit);
             foreach ($sub_phrase_queries as $query){
-                $ids = array_slice($this->Helper()->getSubPhraseEntitiesIds($query), 0, $config->get('boxalino_search_subphrase_product_limit'));
+                $ids = array_slice($this->Helper()->getSubPhraseFieldValues($query, 'products_ordernumber'), 0, $config->get('boxalino_search_subphrase_product_limit'));
                 $suggestion_articles = [];
                 if (count($ids) > 0) {
                     $suggestion_articles = $this->Helper()->getLocalArticles($ids);
@@ -315,19 +301,20 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                     $corrected = true;
                     $term = $this->Helper()->getCorrectedQuery();
                 }
-                $ids = $this->Helper()->getEntitiesIds();
+                $ids = $this->Helper()->getHitFieldValues('products_ordernumber');
                 $articles = $this->Helper()->getLocalArticles($ids);
                 $category = $this->Helper()->getFacets()->getParentCategories();
                 if (!empty($category)) {
                     end($category);
                     $id = (int) key($category);
-                    if($id != Shopware()->Shop()->getCategory()->getId()){
+                    if($id != Shopware()->Shop()->getCategory()->getId()) {
                         $this->Request()->setParam("sCategory", $id);
                         $criteria = $this->get('shopware_search.store_front_criteria_factory')
                             ->createSearchCriteria($this->Request(), $context);
                         $criteria->removeCondition("term");
                         $criteria->removeBaseCondition("search");
-                        $facets['category'] = $this->createFacets($criteria, $context,'category');
+
+                        $facets['category'] = $this->createFacets($criteria, $context, 'category');
                     }
                 }
                 $facets = $this->updateFacetsWithResult($facets);
@@ -356,8 +343,20 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         $this->View()->addTemplateDir($this->Bootstrap()->Path() . 'Views/emotion/');
         $this->View()->extendsTemplate('frontend/plugins/boxalino/listing/actions/action-pagination.tpl');
         $this->View()->extendsTemplate('frontend/plugins/boxalino/search/fuzzy.tpl');
-        $this->View()->extendsTemplate('frontend/plugins/boxalino/listing/filter/facet-value-list.tpl');
-        $this->View()->extendsTemplate('frontend/plugins/boxalino/listing/index.tpl');
+        if(version_compare(Shopware::VERSION, '5.3.0', '<')) {
+            $this->View()->extendsTemplate('frontend/plugins/boxalino/listing/filter/facet-value-list.tpl');
+            $this->View()->extendsTemplate('frontend/plugins/boxalino/listing/index.tpl');
+        } else {
+            $this->View()->extendsTemplate('frontend/plugins/boxalino/listing/filter/_includes/filter-multi-selection.tpl');
+            $this->View()->extendsTemplate('frontend/plugins/boxalino/listing/index_5_3.tpl');
+            if($this->Helper()->getTotalHitCount('blog')) {
+                $this->View()->extendsTemplate('frontend/plugins/boxalino/blog/listing_actions.tpl');
+            }
+            $service = Shopware()->Container()->get('shopware_storefront.custom_sorting_service');
+            $sortingIds = $this->container->get('config')->get('searchSortings');
+            $sortingIds = array_filter(explode('|', $sortingIds));
+            $sortings = $service->getList($sortingIds, $context);
+        }
         $no_result_title = Shopware()->Snippets()->getNamespace('boxalino/intelligence')->get('search/noresult');
         $templateProperties = array_merge(array(
             'bxFacets' => $this->Helper()->getFacets(),
@@ -373,6 +372,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                 'article_slider_arrows' => 1
             ],
             'criteria' => $criteria,
+            'sortings' => $sortings,
             'facets' => $facets,
             'sPage' => $request->getParam('sPage', 1),
             'sSort' => $request->getParam('sSort', 7),
@@ -381,7 +381,8 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             'sRequests' => $params,
             'shortParameters' => $this->get('query_alias_mapper')->getQueryAliases(),
             'pageSizes' => $pageCounts,
-            'ajaxCountUrlParams' => ['sCategory' => $context->getShop()->getCategory()->getId()],
+            'ajaxCountUrlParams' => version_compare(Shopware::VERSION, '5.3.0', '<') ?
+                ['sCategory' => $context->getShop()->getCategory()->getId()] : [],
             'sSearchResults' => array(
                 'sArticles' => $articles,
                 'sArticlesCount' => $totalHitCount
@@ -396,6 +397,10 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         return false;
     }
 
+    /**
+     * @param $hitCount
+     * @return array
+     */
     private function getSearchTemplateProperties($hitCount)
     {
         $props = array();
@@ -450,6 +455,10 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         return $props;
     }
 
+    /**
+     * @param $params
+     * @return string
+     */
     private function assemble($params) {
         $p = $this->Request()->getBasePath() . $this->Request()->getPathInfo();
         if (empty($params)) return $p;
@@ -462,29 +471,6 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             $kv[] = $k . '=' . $v;
         });
         return $p . "?" . implode('&', $kv);
-    }
-
-    public function checkForFinder($category_id) {
-        $db = Shopware()->Db();
-        $sql = $db->select()
-            ->from(array('e_c' => 's_emotion_categories'), array())
-            ->join(array('e_e' => 's_emotion_element'),
-                'e_c.emotion_id = e_e.emotionID', array()
-            )
-            ->join(array('l_c' => 's_library_component'),
-                'l_c.id = e_e.componentID', array()
-            )
-            ->join(array('e_e_v'=>'s_emotion_element_value'),
-                'e_e_v.emotionID = e_c.emotion_id', array('value')
-            )
-            ->join(array('l_c_f' => 's_library_component_field'),
-                'l_c_f.id = e_e_v.fieldID', array()
-            )
-            ->where('l_c.template = ?', 'boxalino_product_finder')
-            ->where('e_c.category_id = ?', $category_id)
-            ->where('l_c_f.name = ?', 'widget_type');
-        $stmt = $db->query($sql);
-        return $stmt->rowCount() ? reset($stmt->fetch()) == '2' : false;
     }
 
     // mostly copied from Frontend/Blog.php#indexAction
@@ -500,15 +486,6 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         foreach ($blogArticles as $key => $blogArticle) {
             //adding number of comments to the blog article
             $blogArticles[$key]["numberOfComments"] = count($blogArticle["comments"]);
-
-            //adding tags and tag filter links to the blog article
-//             $tagsQuery = $this->repository->getTagsByBlogId($blogArticle["id"]);
-//             $tagsData = $tagsQuery->getArrayResult();
-//             $blogArticles[$key]["tags"] = $this->addLinksToFilter($tagsData, "sFilterTags", "name", false);
-
-            //adding average vote data to the blog article
-//             $avgVoteQuery = $this->repository->getAverageVoteQuery($blogArticle["id"]);
-//             $blogArticles[$key]["sVoteAverage"] = $avgVoteQuery->getOneOrNullResult(\Doctrine\ORM\AbstractQuery::HYDRATE_SINGLE_SCALAR);
 
             //adding thumbnails to the blog article
             if (empty($blogArticle["media"][0]['mediaId'])) {
@@ -534,6 +511,10 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         return $blogArticles;
     }
 
+    /**
+     * @param $facets
+     * @return array
+     */
     protected function getPropertyFacetOptionIds($facets) {
         $ids = array();
         foreach ($facets as $facet) {
@@ -556,6 +537,10 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         return $facetToOption;
     }
 
+    /**
+     * @param $facet
+     * @return array
+     */
     protected function getValueIds($facet) {
         if ($facet instanceof Shopware\Bundle\SearchBundle\FacetResult\FacetResultGroup) {
             $ids = array();
@@ -569,9 +554,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
     }
 
     /**
-     * Get service from resource loader
-     *
-     * @param string $name
+     * @param $name
      * @return mixed
      */
     public function get($name) {
@@ -579,7 +562,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
     }
 
     /**
-     * @return string
+     * @return mixed|string
      */
     protected function getSearchTerm() {
         $term = $this->Request()->get('sSearch', '');
@@ -593,10 +576,8 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
     }
 
     /**
-     * Search product by order number
-     *
-     * @param string $search
-     * @return string
+     * @param $search
+     * @return mixed|string
      */
     protected function searchFuzzyCheck($search) {
         $minSearch = empty($this->Config()->sMINSEARCHLENGHT) ? 2 : (int) $this->Config()->sMINSEARCHLENGHT;
@@ -635,7 +616,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
     }
 
     /**
-     * @return Shopware\Bundle\SearchBundle\FacetHandlerInterface[]
+     * @return array
      */
     protected function registerFacetHandlers() {
         // did not find a way to use the service tag "facet_handler_dba"
@@ -675,7 +656,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
 
     /**
      * @param $value_id
-     * @return null
+     * @return string
      */
     private function getOptionIdFromValue($value_id) {
         $db = Shopware()->Db();
@@ -686,19 +667,27 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
     }
 
     /**
-     * @param \Shopware\Bundle\SearchBundle\Criteria $criteria
-     * @param \Shopware\Bundle\StoreFrontBundle\Struct\ShopContext $context
+     * @param $criteria
+     * @param $context
+     * @param null $facet_type
      * @return array
+     * @throws Exception
      */
-    protected function createFacets(Shopware\Bundle\SearchBundle\Criteria $criteria, Shopware\Bundle\StoreFrontBundle\Struct\ShopContext $context, $facet_type = null) {
+    protected function createFacets($criteria, $context, $facet_type = null) {
         $facets = array();
 
         foreach ($criteria->getFacets() as $type => $facet) {
 
             $handler = $this->getFacetHandler($facet);
             if ($handler === null) continue;
-
-            $result = $handler->generateFacet($facet, $criteria, $context);
+            if(version_compare(Shopware::VERSION, '5.3.0', '>=')){
+                $reverted = clone $criteria;
+                $reverted->resetConditions();
+                $reverted->resetSorting();
+                $result = $handler->generatePartialFacet($facet, $reverted, $criteria, $context);
+            } else {
+                $result = $handler->generateFacet($facet, $criteria, $context);
+            }
             if (!$result) {
                 continue;
             }
@@ -731,7 +720,6 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
      */
     protected function getFacetConfig($facets) {
         $options = [];
-
         foreach ($facets as $fieldName => $facet) {
             $key = '';
             switch ($facet->getFacetName()) {
@@ -750,19 +738,22 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                     ];
                     break;
                 case 'category':
-                    if ($this->Request()->getControllerName() == 'search') {
+                    if ($this->Request()->getControllerName() == 'search' || $this->Request()->getActionName() == 'listingCount') {
                         $id = $label = null;
                         $params = $this->Request()->getParams();
-                        if (isset($_REQUEST['c']) || isset($params['sCategory'])) {
+                        if (isset($_REQUEST['c']) || isset($params['sCategory']) || isset($params['cf'])) {
                             $value = $this->getLowestActiveTreeItem($facet->getValues());
                             if ($value instanceof Shopware\Bundle\SearchBundle\FacetResult\TreeItem) {
                                 $id = $value->getId();
                             }
-                        }
-                        else {
+                        } else {
                             $id = Shopware()->Shop()->getCategory()->getId();
+                            $this->shopCategorySelect = true;
                         }
-                        $options['category']['value'] = $id;
+                        $options['category'] = [
+                            'value' => $id
+                        ];
+
                     }
                     break;
                 case 'property':
@@ -772,7 +763,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                         $key = 'products_brand';
                     }
                     if (!array_key_exists($key, $options)) {
-                        $options[$key] = ['label' => $facet->getLabel()];
+                        $options[$key] = ['label' => trim($facet->getLabel())];
                     }
                     $selected_value = [];
                     foreach ($facet->getValues() as $value) {
@@ -807,8 +798,8 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
     }
 
     /**
-     * @param Shopware\Bundle\SearchBundle\FacetResult\TreeItem[] $values
-     * @return null|Shopware\Bundle\SearchBundle\FacetResult\TreeItem
+     * @param $values
+     * @return null
      */
     protected function getLowestActiveTreeItem($values) {
         foreach ($values as $value) {
@@ -828,7 +819,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
 
     /**
      * @param $id
-     * @return Doctrine\DBAL\Query\QueryBuilder
+     * @return mixed
      */
     private function getMediaById($id)
     {
@@ -840,13 +831,16 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
      * @param $bxFacets
      * @param $facet
      * @param $lang
-     * @return \Shopware\Bundle\SearchBundle\FacetResult\ValueListFacetResult
+     * @return \Shopware\Bundle\SearchBundle\FacetResult\ValueListFacetResult|void
      */
     private function generateManufacturerListItem($bxFacets, $facet, $lang) {
         $db = Shopware()->Db();
         $fieldName = 'products_brand';
         $where_statement = '';
         $values = $bxFacets->getFacetValues($fieldName);
+        if(sizeof($values) == 0){
+            return;
+        }
         foreach ($values as $index => $value) {
             if($index > 0) {
                 $where_statement .= ' OR ';
@@ -859,27 +853,30 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             ->where($where_statement);
         $result = $db->fetchAll($sql);
         $showCount = $bxFacets->showFacetValueCounters($fieldName);
-        $innerValues = $this->useValuesAsKeys($values);
+        $values = $this->useValuesAsKeys($values);
         foreach ($result as $r) {
             $label = trim($r['name']);
-            if(!isset($innerValues[$label])) {
+            if(!isset($values[$label])) {
                 continue;
             }
             $selected = $bxFacets->isFacetValueSelected($fieldName, $label);
-            if ($showCount) {
-                $label .= ' (' . $bxFacets->getFacetValueCount($fieldName, $label) . ')';
-            }
-            $innerValues[trim($r['name'])] = new Shopware\Bundle\SearchBundle\FacetResult\MediaListItem(
+            $values[$label] = new Shopware\Bundle\SearchBundle\FacetResult\MediaListItem(
                 (int)$r['id'],
-                $label,
+                $showCount ? $label . ' (' . $bxFacets->getFacetValueCount($fieldName, $label) . ')' : $label,
                 $selected
             );
+        }
+        $finalValues = array();
+        foreach ($values as $key => $innerValue) {
+            if(!is_string($innerValue)) {
+                $finalValues[] = $innerValue;
+            }
         }
         return new Shopware\Bundle\SearchBundle\FacetResult\ValueListFacetResult(
             $facet->getFacetName(),
             $bxFacets->isSelected($fieldName),
             $bxFacets->getFacetLabel($fieldName, $lang),
-            $innerValues,
+            $finalValues,
             $facet->getFieldName()
         );
     }
@@ -934,18 +931,22 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
      * @param $bxFacets
      * @param $facet
      * @param $lang
-     * @return mixed
      */
     private function generateListItem($fieldName, $bxFacets, $facet, $lang) {
+        if(is_null($facet)) {
+            return;
+        }
         $option_id = end(explode('_', $fieldName));
         $values = $bxFacets->getFacetValues($fieldName);
+        if(sizeof($values) == 0) {
+            return;
+        }
         $shop_id  = Shopware()->Shop()->getId();
         $useTranslation = $this->useTranslation($shop_id);
         $result = $this->getFacetValuesResult($option_id, $values, $useTranslation, $shop_id);
         $media_class = false;
         $showCount = $bxFacets->showFacetValueCounters($fieldName);
         $values = $this->useValuesAsKeys($values);
-
         foreach ($result as $r) {
             if($useTranslation == true && isset($r['objectkey'])) {
                 $r['id'] = $r['objectkey'];
@@ -973,31 +974,33 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                 $media
             );
         }
+        $finalValues = array();
+        foreach ($values as $key => $innerValue) {
+            if(!is_string($innerValue)) {
+                $finalValues[] = $innerValue;
+            }
+        }
         $class = $media_class === true ? 'Shopware\Bundle\SearchBundle\FacetResult\MediaListFacetResult' :
             'Shopware\Bundle\SearchBundle\FacetResult\ValueListFacetResult';
         return new $class(
             $facet->getFacetName(),
             $bxFacets->isSelected($fieldName),
             $bxFacets->getFacetLabel($fieldName,$lang),
-            $values,
+            $finalValues,
             $facet->getFieldName()
         );
     }
 
     /**
-     * @param Shopware\Bundle\SearchBundle\FacetResultInterface[] $facets
-     * @param \com\boxalino\p13n\api\thrift\Variant $variant
-     * @return Shopware\Bundle\SearchBundle\FacetResultInterface[]
+     * @param $facets
+     * @return array
      */
     protected function updateFacetsWithResult($facets) {
         $lang = substr(Shopware()->Shop()->getLocale()->getLocale(), 0, 2);
         $bxFacets = $this->Helper()->getFacets();
+        $propertyFacets = [];
         $filters = array();
-
         foreach ($bxFacets->getLeftFacets() as $fieldName) {
-            if($fieldName == 'products_optionID_13' || $fieldName == 'products_optionID_18'){
-                continue;
-            }
             $key = '';
             if ($bxFacets->isFacetHidden($fieldName)) {
                 continue;
@@ -1006,7 +1009,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             switch ($fieldName) {
                 case 'discountedPrice':
                     $facet = $facets['price'];
-                    $label = $bxFacets->getFacetLabel($fieldName,$lang);
+                    $label = trim($bxFacets->getFacetLabel($fieldName,$lang));
                     $this->facetOptions[$label] = [
                         'fieldName' => $fieldName,
                         'expanded' => $bxFacets->isFacetExpanded($fieldName, false)
@@ -1022,23 +1025,40 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                     if (isset($activeMax)) {
                         $activeMax = $activeMax == 0 ? $to : min($to, $activeMax);
                     }
-
-                    $filters[] = new Shopware\Bundle\SearchBundle\FacetResult\RangeFacetResult(
-                        $facet->getFacetName(),
-                        $bxFacets->isSelected($fieldName),
-                        $label,
-                        $from,
-                        $to,
-                        $activeMin,
-                        $activeMax,
-                        $facet->getMinFieldName(),
-                        $facet->getMaxFieldName(),
-                        $facet->getAttributes(),
-                        $facet->getTemplate()
-                    );
+                    if(version_compare(Shopware::VERSION, '5.3.0', '<')) {
+                        $filters[] = new Shopware\Bundle\SearchBundle\FacetResult\RangeFacetResult(
+                            $facet->getFacetName(),
+                            $bxFacets->isSelected($fieldName),
+                            $label,
+                            $from,
+                            $to,
+                            $activeMin,
+                            $activeMax,
+                            $facet->getMinFieldName(),
+                            $facet->getMaxFieldName(),
+                            $facet->getAttributes(),
+                            $facet->getTemplate()
+                        );
+                    } else {
+                        $filters[] = new Shopware\Bundle\SearchBundle\FacetResult\RangeFacetResult(
+                            $facet->getFacetName(),
+                            $bxFacets->isSelected($fieldName),
+                            $label,
+                            $from,
+                            $to,
+                            $activeMin,
+                            $activeMax,
+                            $facet->getMinFieldName(),
+                            $facet->getMaxFieldName(),
+                            $facet->getAttributes(),
+                            $facet->getSuffix(),
+                            $facet->getDigits(),
+                            $facet->getTemplate()
+                        );
+                    }
                     break;
                 case 'categories':
-                    if ($this->Request()->getControllerName() == 'search') {
+                    if ($this->Request()->getControllerName() == 'search' || $this->Request()->getActionName() == 'listingCount') {
                         $facet = $facets['category'];
                         $label = $bxFacets->getFacetLabel($fieldName,$lang);
                         $this->facetOptions[$label] = [
@@ -1046,15 +1066,17 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                             'expanded' => $bxFacets->isFacetExpanded($fieldName, false)
                         ];
                         $updatedFacetValues = $this->updateTreeItemsWithFacetValue($facet->getValues(), $bxFacets);
+
                         $filters[] = new Shopware\Bundle\SearchBundle\FacetResult\TreeFacetResult(
                             $facet->getFacetName(),
                             $facet->getFieldName(),
-                            $bxFacets->isSelected($fieldName),
+                            !$this->shopCategorySelect, //$bxFacets->isSelected($fieldName),
                             $label,
                             $updatedFacetValues,
                             $facet->getAttributes(),
                             $facet->getTemplate()
                         );
+
                     }
                     break;
                 case 'products_shippingfree':
@@ -1075,24 +1097,31 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                     break;
                 case 'products_brand':
                     $facet = $facets['manufacturer'];
-                    $this->facetOptions[$bxFacets->getFacetLabel($fieldName,$lang)] = [
-                        'fieldName' => $fieldName,
-                        'expanded' => $bxFacets->isFacetExpanded($fieldName, false)
-                    ];
-                    $filters[] = $this->generateManufacturerListItem($bxFacets, $facet, $lang);
-                    break;
-                default:
-                    if ((strpos($fieldName, 'products_optionID') !== false)) {
-                        $facet = $facets[$fieldName];
+                    $returnFacet = $this->generateManufacturerListItem($bxFacets, $facet, $lang);
+                    if($returnFacet) {
                         $this->facetOptions[$bxFacets->getFacetLabel($fieldName,$lang)] = [
                             'fieldName' => $fieldName,
                             'expanded' => $bxFacets->isFacetExpanded($fieldName, false)
                         ];
-                        $filters[] = $this->generateListItem($fieldName, $bxFacets, $facet, $lang);
+                        $filters[] = $returnFacet;
+                    }
+                    break;
+                default:
+                    if ((strpos($fieldName, 'products_optionID') !== false)) {
+                        $facet = $facets[$fieldName];
+                        $returnFacet = $this->generateListItem($fieldName, $bxFacets, $facet, $lang);
+                        if($returnFacet) {
+                            $this->facetOptions[$bxFacets->getFacetLabel($fieldName, $lang)] = [
+                                'fieldName' => $fieldName,
+                                'expanded' => $bxFacets->isFacetExpanded($fieldName, false)
+                            ];
+                            $propertyFacets[] = $returnFacet;
+                        }
                     }
                     break;
             }
         }
+        $filters[] = new Shopware\Bundle\SearchBundle\FacetResult\FacetResultGroup($propertyFacets, null, 'property');
         return $filters;
     }
 
@@ -1129,8 +1158,8 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                 }
             }
 
-            $finalVals[$key] = new Shopware\Bundle\SearchBundle\FacetResult\TreeItem(
-                $value->getId(),
+            $finalVals[] = new Shopware\Bundle\SearchBundle\FacetResult\TreeItem(
+                "{$value->getId()}",
                 $label,
                 $value->isActive(),
                 $innerValues,
@@ -1202,43 +1231,6 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         );
     }
 
-    private function convertFacetsToJson(){
-        $json = [];
-        $bxFacets =  $this->Helper()->getFacets();
-        $fieldNames = $bxFacets->getGiftFinderFacets();
-        if(!empty($fieldNames)) {
-            $facet_info = ['label', 'icon', 'iconMap', 'visualisation', 'jsonDependencies', 'position', 'isSoftFacet', 'isQuickSearch', 'order', 'finderQuestion'];
-            foreach ($fieldNames as $fieldName) {
-                if($fieldName == ''){
-                    continue;
-                }
-                $extraInfo = [];
-                $json['facets'][$fieldName]['facetValues'] = $bxFacets->getFacetValues($fieldName);
-                $json['facets'][$fieldName]['label'] = $bxFacets->getFacetLabel($fieldName);
-                foreach ($facet_info as $info_key) {
-                    $info = $bxFacets->getFacetExtraInfo($fieldName, $info_key);
-                    if($info_key == 'jsonDependencies' || $info_key == 'label' ||$info_key == 'iconMap') {
-                        $info = json_decode($info);
-                        if($info_key == 'jsonDependencies') {
-                            if(!is_null($info)) {
-                                if(isset($info[0]) && isset($info[0]->values[0])) {
-                                    $check = $info[0]->values[0];
-                                    if(strpos($check, ',') !== false) {
-                                        $info[0]->values = explode(',', $check);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    $extraInfo[$info_key] = $info;
-                }
-                $json['facets'][$fieldName]['facetExtraInfo'] = $extraInfo;
-            }
-            $json['parametersPrefix'] = $this->Helper()->getPrefixContextParameter();
-        }
-        return json_encode($json);
-    }
-
     /**
      * @return mixed|null
      */
@@ -1286,6 +1278,23 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         }
 
         return null;
+    }
+
+    private function loadThemeConfig()
+    {
+        $inheritance = $this->container->get('theme_inheritance');
+
+        /** @var \Shopware\Models\Shop\Shop $shop */
+        $shop = $this->container->get('Shop');
+
+        $config = $inheritance->buildConfig($shop->getTemplate(), $shop, false);
+
+        $this->get('template')->addPluginsDir(
+            $inheritance->getSmartyDirectories(
+                $shop->getTemplate()
+            )
+        );
+        $this->View()->assign('theme', $config);
     }
 
 }
