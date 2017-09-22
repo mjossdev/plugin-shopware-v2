@@ -222,7 +222,7 @@ class Shopware_Plugins_Frontend_Boxalino_FrontendInterceptor
         if ($script != null && $this->Config()->get('boxalino_tracking_enabled')) {
             $this->View()->assign('report_script', $script);
         }
-        $this->View()->assign('helper', $this->Helper());
+        $this->View()->assign('bxHelper', $this->Helper());
     }
     
 }

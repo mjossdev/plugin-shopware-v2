@@ -18,7 +18,10 @@ class BxChooseResponse
     public function setNotificationMode($mode) {
         $this->notificationMode = $mode;
         foreach($this->bxRequests as $bxRequest) {
-            $bxRequest->getFacets()->setNotificationMode($mode);
+            $facet = $bxRequest->getFacets();
+            if(!is_null($facet)) {
+                $facet->setNotificationMode($mode);
+            }
         }
     }
 
