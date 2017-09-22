@@ -1,6 +1,7 @@
 {extends file="parent:frontend/listing/filter/_includes/filter-multi-selection.tpl"}
+
+{block name="frontend_listing_filter_facet_multi_selection"}
 {if $bxFacets}
-    {block name="frontend_listing_filter_facet_multi_selection"}
     <div class="filter-panel filter--multi-selection filter-facet--{$filterType} facet--{$facet->getFacetName()|escape:'htmlall'}"
          data-filter-type="{$filterType}"
          data-facet-name="{$facet->getFacetName()}"
@@ -118,8 +119,8 @@
         {/block}
         </div>
         {/block}
-        </div>
-    {/block}
+    </div>
 {else}
     {$smarty.block.parent}
 {/if}
+{/block}
