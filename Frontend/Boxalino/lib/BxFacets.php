@@ -13,6 +13,28 @@ class BxFacets
 
     protected $priceFieldName = 'discountedPrice';
 
+    protected $notificationLog = array();
+
+    protected $notificationMode = false;
+
+    public function setNotificationMode($mode) {
+        $this->notificationMode = $mode;
+    }
+
+    public function getNotificationMode() {
+        return $this->notificationMode;
+    }
+
+    public function addNotification($name, $parameters) {
+        if($this->notificationMode) {
+            $this->notificationLog[] = array('name'=>$name, 'parameters'=>$parameters);
+        }
+    }
+
+    public function getNotifications() {
+        return $this->notificationLog;
+    }
+
     public function setSearchResults($searchResult) {
         $this->searchResult = $searchResult;
     }
@@ -48,6 +70,7 @@ class BxFacets
         if(!is_null($selectedValue)) {
             $selectedValues = is_array($selectedValue) ? $selectedValue : [$selectedValue];
         }
+
         $this->facets[$fieldName] = array('label'=>$label, 'type'=>$type, 'order'=>$order, 'selectedValues'=>$selectedValues, 'boundsOnly'=>$boundsOnly, 'maxCount'=>$maxCount);
 
     }
@@ -134,7 +157,9 @@ class BxFacets
     }
 
     public function getLeftFacets($returnHidden=false) {
-        return $this->getFacetExtraInfoFacets('position', 'left', true, $returnHidden);
+        $leftFacets = $this->getFacetExtraInfoFacets('position', 'left', true, $returnHidden);
+        $this->addNotification('getLeftFacets', json_encode(array($returnHidden, $leftFacets)));
+        return $leftFacets;
     }
 
     public function getTopFacets($returnHidden=false) {
@@ -174,8 +199,11 @@ class BxFacets
             $fieldName = 'category_id';
         }
         try {
-            return $this->getFacetResponseExtraInfo($this->getFacetResponse($fieldName), $extraInfoKey, $defaultExtraInfoValue);
+            $extraInfo = $this->getFacetResponseExtraInfo($this->getFacetResponse($fieldName), $extraInfoKey, $defaultExtraInfoValue);
+            $this->addNotification('getFacetResponseExtraInfo', json_encode(array($fieldName, $extraInfoKey, $defaultExtraInfoValue, $extraInfo)));
+            return $extraInfo;
         } catch(\Exception $e) {
+            $this->addNotification('Exception - getFacetResponseExtraInfo', json_encode(array($fieldName, $extraInfoKey, $defaultExtraInfoValue)));
             return $defaultExtraInfoValue;
         }
         return $defaultExtraInfoValue;
@@ -444,6 +472,17 @@ class BxFacets
             default:
                 foreach($facetResponse->values as $facetValue) {
                     $facetValues[$facetValue->stringValue] = $facetValue;
+                }
+                if(sizeof($facetValues) > 0) {
+                    foreach ($this->facets[$fieldName]['selectedValues'] as $value) {
+                        if(!isset($facetValues[$value])) {
+                            $newValue = clone reset($facetValues);
+                            $newValue->selected = true;
+                            $newValue->stringValue = $value;
+                            $newValue->hitCount = 0;
+                            $facetValues[$value] = $newValue;
+                        }
+                    }
                 }
                 break;
         }
@@ -714,6 +753,7 @@ class BxFacets
             $valueLabel = $from . ' - ' . $to;
             $paramValue = "$from-$to";
             $hitCount = $this->getFacetResponse($fieldName)->values[0]->hitCount;
+            $this->addNotification('getFacetValueArray-1', json_encode(array($fieldName, $facetValue, $valueLabel, $paramValue, $hitCount, true, false)));
             return array($valueLabel, $paramValue, $hitCount, true, false);
         }
 
@@ -740,6 +780,7 @@ class BxFacets
         switch($type) {
             case 'hierarchical':
                 $parts = explode("/", $fv->stringValue);
+                $this->addNotification('getFacetValueArray-2', json_encode(array($fieldName, $facetValue, $parts[sizeof($parts)-1], $parts[0], $fv->hitCount, $fv->selected, $hidden)));
                 return array($parts[sizeof($parts)-1], $parts[0], $fv->hitCount, $fv->selected, $hidden);
             case 'ranged':
                 $from = round($fv->rangeFromInclusive, 2);
@@ -747,10 +788,12 @@ class BxFacets
                 $valueLabel = $from . ' - ' . $to;
                 $paramValue = $fv->stringValue;
                 $paramValue = "$from-$to";
+                $this->addNotification('getFacetValueArray-3', json_encode(array($fieldName, $facetValue, $valueLabel, $paramValue, $fv->hitCount, $fv->selected, $hidden)));
                 return array($valueLabel, $paramValue, $fv->hitCount, $fv->selected, $hidden);
 
             default:
                 $fv = $keyValues[$facetValue];
+                $this->addNotification('getFacetValueArray-4', json_encode(array($fieldName, $facetValue, $fv->stringValue, $fv->stringValue, $fv->hitCount, $fv->selected, $hidden)));
                 return array($fv->stringValue, $fv->stringValue, $fv->hitCount, $fv->selected, $hidden);
         }
     }

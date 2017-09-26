@@ -428,9 +428,15 @@ class BxClient
 		if(!$this->chooseResponses) {
 			$this->choose();
 		}
-		return new \com\boxalino\bxclient\v1\BxChooseResponse($this->chooseResponses, $this->chooseRequests);
+		$bxChooseResponse = new \com\boxalino\bxclient\v1\BxChooseResponse($this->chooseResponses, $this->chooseRequests);
+        $bxChooseResponse->setNotificationMode($this->getNotificationMode());
+		return $bxChooseResponse;
 	}
-	
+
+	public function getNotificationMode() {
+	    return isset($this->requestMap['dev_bx_notifications']) && $this->requestMap['dev_bx_notifications'] == 'true';
+    }
+
 	public function setAutocompleteRequest($request) {
 		$this->setAutocompleteRequests(array($request));
 	}
@@ -527,11 +533,17 @@ class BxClient
         $this->notifications[$type][] = $notification;
     }
 
+    public function getNotifications() {
+	    $final = $this->notifications;
+	    $final['response'] = $this->getResponse()->getNotifications();
+	    return $final;
+    }
+
     public function finalNotificationCheck($force=false, $requestMapKey = 'dev_bx_notifications')
     {
         if ($force || (isset($this->requestMap[$requestMapKey]) && $this->requestMap[$requestMapKey] == 'true')) {
             echo "<pre><h1>Notifications</h1>" ;
-            var_export($this->notifications, true);
+            var_dump($this->getNotifications(), true);
             echo "</pre>";
             exit;
         }

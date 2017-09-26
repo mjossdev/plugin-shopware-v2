@@ -736,4 +736,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         return $articles;
     }
 
+    public function callNotification($force=false) {
+        self::$bxClient->finalNotificationCheck($force);
+    }
 }

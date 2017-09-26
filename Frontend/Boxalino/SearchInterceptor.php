@@ -87,7 +87,12 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         $catId = $this->Request()->getParam('sCategory', null);
         $streamId = $this->findStreamIdByCategoryId($catId);
         $listingCount = $this->Request()->getActionName() == 'listingCount';
-        if (!$listingCount && ($streamId != null || !isset($viewData['sArticles']) || count($viewData['sArticles']) == 0)) {
+        if(version_compare(Shopware::VERSION, '5.3.0', '>=')) {
+            if(!$listingCount){
+                return null;
+            }
+        }
+        if ($streamId != null || !isset($viewData['sArticles']) || count($viewData['sArticles']) == 0) {
             return null;
         }
         $filter = array();
@@ -128,13 +133,14 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                     $boxLayout = $catId ? Shopware()->Modules()->Categories()
                         ->getProductBoxLayout($catId) : $this->get('config')->get('searchProductBoxLayout');
                 }
-
                 $this->View()->assign($this->Request()->getParams());
                 $this->View()->extendsTemplate('frontend/plugins/boxalino/listing/filter/_includes/filter-multi-selection.tpl');
                 $this->View()->extendsTemplate('frontend/plugins/boxalino/listing/index_5_3.tpl');
+                $articles = $this->Helper()->getLocalArticles($this->Helper()->getHitFieldValues('products_ordernumber'));
+                $articles = $this->convertArticlesResult($articles, $catId);
                 $this->loadThemeConfig();
                 $this->View()->assign([
-                    'sArticles' => $this->Helper()->getLocalArticles($this->Helper()->getHitFieldValues('products_ordernumber')),
+                    'sArticles' => $articles,
                     'pageIndex' => $this->Request()->getParam('sPage'),
                     'productBoxLayout' => $boxLayout,
                     'sCategoryCurrent' => $catId,
@@ -1295,6 +1301,29 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             )
         );
         $this->View()->assign('theme', $config);
+    }
+
+    private function convertArticlesResult($articles, $categoryId)
+    {
+        $router = $this->get('router');
+        if (empty($articles)) {
+            return $articles;
+        }
+        $urls = array_map(function ($article) use ($categoryId) {
+            if ($categoryId !== null) {
+                return $article['linkDetails'] . '&sCategory=' . (int) $categoryId;
+            }
+
+            return $article['linkDetails'];
+        }, $articles);
+        $rewrite = $router->generateList($urls);
+        foreach ($articles as $key => &$article) {
+            if (!array_key_exists($key, $rewrite)) {
+                continue;
+            }
+            $article['linkDetails'] = $rewrite[$key];
+        }
+        return $articles;
     }
 
 }

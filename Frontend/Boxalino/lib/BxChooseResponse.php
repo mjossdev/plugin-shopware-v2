@@ -10,6 +10,41 @@ class BxChooseResponse
 		$this->response = $response;
 		$this->bxRequests = is_array($bxRequests) ? $bxRequests : array($bxRequests);
 	}
+
+	protected $notificationLog = array();
+
+    protected $notificationMode = false;
+
+    public function setNotificationMode($mode) {
+        $this->notificationMode = $mode;
+        foreach($this->bxRequests as $bxRequest) {
+            $facet = $bxRequest->getFacets();
+            if(!is_null($facet)) {
+                $facet->setNotificationMode($mode);
+            }
+        }
+    }
+
+    public function getNotificationMode() {
+        return $this->notificationMode;
+    }
+
+    public function addNotification($name, $parameters) {
+        if($this->notificationMode) {
+            $this->notifications[] = array('name'=>$name, 'parameters'=>$parameters);
+        }
+    }
+
+    public function getNotifications() {
+        $finalNotifications = $this->notifications;
+        foreach($this->bxRequests as $bxRequest) {
+            $finalNotifications[] = array('name'=>'bxFacet', 'parameters'=>$bxRequest->getChoiceId());
+            foreach($bxRequest->getFacets()->getNotifications() as $notification) {
+                $finalNotifications[] = $notification;
+            }
+        }
+        return $finalNotifications;
+    }
 	
 	public function getResponse() {
 		return $this->response;
@@ -151,7 +186,9 @@ class BxChooseResponse
 		$facets = $this->getRequestFacets($choice);
 
 		if(empty($facets) || $searchResult == null){
-			return new \com\boxalino\bxclient\v1\BxFacets();
+            $facets = new \com\boxalino\bxclient\v1\BxFacets();
+            $facets->setNotificationMode($this->notificationMode);
+            return $facets;
 		}
 		$facets->setSearchResults($searchResult);
 		return $facets;

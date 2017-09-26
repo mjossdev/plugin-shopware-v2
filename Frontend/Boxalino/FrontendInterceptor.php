@@ -217,11 +217,12 @@ class Shopware_Plugins_Frontend_Boxalino_FrontendInterceptor
      * @return void
      */
     protected function addScript($script) {
+        $this->View()->addTemplateDir($this->Bootstrap()->Path() . 'Views/emotion/');
+        $this->View()->extendsTemplate('frontend/plugins/boxalino/index.tpl');
         if ($script != null && $this->Config()->get('boxalino_tracking_enabled')) {
-            $this->View()->addTemplateDir($this->Bootstrap()->Path() . 'Views/emotion/');
-            $this->View()->extendsTemplate('frontend/plugins/boxalino/index.tpl');
             $this->View()->assign('report_script', $script);
         }
+        $this->View()->assign('bxHelper', $this->Helper());
     }
     
 }
