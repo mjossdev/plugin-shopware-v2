@@ -473,6 +473,17 @@ class BxFacets
                 foreach($facetResponse->values as $facetValue) {
                     $facetValues[$facetValue->stringValue] = $facetValue;
                 }
+                if(sizeof($facetValues) > 0) {
+                    foreach ($this->facets[$fieldName]['selectedValues'] as $value) {
+                        if(!isset($facetValues[$value])) {
+                            $newValue = clone reset($facetValues);
+                            $newValue->selected = true;
+                            $newValue->stringValue = $value;
+                            $newValue->hitCount = 0;
+                            $facetValues[$value] = $newValue;
+                        }
+                    }
+                }
                 break;
         }
         $overWriteRanking = $this->getFacetExtraInfo($fieldName, "valueorderEnums");

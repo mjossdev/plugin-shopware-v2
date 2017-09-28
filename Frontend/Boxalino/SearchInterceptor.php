@@ -87,7 +87,12 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         $catId = $this->Request()->getParam('sCategory', null);
         $streamId = $this->findStreamIdByCategoryId($catId);
         $listingCount = $this->Request()->getActionName() == 'listingCount';
-        if (!$listingCount && ($streamId != null || !isset($viewData['sArticles']) || count($viewData['sArticles']) == 0)) {
+        if(version_compare(Shopware::VERSION, '5.3.0', '>=')) {
+            if(!$listingCount) {
+                return null;
+            }
+        }
+        if ($streamId != null || !isset($viewData['sArticles']) || count($viewData['sArticles']) == 0) {
             return null;
         }
         $filter = array();
