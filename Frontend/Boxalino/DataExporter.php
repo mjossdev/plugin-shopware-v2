@@ -1168,7 +1168,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
         $customer_attributes = $this->getCustomerAttributes($account);
         $customer_properties = array_flip($customer_attributes);
         $header = true;
-
+        $firstShop = true;
         foreach ($this->_config->getAccountLanguages($account) as $shop_id => $language) {
             $data = array();
             $countMax = 1000000;
@@ -1199,7 +1199,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
                         $totalCount++;
                     }
                 } else {
-                    if ($totalCount == 0) {
+                    if ($totalCount == 0 && $firstShop) {
                         return;
                     }
                     break;
@@ -1212,6 +1212,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
                 $this->log->info("BxIndexLog: Customer export - Current page: {$page}, data count: {$totalCount}");
                 $page++;
             }
+            $firstShop = false;
         }
 
         $customerSourceKey = $this->bxData->addMainCSVCustomerFile($files->getPath('customers.csv'), 'id');
@@ -1255,6 +1256,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
         $totalCount = 0;
         $date = date("Y-m-d H:i:s", strtotime("-1 month"));
         $mode = $this->_config->getTransactionMode($account);
+        $firstShop = true;
         foreach ($this->_config->getAccountLanguages($account) as $shop_id => $language) {
 
             $page = 1;
@@ -1291,7 +1293,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
                         $totalCount++;
                     }
                 } else {
-                    if ($totalCount == 0){
+                    if ($totalCount == 0 && $firstShop){
                         return;
                     }
                     break;
@@ -1304,6 +1306,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
                 $this->log->info("BxIndexLog: Transaction export - Current page: {$page}, data count: {$totalCount}");
                 $page++;
             }
+            $firstShop = false;
         }
         $this->bxData->setCSVTransactionFile($files->getPath('transactions.csv'), 'id', 'articledetailsID', 'userID', 'ordertime', 'total_order_value', 'price', 'discounted_price');
     }

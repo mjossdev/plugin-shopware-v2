@@ -139,7 +139,7 @@ class BxFacets
         return $selectedFacets;
     }
 
-    public function getFacetExtraInfoFacets($extraInfoKey, $extraInfoValue, $default=false, $returnHidden=false) {
+    public function getFacetExtraInfoFacets($extraInfoKey, $extraInfoValue, $default=false, $returnHidden=false, $withSoftFacets=false) {
         $selectedFacets = array();
         foreach($this->getFieldNames() as $fieldName) {
             if (!$returnHidden && $this->isFacetHidden($fieldName)) {
@@ -150,6 +150,9 @@ class BxFacets
                 continue;
             }
             if ($this->getFacetExtraInfo($fieldName, $extraInfoKey) == $extraInfoValue || ($this->getFacetExtraInfo($fieldName, $extraInfoKey) == null && $default)) {
+                if(!$withSoftFacets && $this->getFacetExtraInfo($fieldName, 'isSoftFacet') == 'true'){
+                    continue;
+                }
                 $selectedFacets[] = $fieldName;
             }
         }
@@ -172,6 +175,18 @@ class BxFacets
 
     public function getRightFacets($returnHidden=false) {
         return $this->getFacetExtraInfoFacets('position', 'right', false, $returnHidden);
+    }
+
+    public function getSoftFacets($returnHidden=false) {
+        return $this->getFacetExtraInfoFacets('isSoftFacet', 'true', false, $returnHidden, true);
+    }
+
+    public function getQuickSearchFacets($returnHidden=false) {
+        return $this->getFacetExtraInfoFacets('isQuickSearch', 'true', false, $returnHidden, true);
+    }
+
+    public function getCPOFinderFacets($returnHidden=false){
+        return array_unique(array_merge( $this->getQuickSearchFacets($returnHidden), $this->getSoftFacets($returnHidden)), SORT_REGULAR);
     }
 
     public function getFacetResponseExtraInfo($facetResponse, $extraInfoKey, $defaultExtraInfoValue = null) {

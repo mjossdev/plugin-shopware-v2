@@ -44,12 +44,18 @@ class Shopware_Controllers_Frontend_RecommendationSlider extends Enlight_Control
             $categoryId = 0;
         }
         $this->config->offsetSet('similarLimit', 0);
-        $sArticles = Shopware()->Modules()->Articles()->sGetArticleById(
-            $id,
-            $categoryId,
-            $number,
-            $selection
-        );
+
+        try{
+            $sArticles = Shopware()->Modules()->Articles()->sGetArticleById(
+                $id,
+                $categoryId,
+                $number,
+                $selection
+            );
+        }catch(\Exception $exception) {
+            Shopware()->Plugins()->Frontend()->Boxalino()->logException($exception, __FUNCTION__, $this->request->getRequestUri());
+            $sArticles = [];
+        }
         $boughtArticles = [];
         $viewedArticles = [];
         $sRelatedArticles = isset($sArticles['sRelatedArticles']) ? $sArticles['sRelatedArticles'] : [];

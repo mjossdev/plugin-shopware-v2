@@ -45,6 +45,8 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
      */
     private $benchmark;
 
+    private $prefixContextParameter = null;
+
     /**
      * Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper constructor.
      */
@@ -118,7 +120,69 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         }
         return $bxFilters;
     }
+    public function getPrefixContextParameter(){
+        return $this->prefixContextParameter;
+    }
+    public function setPrefixContextParameter($prefix) {
+        $this->prefixContextParameter = $prefix;
+    }
+    protected function checkPrefixContextParameter($prefix){
+        $address = $_SERVER['HTTP_REFERER'];
+        $params = explode('&', substr ($address,strpos($address, '?')+1, strlen($address)));
+        foreach ($params as $index => $param){
+            $keyValue = explode("=", $param);
+            $params[$keyValue[0]] = $keyValue[1];
+            unset($params[$index]);
+        }
+        foreach ($params as $key => $value) {
+            if(strpos($key, $prefix) === 0) {
+                self::$bxClient->addRequestContextParameter($key, $value);
+            }
+        }
+    }
+    protected function checkFilterParameter() {
+        $address = $_SERVER['HTTP_REFERER'];
+        $params = explode('&', substr ($address,strpos($address, '?')+1, strlen($address)));
 
+        foreach ($params as $index => $param){
+            $keyValue = explode("=", $param);
+            $params[$keyValue[0]] = $keyValue[1];
+            unset($params[$index]);
+        }
+        $filters = [];
+        foreach ($params as $key => $value) {
+            if(strpos($key, 'bx_') === 0) {
+                $filters[$key] = new \com\boxalino\bxclient\v1\BxFilter(substr($key, 3), [rawurldecode($value)]);
+            }
+        }
+        return $filters;
+    }
+    public function addFinder($hitCount = 1, $choiceId = 'productfinder', $filter=[], $type = 'product', $finder_type = 1){
+
+        $lang = $this->getShortLocale();
+        $this->currentSearchChoice = $choiceId;
+        $bxRequest = new \com\boxalino\bxclient\v1\BxParametrizedRequest($lang, $choiceId, $hitCount);
+        $this->setPrefixContextParameter($bxRequest->getRequestWeightedParametersPrefix());
+        $this->checkPrefixContextParameter($this->getPrefixContextParameter());
+        $bxRequest->setGroupBy($this->getEntityIdFieldName($type));
+        $bxRequest->setReturnFields($this->getReturnFields());
+
+        $filters = [];
+        if($finder_type == 1) {
+            foreach ($filter as $field => $value){
+                $filters[] = new \com\boxalino\bxclient\v1\BxFilter($field, array($value));
+            }
+        }
+        $filters = array_merge($filters, $this->checkFilterParameter());
+        $filters = array_merge($filters, $this->getSystemFilters($type, 'finder', true));
+        $bxRequest->setFilters($filters);
+        $this->addBxRequest($bxRequest, $type);
+    }
+
+    protected function addBxRequest($bxRequest, $type = 'product') {
+        self::$bxClient->addRequest($bxRequest);
+        self::$choiceContexts[$bxRequest->getChoiceId()][] = $type;
+    }
     /**
      * @param string $queryText
      * @param int $pageOffset
@@ -512,6 +576,43 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
      */
     public function resetRequests() {
         self::$bxClient->resetRequests();
+    }
+
+    /**
+     * @param $hitId
+     * @param string $field
+     * @param string $type
+     * @return mixed
+     */
+    public function getHitFieldsValues($hitId, $field = 'id', $type = "product") {
+
+        $count = array_search($type, self::$choiceContexts[$this->currentSearchChoice]);
+        return self::$bxClient->getResponse()->getHitFieldValue($this->currentSearchChoice, $hitId, $field, $count);
+    }
+
+    /**
+     * @param $hitId
+     * @param $info_key
+     * @param string $default_value
+     * @param string $type
+     * @return mixed
+     */
+    public function getHitExtraInfo($hitId, $info_key, $default_value = '',  $type = "product") {
+
+        $count = array_search($type, self::$choiceContexts[$this->currentSearchChoice]);
+        return self::$bxClient->getResponse()->getHitExtraInfo($this->currentSearchChoice, $hitId, $info_key, $default_value, $count);
+    }
+
+    /**
+     * @param $hitId
+     * @param $field
+     * @param string $type
+     * @return mixed
+     */
+    public function getHitVariable($hitId, $field, $type = "product") {
+
+        $count = array_search($type, self::$choiceContexts[$this->currentSearchChoice]);
+        return self::$bxClient->getResponse()->getHitVariable($this->currentSearchChoice, $hitId, $field, $count);
     }
 
     /**
