@@ -991,11 +991,11 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                     }
                     break;
                 case 'vote_average':
-//                    $vote = isset($params['rating']) ? range($params['rating'], 4) : null;
-//                    $options['di_rating']['label'] = $snippetManager->get('vote_average', 'Bewertung');
-//                    if($vote) {
-//                        $options['di_rating']['value'] = $vote;
-//                    }
+                    $vote = isset($params['rating']) ? range($params['rating'], 4) : null;
+                    $options['di_rating']['label'] = $snippetManager->get('vote_average', 'Bewertung');
+                    if($vote) {
+                        $options['di_rating']['value'] = $vote;
+                    }
                     break;
                 default:
                     break;
@@ -1349,31 +1349,31 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                     if($_REQUEST['dev_bx_debug'] == 'true'){
                         $t1 = microtime(true);
                     }
-//                    if ($this->Request()->getControllerName() == 'search' || $this->Request()->getActionName() == 'listingCount') {
-//                        $facet = $facets['category'];
-//                        $ids = array();
-//                        $depth = version_compare(Shopware::VERSION, '5.3.0', '<') ? 1 : $facet->getDepth();
-//                        foreach (range(0, $depth) as $i) {
-//                            $ids = array_merge($ids, $bxFacets->getCategoryIdsFromLevel($i));
-//                        }
-//                        foreach ($bxFacets->getParentCategories() as $category_id => $parent){
-//                            if($category_id > 1) {
-//                                $ids[] = $category_id;
-//                            }
-//                        }
-//                        $categories = $this->get('shopware_storefront.category_service')->getList($ids, $context);
-//                        if (!$fieldName = $mapper->getShortAlias('categoryFilter')) {
-//                            $fieldName = 'categoryFilter';
-//                        }
-//                        $selectedCategoryId = reset($bxFacets->getSelectedCategoryIds());
-//                        $treeResult = $this->generateTreeResult($fieldName, $facet, $selectedCategoryId, $categories);
-//                        $filters[] = $treeResult;
-//                        $label = $bxFacets->getFacetLabel($fieldName,$lang);
-//                        $this->facetOptions[$label] = [
-//                            'fieldName' => $fieldName,
-//                            'expanded' => $bxFacets->isFacetExpanded($fieldName, false)
-//                        ];
-//                    }
+                    if ($this->Request()->getControllerName() == 'search' || $this->Request()->getActionName() == 'listingCount') {
+                        $facet = $facets['category'];
+                        $ids = array();
+                        $depth = version_compare(Shopware::VERSION, '5.3.0', '<') ? 1 : $facet->getDepth();
+                        foreach (range(0, $depth) as $i) {
+                            $ids = array_merge($ids, $bxFacets->getCategoryIdsFromLevel($i));
+                        }
+                        foreach ($bxFacets->getParentCategories() as $category_id => $parent){
+                            if($category_id > 1) {
+                                $ids[] = $category_id;
+                            }
+                        }
+                        $categories = $this->get('shopware_storefront.category_service')->getList($ids, $context);
+                        if (!$fieldName = $mapper->getShortAlias('categoryFilter')) {
+                            $fieldName = 'categoryFilter';
+                        }
+                        $selectedCategoryId = reset($bxFacets->getSelectedCategoryIds());
+                        $treeResult = $this->generateTreeResult($fieldName, $facet, $selectedCategoryId, $categories);
+                        $filters[] = $treeResult;
+                        $label = $bxFacets->getFacetLabel($fieldName,$lang);
+                        $this->facetOptions[$label] = [
+                            'fieldName' => $fieldName,
+                            'expanded' => $bxFacets->isFacetExpanded($fieldName, false)
+                        ];
+                    }
                     if($_REQUEST['dev_bx_debug'] == 'true'){
                         $t1 = (microtime(true) - $t1) * 1000 ;
                         $this->Helper()->addNotification("Search updateFacets for $fieldName: " . $t1 . "ms.");
