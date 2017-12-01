@@ -20,6 +20,7 @@ class BxRequest
 	protected $bxSortFields = null;
 	protected $bxFilters = array();
 	protected $orFilters = false;
+	protected $hitsGroupsAsHits = null;
 	
 	public function __construct($language, $choiceId, $max=10, $min=0) {
 		if($choiceId == ''){
@@ -181,6 +182,10 @@ class BxRequest
 		$this->groupBy = $groupBy;
 	}
 
+	public function setHitsGroupsAsHits($groupsAsHits) {
+	    $this->hitsGroupsAsHits = $groupsAsHits;
+    }
+
 	public function getSimpleSearchQuery() {
 		
 		$searchQuery = new \com\boxalino\p13n\api\thrift\SimpleSearchQuery();
@@ -191,6 +196,9 @@ class BxRequest
 		$searchQuery->hitCount = $this->getMax();
 		$searchQuery->queryText = $this->getQueryText();
 		$searchQuery->groupBy = $this->groupBy;
+		if(!is_null($this->hitsGroupsAsHits)) {
+            $searchQuery->hitsGroupsAsHits = $this->hitsGroupsAsHits;
+        }
 		if(sizeof($this->getFilters()) > 0) {
 			$searchQuery->filters = array();
 			foreach($this->getFilters() as $filter) {

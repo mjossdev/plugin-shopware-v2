@@ -34,3 +34,10 @@
         });
     </script>
 {/block}
+{block name="frontend_index_content"}
+    {$smarty.block.parent}
+    {if $sBlogArticles}
+        <h2>Blog Recommendation</h2>
+        {include file="frontend/_includes/product_slider.tpl" productBoxLayout="emotion" fixedImage=true articles=$sBlogArticles bxBlogRecommendation=true}
+    {/if}
+{/block}

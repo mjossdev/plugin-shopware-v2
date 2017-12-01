@@ -2,7 +2,6 @@
 
 namespace Thrift\Server;
 
-use Thrift\Server\TServerTransport;
 use Thrift\Factory\TTransportFactory;
 use Thrift\Factory\TProtocolFactory;
 
@@ -11,8 +10,8 @@ use Thrift\Factory\TProtocolFactory;
  *
  * @package thrift.server
  */
-abstract class TServer {
-
+abstract class TServer
+{
   /**
    * Processor to handle new clients
    *
@@ -68,17 +67,17 @@ abstract class TServer {
    * @return void
    */
   public function __construct($processor,
-							  TServerTransport $transport,
-							  TTransportFactory $inputTransportFactory,
-							  TTransportFactory $outputTransportFactory,
-							  TProtocolFactory $inputProtocolFactory,
-							  TProtocolFactory $outputProtocolFactory) {
-	$this->processor_ = $processor;
-	$this->transport_ = $transport;
-	$this->inputTransportFactory_ = $inputTransportFactory;
-	$this->outputTransportFactory_ = $outputTransportFactory;
-	$this->inputProtocolFactory_ = $inputProtocolFactory;
-	$this->outputProtocolFactory_ = $outputProtocolFactory;
+                              TServerTransport $transport,
+                              TTransportFactory $inputTransportFactory,
+                              TTransportFactory $outputTransportFactory,
+                              TProtocolFactory $inputProtocolFactory,
+                              TProtocolFactory $outputProtocolFactory) {
+    $this->processor_ = $processor;
+    $this->transport_ = $transport;
+    $this->inputTransportFactory_ = $inputTransportFactory;
+    $this->outputTransportFactory_ = $outputTransportFactory;
+    $this->inputProtocolFactory_ = $inputProtocolFactory;
+    $this->outputProtocolFactory_ = $outputProtocolFactory;
   }
 
   /**

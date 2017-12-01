@@ -25,11 +25,12 @@ namespace Thrift\Factory;
 /**
  * Protocol factory creates protocol objects from transports
  */
-interface TProtocolFactory {
+interface TProtocolFactory
+{
   /**
    * Build a protocol from the base transport
    *
-   * @return \Thrift\Protocol\TProtocol protocol
+   * @return Thrift\Protocol\TProtocol protocol
    */
   public function getProtocol($trans);
 }

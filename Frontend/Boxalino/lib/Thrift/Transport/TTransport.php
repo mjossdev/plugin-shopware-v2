@@ -29,35 +29,35 @@ use Thrift\Factory\TStringFuncFactory;
  *
  * @package thrift.transport
  */
-abstract class TTransport {
-
+abstract class TTransport
+{
   /**
    * Whether this transport is open.
    *
    * @return boolean true if open
    */
-  public abstract function isOpen();
+  abstract public function isOpen();
 
   /**
    * Open the transport for reading/writing
    *
    * @throws TTransportException if cannot open
    */
-  public abstract function open();
+  abstract public function open();
 
   /**
    * Close the transport.
    */
-  public abstract function close();
+  abstract public function close();
 
   /**
    * Read some data into the array.
    *
-   * @param int	$len How much to read
+   * @param int    $len How much to read
    * @return string The data that has been read
    * @throws TTransportException if cannot read any more data
    */
-  public abstract function read($len);
+  abstract public function read($len);
 
   /**
    * Guarantees that the full amount of data is read.
@@ -65,15 +65,17 @@ abstract class TTransport {
    * @return string The data, of exact length
    * @throws TTransportException if cannot read data
    */
-  public function readAll($len) {
-	// return $this->read($len);
+  public function readAll($len)
+  {
+    // return $this->read($len);
 
-	$data = '';
-	$got = 0;
-	while (($got = TStringFuncFactory::create()->strlen($data)) < $len) {
-	  $data .= $this->read($len - $got);
-	}
-	return $data;
+    $data = '';
+    $got = 0;
+    while (($got = TStringFuncFactory::create()->strlen($data)) < $len) {
+      $data .= $this->read($len - $got);
+    }
+
+    return $data;
   }
 
   /**
@@ -82,7 +84,7 @@ abstract class TTransport {
    * @param string $buf  The data to write
    * @throws TTransportException if writing fails
    */
-  public abstract function write($buf);
+  abstract public function write($buf);
 
   /**
    * Flushes any pending data out of a buffer

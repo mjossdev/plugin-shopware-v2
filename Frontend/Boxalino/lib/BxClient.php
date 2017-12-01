@@ -22,7 +22,9 @@ class BxClient
 	
 	private $chooseRequests = array();
 	private $chooseResponses = null;
-	
+
+	private $bundleChooseRequests = array();
+
 	const VISITOR_COOKIE_TIME = 31536000;
 
 	private $_timeout = 2;
@@ -71,7 +73,11 @@ class BxClient
 		}
 		$this->domain = $domain;
 	}
-	
+
+	public function setHost($host) {
+	    $this->host = $host;
+    }
+
 	public function setTestMode($isTest) {
 		$this->isTest = $isTest;
 	}
@@ -333,6 +339,10 @@ class BxClient
 	private function p13nchoose($choiceRequest) {
 		try {
 			$choiceResponse = $this->getP13n($this->_timeout)->choose($choiceRequest);
+            if($_REQUEST['dev_bx_debug'] == 'true'){
+                $this->addNotification('bxRequest', $choiceRequest);
+                $this->addNotification('bxResponse', $choiceResponse);
+            }
 			if(isset($this->requestMap['dev_bx_disp']) && $this->requestMap['dev_bx_disp'] == 'true') {
 				echo "<pre><h1>Choice Request</h1>";
 				var_dump($choiceRequest);
@@ -346,15 +356,42 @@ class BxClient
 			$this->throwCorrectP13nException($e);
 		}
 	}
+
+    private function p13nchooseAll($choiceRequestBundle) {
+        try {
+            $bundleChoiceResponse = $this->getP13n($this->_timeout)->chooseAll($choiceRequestBundle);
+            if(isset($this->requestMap['dev_bx_disp']) && $this->requestMap['dev_bx_disp'] == 'true') {
+                echo "<pre><h1>Bundle Choice Request</h1>";
+                var_dump($choiceRequestBundle);
+                echo "<br><h1>Bundle Choice Response</h1>";
+                var_dump($bundleChoiceResponse);
+                echo "</pre>";
+                exit;
+            }
+            return $bundleChoiceResponse;
+        } catch(\Exception $e) {
+            var_dump($e->getMessage());exit;
+            $this->throwCorrectP13nException($e);
+        }
+    }
 	
 	public function addRequest($request) {
 		$request->setDefaultIndexId($this->getAccount());
 		$request->setDefaultRequestMap($this->requestMap);
 		$this->chooseRequests[] = $request;
 	}
-	
+
+	public function addBundleRequest($requests) {
+	    foreach ($requests as $request) {
+            $request->setDefaultIndexId($this->getAccount());
+            $request->setDefaultRequestMap($this->requestMap);
+        }
+	    $this->bundleChooseRequests[] = $requests;
+    }
+
 	public function resetRequests() {
 		$this->chooseRequests = array();
+		$this->bundleChooseRequests = array();
 	}
 	
 	public function getRequest($index=0) {
@@ -414,9 +451,58 @@ class BxClient
 		$choiceRequest = $this->getChoiceRequest($choiceInquiries, $this->getRequestContext());
 		return $choiceRequest;
 	}
+
+    public function getBundleChoiceRequest($inquiries, $requestContext = null) {
+
+        $choiceRequest = new \com\boxalino\p13n\api\thrift\ChoiceRequest();
+        list($sessionid, $profileid) = $this->getSessionAndProfile();
+
+        $choiceRequest->userRecord = $this->getUserRecord();
+        $choiceRequest->profileId = $profileid;
+        $choiceRequest->inquiries = $inquiries;
+        if($requestContext == null) {
+            $requestContext = $this->getRequestContext();
+        }
+        $choiceRequest->requestContext = $requestContext;
+        return $choiceRequest;
+    }
+
+    public function getThriftBundleChoiceRequest() {
+
+	    $bundleRequest = array();
+        foreach($this->bundleChooseRequests as $bundleChooseRequest) {
+            $choiceInquiries = array();
+            foreach ($bundleChooseRequest as $request) {
+                $this->addRequest($request);
+                $choiceInquiry = new \com\boxalino\p13n\api\thrift\ChoiceInquiry();
+                $choiceInquiry->choiceId = $request->getChoiceId();
+                if($this->isTest === true || ($this->isDev && $this->isTest === null)) {
+                    $choiceInquiry->choiceId .= "_debugtest";
+                }
+                $choiceInquiry->simpleSearchQuery = $request->getSimpleSearchQuery($this->getAccount());
+                $choiceInquiry->contextItems = $request->getContextItems();
+                $choiceInquiry->minHitCount = $request->getMin();
+                $choiceInquiry->withRelaxation = $request->getWithRelaxation();
+                $choiceInquiries[] = $choiceInquiry;
+            }
+            $bundleRequest[] = $this->getBundleChoiceRequest($choiceInquiries, $this->getRequestContext());
+        }
+        return new \com\boxalino\p13n\api\thrift\ChoiceRequestBundle(['requests' => $bundleRequest]);
+    }
 	
-	protected function choose() {
-		$this->chooseResponses = $this->p13nchoose($this->getThriftChoiceRequest());
+	protected function choose($chooseAll=false) {
+	    if($chooseAll) {
+	        $bundleResponse = $this->p13nchooseAll($this->getThriftBundleChoiceRequest());
+            $variants = array();
+	        foreach ($bundleResponse->responses as $choiceResponse) {
+                $variants = array_merge($variants, $choiceResponse->variants);
+            }
+
+            $response = new \com\boxalino\p13n\api\thrift\ChoiceResponse(['variants' => $variants]);
+        } else {
+            $response = $this->p13nchoose($this->getThriftChoiceRequest());
+        }
+		$this->chooseResponses = $response ;
 	}
 	
 	public function flushResponses() {
@@ -424,9 +510,9 @@ class BxClient
 		$this->chooseResponses = null;
 	}
 	
-	public function getResponse() {
+	public function getResponse($chooseAll=false) {
 		if(!$this->chooseResponses) {
-			$this->choose();
+			$this->choose($chooseAll);
 		}
 		$bxChooseResponse = new \com\boxalino\bxclient\v1\BxChooseResponse($this->chooseResponses, $this->chooseRequests);
         $bxChooseResponse->setNotificationMode($this->getNotificationMode());
@@ -535,14 +621,13 @@ class BxClient
 
     public function getNotifications() {
 	    $final = $this->notifications;
-	    $final['response'] = $this->getResponse()->getNotifications();
 	    return $final;
     }
 
     public function finalNotificationCheck($force=false, $requestMapKey = 'dev_bx_notifications')
     {
         if ($force || (isset($this->requestMap[$requestMapKey]) && $this->requestMap[$requestMapKey] == 'true')) {
-            echo "<pre><h1>Notifications</h1>" ;
+            echo "<pre><h1>Notifications</h1>";
             var_dump($this->getNotifications(), true);
             echo "</pre>";
             exit;
