@@ -1182,10 +1182,8 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
 
         $items = $this->getCategoriesOfParent($categories, null);
         $values = [];
-        $selectedCategory = (version_compare(Shopware::VERSION, '5.3.0', '<') ?
-            $selectedCategoryId : (Shopware()->Shop()->getCategory()->getId() == $selectedCategoryId ? null : $selectedCategoryId));
         foreach ($items as $item) {
-            $values[] = $this->createTreeItem($categories, $item, [$selectedCategory]);
+            $values[] = $this->createTreeItem($categories, $item, [$selectedCategoryId]);
         }
 
         return new TreeFacetResult(
@@ -1352,9 +1350,16 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                     if ($this->Request()->getControllerName() == 'search' || $this->Request()->getActionName() == 'listingCount') {
                         $facet = $facets['category'];
                         $ids = array();
-                        $depth = version_compare(Shopware::VERSION, '5.3.0', '<') ? 1 : $facet->getDepth();
-                        foreach (range(0, $depth) as $i) {
-                            $ids = array_merge($ids, $bxFacets->getCategoryIdsFromLevel($i));
+
+                        $selectedCategoryId = reset($bxFacets->getSelectedCategoryIds());
+                        if(version_compare(Shopware::VERSION, '5.3.0', '<')) {
+                            foreach ($bxFacets->getCategories() as $category) {
+                                $ids[] = explode('/', $category)[0];
+                            }
+                        } else {
+                            foreach (range(0, $facet->getDepth()) as $i) {
+                                $ids = array_merge($ids, $bxFacets->getCategoryIdsFromLevel($i));
+                            }
                         }
                         foreach ($bxFacets->getParentCategories() as $category_id => $parent){
                             if($category_id > 1) {
@@ -1365,7 +1370,6 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                         if (!$fieldName = $mapper->getShortAlias('categoryFilter')) {
                             $fieldName = 'categoryFilter';
                         }
-                        $selectedCategoryId = reset($bxFacets->getSelectedCategoryIds());
                         $treeResult = $this->generateTreeResult($fieldName, $facet, $selectedCategoryId, $categories);
                         $filters[] = $treeResult;
                         $label = $bxFacets->getFacetLabel($fieldName,$lang);
