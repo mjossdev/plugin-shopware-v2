@@ -205,7 +205,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
             $this->log->info("BxIndexLog: Preparing products - blogs.");
             $this->exportItemBlogs($account, $files);
             $this->log->info("BxIndexLog: Finished products - blogs.");
-            $this->exportItemVotes($account, $files);
+            $this->exportItemVotes($files);
             $this->exportProductStreams($files);
         }
         return $export_products;
@@ -261,33 +261,29 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
      * @param $account
      * @param $files
      */
-    private function exportItemVotes($account, $files) {
+    private function exportItemVotes($files) {
 
-        $languages = $this->_config->getAccountLanguages($account);
         $db = $this->db;
         $data = array();
         $header = true;
-        foreach ($languages as $shopId => $language) {
+        $sql = $db->select()
+            ->from(array('a' => 's_articles_vote'), array('vote' => 'points'))
+            ->join(array('a_d' => 's_articles_details'), 'a.articleID = a_d.articleID', array('a_d.id'))
+            ->where('a.active = 1');
+        if ($this->delta) {
+            $sql->where('a.articleID IN(?)', $this->deltaIds);
+        }
 
-            $sql = $db->select()
-                ->from(array('a' => 's_articles_vote'), array('id' => 'articleID', 'vote' => 'points'))
-                ->where('a.shop_id = ? AND a.active = 1', $shopId);
-            if ($this->delta) {
-                $sql->where('a.articleID IN(?)', $this->deltaIds);
+        $stmt = $db->query($sql);
+        while ($row = $stmt->fetch()) {
+            if (!isset($this->shopProductIds[$row['id']])) {
+                continue;
             }
-
-            $stmt = $db->query($sql);
-            while ($row = $stmt->fetch()) {
-                if (!isset($this->shopProductIds[$row['id']])) {
-                    continue;
-                }
-                if ($header) {
-                    $data[] = array_keys($row);
-                    $header = false;
-                }
-                $data[] = $row;
+            if ($header) {
+                $data[] = array_keys($row);
+                $header = false;
             }
-            $files->savepartToCsv('product_vote.csv', $data);
+            $data[] = $row;
         }
         $files->savepartToCsv('product_vote.csv', $data);
         $attributeSourceKey = $this->bxData->addCSVItemFile($files->getPath('product_vote.csv'), 'id');

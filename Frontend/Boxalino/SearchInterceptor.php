@@ -1326,7 +1326,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                             $activeMax = $selectedRange[1];
                         }
 
-                        $filters[] = new Shopware\Bundle\SearchBundle\FacetResult\RangeFacetResult(
+                        $result = new Shopware\Bundle\SearchBundle\FacetResult\RangeFacetResult(
                             $facet->getName(),
                             $selectedRange == '0-0' ? false : $bxFacets->isSelected($fieldName),
                             $label,
@@ -1337,6 +1337,8 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                             $mapper->getShortAlias('priceMin'),
                             $mapper->getShortAlias('priceMax')
                         );
+                        $result->setTemplate('frontend/listing/filter/facet-currency-range.tpl');
+                        $filters[] = $result;
                     }
                     if($_REQUEST['dev_bx_debug'] == 'true'){
                         $t1 = (microtime(true) - $t1) * 1000 ;

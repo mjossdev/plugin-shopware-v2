@@ -465,11 +465,11 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
 
         foreach ($options as $fieldName => $option) {
             if ($fieldName == 'category') {
-                $bxFacets->addCategoryFacet($option['value']);
+                $bxFacets->addCategoryFacet($option['value'], 2, -1, false, $option['label']);
                 continue;
             }
             if ($fieldName == 'discountedPrice') {
-                $bxFacets->addPriceRangeFacet($option['value']);
+                $bxFacets->addPriceRangeFacet($option['value'], 2, $option['label']);
                 continue;
             }
             $value = isset($option['value']) && count($option['value']) ? $option['value'] : null;
