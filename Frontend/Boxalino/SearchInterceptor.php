@@ -264,7 +264,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                 case 'Shopware\Bundle\SearchBundle\Condition\PropertyCondition':
                     $filterValues = $condition->getValueIds();
                     $option_id = $this->getOptionIdFromValue(reset($filterValues));
-                    $shop_id  = Shopware()->Shop()->getId();
+                    $shop_id  = $this->Helper()->getShopId();
                     $useTranslation = $this->useTranslation($shop_id);
                     $result = $this->getFacetValuesResult($option_id, $filterValues, $useTranslation, $shop_id);
                     $values = array();
@@ -890,16 +890,28 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
     }
 
     protected function getAllFilterableOptions() {
-
         $options = array();
         $db = Shopware()->Db();
         $sql = $db->select()->from(array('f_o' => 's_filter_options'))
             ->where('f_o.filterable = 1');
+        $shop_id = $this->Helper()->getShopId();
+        $useTranslation = $this->useTranslation($shop_id);
+
+        if($useTranslation) {
+            $sql
+                ->join(array('t' => 's_core_translations'), 'f_o.id = t.objectkey', array('objectdata'))
+                ->where('t.objecttype = ?', 'propertyoption')
+                ->where('t.objectlanguage = ?', $shop_id);
+        }
         $stmt = $db->query($sql);
 
         if($stmt->rowCount()) {
             while($row = $stmt->fetch()){
-                if($row['id'] > 107) continue;
+                if($useTranslation) {
+                    $translation = unserialize($row['objectdata']);
+                    $row['name'] = isset($translation['optionName']) && $translation['optionName'] != '' ?
+                        $translation['optionName'] : $row['name'];
+                }
                 $options['products_optionID_mapped_' . $row['id']] = ['label' => $row['name']];
             }
         }
@@ -1178,7 +1190,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         );
     }
 
-    private function generateTreeResult($fieldName, $facet, $selectedCategoryId, $categories){
+    private function generateTreeResult($facet, $selectedCategoryId, $categories, $label){
 
         $items = $this->getCategoriesOfParent($categories, null);
         $values = [];
@@ -1188,9 +1200,9 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
 
         return new TreeFacetResult(
             $facet->getName(),
-            $fieldName,
+            'categoryFilter',
             Shopware()->Shop()->getCategory()->getId() != $selectedCategoryId,
-            Shopware()->Snippets()->getNamespace('frontend/listing/facet_labels')->get($facet->getName(), 'Categories'),
+            $label,
             $values
         );
     }
@@ -1214,7 +1226,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         }
 
 
-        $shop_id  = Shopware()->Shop()->getId();
+        $shop_id  = $this->Helper()->getShopId();
         $result = $this->getFacetValuesResult($option_id, $values, $useTranslation, $shop_id);
         $media_class = false;
         $showCount = $bxFacets->showFacetValueCounters($fieldName);
@@ -1283,7 +1295,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         $propertyFacets = [];
         $filters = array();
         $mapper = $this->get('query_alias_mapper');
-        $useTranslation = $this->useTranslation(Shopware()->Shop()->getId());
+        $useTranslation = $this->useTranslation($this->Helper()->getShopId());
         if($_REQUEST['dev_bx_debug'] == 'true'){
             $t1 = microtime(true);
 
@@ -1368,13 +1380,11 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                                 $ids[] = $category_id;
                             }
                         }
-                        $categories = $this->get('shopware_storefront.category_service')->getList($ids, $context);
-                        if (!$fieldName = $mapper->getShortAlias('categoryFilter')) {
-                            $fieldName = 'categoryFilter';
-                        }
-                        $treeResult = $this->generateTreeResult($fieldName, $facet, $selectedCategoryId, $categories);
-                        $filters[] = $treeResult;
                         $label = $bxFacets->getFacetLabel($fieldName,$lang);
+                        $categories = $this->get('shopware_storefront.category_service')->getList($ids, $context);
+                        $treeResult = $this->generateTreeResult($facet, $selectedCategoryId, $categories, $label);
+                        $filters[] = $treeResult;
+
                         $this->facetOptions[$label] = [
                             'fieldName' => $fieldName,
                             'expanded' => $bxFacets->isFacetExpanded($fieldName, false)

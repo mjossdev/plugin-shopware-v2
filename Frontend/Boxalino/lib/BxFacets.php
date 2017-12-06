@@ -52,11 +52,11 @@ class BxFacets
         return $this->filters;
     }
 
-    public function addCategoryFacet($selectedValue=null, $order=2, $maxCount=-1, $andSelectedValues = false) {
+    public function addCategoryFacet($selectedValue=null, $order=2, $maxCount=-1, $andSelectedValues = false, $label=null) {
         if($selectedValue) {
             $this->addFacet('category_id', $selectedValue, 'hierarchical', null, '1', false, 1, $andSelectedValues);
         }
-        $this->addFacet($this->getCategoryFieldName(), null, 'hierarchical', null, $order, false, $maxCount);
+        $this->addFacet($this->getCategoryFieldName(), null, 'hierarchical', $label, $order, false, $maxCount);
     }
 
     public function addPriceRangeFacet($selectedValue=null, $order=2, $label='Price', $fieldName = 'discountedPrice', $maxCount=-1) {

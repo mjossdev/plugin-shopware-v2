@@ -547,6 +547,10 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         return $entityIdFieldName;
     }
 
+    public function getShopId(){
+        return $shop_id = $this->config->get('boxalino_overwrite_shop') != '' ? (int) $this->config->get('boxalino_overwrite_shop') : Shopware()->Shop()->getId();
+    }
+
     /**
      * @param string $type
      * @param string $query
@@ -559,12 +563,12 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         $filters[] = new \com\boxalino\bxclient\v1\BxFilter('products_bx_type', array($type));
         if ($type == 'blog') {
             $filters[] = new \com\boxalino\bxclient\v1\BxFilter('products_blog_active', array('1'));
-            $filters[] = new \com\boxalino\bxclient\v1\BxFilter('products_blog_shop_id', array(Shopware()->Shop()->getId()));
+            $filters[] = new \com\boxalino\bxclient\v1\BxFilter('products_blog_shop_id', array($this->getShopId()));
         }
         if ($type == 'product') {
             $filters[] = new \com\boxalino\bxclient\v1\BxFilter('products_active', array('1'));
             $filters[] = new \com\boxalino\bxclient\v1\BxFilter('products_bx_parent_active', array('1'));
-            $shop_id = $this->config->get('boxalino_overwrite_shop') != '' ? (int) $this->config->get('boxalino_overwrite_shop') : Shopware()->Shop()->getId();
+            $shop_id = $this->getShopId();
             $filters[] = new \com\boxalino\bxclient\v1\BxFilter('products_shop_id', array($shop_id));
             if ($query == '' && !$recommendation && !$stream) {
                 if(Shopware()->Shop()->getCategory()->getId() != $this->Request()->getParam('sCategory')) {
@@ -730,7 +734,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         $hitIds = array();
         foreach ($autocompleteResponse->getTextualSuggestions() as $i => $suggestion) {
             $hits = $autocompleteResponse->getTextualSuggestionTotalHitCount($suggestion);
-            $suggestions[] = array('text' => $suggestion, 'html' => $autocompleteResponse->getTextualSuggestionHighlighted($suggestion), 'hits' => $hits);
+            $suggestions[$suggestion] = array('text' => $suggestion, 'html' => $autocompleteResponse->getTextualSuggestionHighlighted($suggestion), 'hits' => $hits);
             if ($i == 0) {
                 if (count($autocompleteResponse->getBxSearchResponse()->getHitIds($choice, true, 0, 10)) == 0) {
                     $hitIds = $this->getHitIdsFromAutocompleteResponse($autocompleteResponse->getBxSearchResponse($suggestion), $type, 'products_ordernumber');
