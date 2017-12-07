@@ -111,7 +111,7 @@ class BxFacets
         }
         foreach($this->facets as $fieldName => $facet) {
             $facetResponse = $this->getFacetResponse($fieldName);
-            if(sizeof($facetResponse->values)>0 || sizeof($facet['selectedValues'])>0) {
+            if(!is_null($facetResponse) && (sizeof($facetResponse->values)>0 || sizeof($facet['selectedValues'])>0)) {
                 $fieldNames[$fieldName] = array('fieldName'=>$fieldName, 'returnedOrder'=> sizeof($fieldNames));
             }
         }
@@ -203,7 +203,7 @@ class BxFacets
         }
         try {
             $facetResponse =    $this->getFacetResponse($fieldName);
-            if(is_array($facetResponse->extraInfo) && sizeof($facetResponse->extraInfo) > 0){
+            if(!is_null($facetResponse) && is_array($facetResponse->extraInfo) && sizeof($facetResponse->extraInfo) > 0){
                 return $facetResponse->extraInfo;
             }
         } catch(\Exception $e) {
@@ -322,9 +322,8 @@ class BxFacets
                     return $facetResponse;
                 }
             }
-            throw new \Exception("trying to get facet response on unexisting fieldname " . $fieldName);
         }
-        throw new \Exception("trying to get facet response but not facet response set");
+        return null;
     }
 
     protected function getFacetType($fieldName) {
@@ -455,9 +454,11 @@ class BxFacets
 
     public function getCategoryById($categoryId) {
         $facetResponse = $this->getFacetResponse($this->getCategoryFieldName());
-        foreach ($facetResponse->values as $bxFacet) {
-            if($bxFacet->hierarchyId == $categoryId) {
-                return $categoryId;
+        if(!is_null($facetResponse)) {
+            foreach ($facetResponse->values as $bxFacet) {
+                if($bxFacet->hierarchyId == $categoryId) {
+                    return $categoryId;
+                }
             }
         }
         return null;
@@ -475,6 +476,9 @@ class BxFacets
         if($fieldName == 'category_id') return array();
         $facetValues = array();
         $facetResponse = $this->getFacetResponse($fieldName);
+        if(is_null($facetResponse)) {
+            return array();
+        }
         $type = $this->getFacetType($fieldName);
         switch($type) {
             case 'hierarchical':
@@ -657,6 +661,9 @@ class BxFacets
         if($facet != null) {
             if($facet['type'] == 'hierarchical') {
                 $facetResponse = $this->getFacetResponse($fieldName);
+                if(is_null($facetResponse)) {
+                   return false;
+                }
                 $tree = $this->buildTree($facetResponse->values);
                 $tree = $this->getSelectedTreeNode($tree);
                 return $tree && sizeof($tree['node']->hierarchy)>1;
@@ -682,6 +689,9 @@ class BxFacets
     public function getParentCategories() {
         $fieldName = $this->getCategoryFieldName();
         $facetResponse = $this->getFacetResponse($fieldName);
+        if(is_null($facetResponse)) {
+           return array();
+        }
         $tree = $this->buildTree($facetResponse->values);
         $treeEnd = $this->getSelectedTreeNode($tree);
         if($treeEnd == null) {
@@ -709,6 +719,9 @@ class BxFacets
     public function getParentCategoriesHitCount($id){
         $fieldName = $this->getCategoryFieldName();
         $facetResponse = $this->getFacetResponse($fieldName);
+        if(is_null($facetResponse)) {
+            return 0;
+        }
         $tree = $this->buildTree($facetResponse->values);
         $treeEnd = $this->getSelectedTreeNode($tree);
         if($treeEnd == null) {
@@ -739,6 +752,9 @@ class BxFacets
         if($facet != null) {
             if($facet['type'] == 'hierarchical') {
                 $facetResponse = $this->getFacetResponse($fieldName);
+                if(is_null($facetResponse)) {
+                    return '';
+                }
                 $tree = $this->buildTree($facetResponse->values);
                 $tree = $this->getSelectedTreeNode($tree);
                 $parts = explode('/', $tree['node']->stringValue);
@@ -772,10 +788,12 @@ class BxFacets
 
     public function getCategoryIdsFromLevel($level) {
         $facetResponse = $this->getFacetResponse($this->getCategoryFieldName());
-        $ids = [];;
-        foreach ($facetResponse->values as $category) {
-            if(sizeof($category->hierarchy) == $level + 2){
-                $ids[] = $category->hierarchyId;
+        $ids = [];
+        if(!is_null($facetResponse)) {
+            foreach ($facetResponse->values as $category) {
+                if(sizeof($category->hierarchy) == $level + 2){
+                    $ids[] = $category->hierarchyId;
+                }
             }
         }
         return $ids;
@@ -829,9 +847,11 @@ class BxFacets
         }
         if(!isset($keyValues[$facetValue]) && $fieldName == $this->getCategoryFieldName()) {
             $facetResponse = $this->getFacetResponse($this->getCategoryFieldName());
-            foreach ($facetResponse->values as $bxFacet) {
-                if($bxFacet->hierarchyId == $facetValue) {
-                    $keyValues[$facetValue] = $bxFacet;
+            if(!is_null($facetResponse)) {
+                foreach ($facetResponse->values as $bxFacet) {
+                    if($bxFacet->hierarchyId == $facetValue) {
+                        $keyValues[$facetValue] = $bxFacet;
+                    }
                 }
             }
         }
