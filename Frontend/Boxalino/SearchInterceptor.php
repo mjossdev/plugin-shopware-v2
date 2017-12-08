@@ -1523,7 +1523,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                     if($_REQUEST['dev_bx_debug'] == 'true'){
                         $t1 = microtime(true);
                     }
-                    if ((strpos($fieldName, 'products_optionID') !== false)) {
+                    if ((strpos($fieldName, 'products_optionID_mapped') !== false)) {
                         $facet = $facets['property'];
                         $returnFacet = $this->generateListItem($fieldName, $bxFacets, $facet, $lang, $useTranslation, $propertyFieldName);
                         if($returnFacet) {
