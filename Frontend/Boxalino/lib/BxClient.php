@@ -87,6 +87,14 @@ class BxClient
 		$this->requestMap = $requestMap;
 	}
 	
+	public function getRequestMap() {
+		return $this->requestMap;
+	}
+
+	public function addToRequestMap($key, $value) {
+		$this->requestMap[$key] = $value;
+	}
+
 	public static function LOAD_CLASSES($libPath) {
         require_once($libPath . '/Thrift/ClassLoader/ThriftClassLoader.php');
 		

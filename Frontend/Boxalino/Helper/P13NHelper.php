@@ -138,6 +138,9 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
             if(strpos($key, $prefix) === 0) {
                 self::$bxClient->addRequestContextParameter($key, $value);
             }
+            if($keyValue[0] == 'dev_bx_disp') {
+              self::$bxClient->addToRequestMap($key, $value);
+            }
         }
     }
     protected function checkFilterParameter() {

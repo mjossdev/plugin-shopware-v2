@@ -209,6 +209,22 @@ class BxFacets
         return $defaultDisplay;
     }
 
+    public function getAllFacetExtraInfo($fieldName) {
+        $extraInfo = null;
+        if ($fieldName == $this->getCategoryFieldName()) {
+            $fieldName = 'category_id';
+        }
+        try {
+            $facetResponse =    $this->getFacetResponse($fieldName);
+            if(is_array($facetResponse->extraInfo) && sizeof($facetResponse->extraInfo) > 0){
+                return $facetResponse->extraInfo;
+            }
+        } catch(\Exception $e) {
+            return $extraInfo;
+        }
+        return $extraInfo;
+    }
+
     public function getFacetExtraInfo($fieldName, $extraInfoKey, $defaultExtraInfoValue = null) {
         if ($fieldName == $this->getCategoryFieldName()) {
             $fieldName = 'category_id';

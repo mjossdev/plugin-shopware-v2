@@ -34,6 +34,11 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
     protected $shopCategorySelect = false;
 
     /**
+     * @var int
+     */
+    protected $finderLevel;
+
+    /**
      * Shopware_Plugins_Frontend_Boxalino_SearchInterceptor constructor.
      * @param Shopware_Plugins_Frontend_Boxalino_Bootstrap $bootstrap
      */
@@ -58,6 +63,12 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             }
         }
         return ($count == 0 ? 'question' : ($count == 1 ? 'listing' : 'present'));
+    }
+
+    public function getFinderLevel(){
+
+      return $this->finderLevel;
+
     }
 
     public function CPOFinder($data) {
@@ -1404,17 +1415,38 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         $bxFacets =  $this->Helper()->getFacets();
         $fieldNames = $bxFacets->getCPOFinderFacets();
         if(!empty($fieldNames)) {
-            $facet_info = ['label', 'icon', 'iconMap', 'visualisation', 'jsonDependencies', 'position', 'isSoftFacet', 'isQuickSearch', 'order', 'finderQuestion'];
             foreach ($fieldNames as $fieldName) {
                 if($fieldName == ''){
                     continue;
                 }
+                $facet_info = $bxFacets->getAllFacetExtraInfo($fieldName);
                 $extraInfo = [];
-                $json['facets'][$fieldName]['facetValues'] = $bxFacets->getFacetValues($fieldName);
+                $facetValues = $bxFacets->getFacetValues($fieldName);
+                $json['facets'][$fieldName]['facetValues'] = $facetValues;
+                foreach ($facetValues as $value) {
+                    if($bxFacets->isFacetValueHidden($fieldName, $value)) {
+                        $json['facets'][$fieldName]['hidden_values'][] = $value;
+                    }
+                }
                 $json['facets'][$fieldName]['label'] = $bxFacets->getFacetLabel($fieldName);
-                foreach ($facet_info as $info_key) {
-                    $info = $bxFacets->getFacetExtraInfo($fieldName, $info_key);
-                    if($info_key == 'jsonDependencies' || $info_key == 'label' ||$info_key == 'iconMap') {
+
+                foreach ($facet_info as $info_key => $info) {
+                    if($info_key == 'isSoftFacet' && $info == null){
+                        $facetMapping = [];
+                        $attributeName = substr($fieldName, 9);
+                        $json['facets'][$fieldNames]['parameterName'] = $attributeName;
+                        $attributeModel = Mage::getModel('eav/config')->getAttribute('catalog_product', $attributeName)->getSource();
+                        $options = $attributeModel->getAllOptions();
+                        $responseValues =  Mage::helper('boxalino_intelligence')->useValuesAsKeys($json['facets'][$fieldName]['facetValues']);
+                        foreach ($options as $option){
+                            $label = is_array($option) ? $option['label'] : $option;
+                            if(isset($responseValues[$label])){
+                                $facetMapping[$label] = $option['value'];
+                            }
+                        }
+                        $json['facets'][$fieldName]['facetMapping'] = $facetMapping;
+                    }
+                    if($info_key == 'jsonDependencies' || $info_key == 'label' || $info_key == 'iconMap' || $info_key == 'facetValueExtraInfo') {
                         $info = json_decode($info);
                         if($info_key == 'jsonDependencies') {
                             if(!is_null($info)) {
@@ -1431,7 +1463,10 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                 }
                 $json['facets'][$fieldName]['facetExtraInfo'] = $extraInfo;
             }
-            $json['parametersPrefix'] = $this->Helper()->getPrefixContextParameter();
+            $json['parametersPrefix'] = 'bx';
+            $json['contextParameterPrefix'] = $this->Helper()->getPrefixContextParameter();
+            $json['level'] = $this->getFinderLevel();
+
         }
         return json_encode($json);
     }
