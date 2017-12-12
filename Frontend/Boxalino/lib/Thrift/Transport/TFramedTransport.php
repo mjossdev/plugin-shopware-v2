@@ -22,7 +22,6 @@
 
 namespace Thrift\Transport;
 
-use Thrift\Transport\TTransport;
 use Thrift\Factory\TStringFuncFactory;
 
 /**
@@ -31,8 +30,8 @@ use Thrift\Factory\TStringFuncFactory;
  *
  * @package thrift.transport
  */
-class TFramedTransport extends TTransport {
-
+class TFramedTransport extends TTransport
+{
   /**
    * Underlying transport object.
    *
@@ -73,22 +72,26 @@ class TFramedTransport extends TTransport {
    *
    * @param TTransport $transport Underlying transport
    */
-  public function __construct($transport=null, $read=true, $write=true) {
-	$this->transport_ = $transport;
-	$this->read_ = $read;
-	$this->write_ = $write;
+  public function __construct($transport=null, $read=true, $write=true)
+  {
+    $this->transport_ = $transport;
+    $this->read_ = $read;
+    $this->write_ = $write;
   }
 
-  public function isOpen() {
-	return $this->transport_->isOpen();
+  public function isOpen()
+  {
+    return $this->transport_->isOpen();
   }
 
-  public function open() {
-	$this->transport_->open();
+  public function open()
+  {
+    $this->transport_->open();
   }
 
-  public function close() {
-	$this->transport_->close();
+  public function close()
+  {
+    $this->transport_->close();
   }
 
   /**
@@ -97,26 +100,29 @@ class TFramedTransport extends TTransport {
    *
    * @param int $len How much data
    */
-  public function read($len) {
-	if (!$this->read_) {
-	  return $this->transport_->read($len);
-	}
+  public function read($len)
+  {
+    if (!$this->read_) {
+      return $this->transport_->read($len);
+    }
 
-	if (TStringFuncFactory::create()->strlen($this->rBuf_) === 0) {
-	  $this->readFrame();
-	}
+    if (TStringFuncFactory::create()->strlen($this->rBuf_) === 0) {
+      $this->readFrame();
+    }
 
-	// Just return full buff
-	if ($len >= TStringFuncFactory::create()->strlen($this->rBuf_)) {
-	  $out = $this->rBuf_;
-	  $this->rBuf_ = null;
-	  return $out;
-	}
+    // Just return full buff
+    if ($len >= TStringFuncFactory::create()->strlen($this->rBuf_)) {
+      $out = $this->rBuf_;
+      $this->rBuf_ = null;
 
-	// Return TStringFuncFactory::create()->substr
-	$out = TStringFuncFactory::create()->substr($this->rBuf_, 0, $len);
-	$this->rBuf_ = TStringFuncFactory::create()->substr($this->rBuf_, $len);
-	return $out;
+      return $out;
+    }
+
+    // Return TStringFuncFactory::create()->substr
+    $out = TStringFuncFactory::create()->substr($this->rBuf_, 0, $len);
+    $this->rBuf_ = TStringFuncFactory::create()->substr($this->rBuf_, $len);
+
+    return $out;
   }
 
   /**
@@ -124,60 +130,64 @@ class TFramedTransport extends TTransport {
    *
    * @param string $data data to return
    */
-  public function putBack($data) {
-	if (TStringFuncFactory::create()->strlen($this->rBuf_) === 0) {
-	  $this->rBuf_ = $data;
-	} else {
-	  $this->rBuf_ = ($data . $this->rBuf_);
-	}
+  public function putBack($data)
+  {
+    if (TStringFuncFactory::create()->strlen($this->rBuf_) === 0) {
+      $this->rBuf_ = $data;
+    } else {
+      $this->rBuf_ = ($data . $this->rBuf_);
+    }
   }
 
   /**
    * Reads a chunk of data into the internal read buffer.
    */
-  private function readFrame() {
-	$buf = $this->transport_->readAll(4);
-	$val = unpack('N', $buf);
-	$sz = $val[1];
+  private function readFrame()
+  {
+    $buf = $this->transport_->readAll(4);
+    $val = unpack('N', $buf);
+    $sz = $val[1];
 
-	$this->rBuf_ = $this->transport_->readAll($sz);
+    $this->rBuf_ = $this->transport_->readAll($sz);
   }
 
   /**
    * Writes some data to the pending output buffer.
    *
    * @param string $buf The data
-   * @param int	$len Limit of bytes to write
+   * @param int    $len Limit of bytes to write
    */
-  public function write($buf, $len=null) {
-	if (!$this->write_) {
-	  return $this->transport_->write($buf, $len);
-	}
+  public function write($buf, $len=null)
+  {
+    if (!$this->write_) {
+      return $this->transport_->write($buf, $len);
+    }
 
-	if ($len !== null && $len < TStringFuncFactory::create()->strlen($buf)) {
-	  $buf = TStringFuncFactory::create()->substr($buf, 0, $len);
-	}
-	$this->wBuf_ .= $buf;
+    if ($len !== null && $len < TStringFuncFactory::create()->strlen($buf)) {
+      $buf = TStringFuncFactory::create()->substr($buf, 0, $len);
+    }
+    $this->wBuf_ .= $buf;
   }
 
   /**
    * Writes the output buffer to the stream in the format of a 4-byte length
    * followed by the actual data.
    */
-  public function flush() {
-	if (!$this->write_ || TStringFuncFactory::create()->strlen($this->wBuf_) == 0) {
-	  return $this->transport_->flush();
-	}
+  public function flush()
+  {
+    if (!$this->write_ || TStringFuncFactory::create()->strlen($this->wBuf_) == 0) {
+      return $this->transport_->flush();
+    }
 
-	$out = pack('N', TStringFuncFactory::create()->strlen($this->wBuf_));
-	$out .= $this->wBuf_;
+    $out = pack('N', TStringFuncFactory::create()->strlen($this->wBuf_));
+    $out .= $this->wBuf_;
 
-	// Note that we clear the internal wBuf_ prior to the underlying write
-	// to ensure we're in a sane state (i.e. internal buffer cleaned)
-	// if the underlying write throws up an exception
-	$this->wBuf_ = '';
-	$this->transport_->write($out);
-	$this->transport_->flush();
+    // Note that we clear the internal wBuf_ prior to the underlying write
+    // to ensure we're in a sane state (i.e. internal buffer cleaned)
+    // if the underlying write throws up an exception
+    $this->wBuf_ = '';
+    $this->transport_->write($out);
+    $this->transport_->flush();
   }
 
 }

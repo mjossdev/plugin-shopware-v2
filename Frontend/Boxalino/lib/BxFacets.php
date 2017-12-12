@@ -469,9 +469,11 @@ class BxFacets
 
     public function getCategoryById($categoryId) {
         $facetResponse = $this->getFacetResponse($this->getCategoryFieldName());
-        foreach ($facetResponse->values as $bxFacet) {
-            if($bxFacet->hierarchyId == $categoryId) {
-                return $categoryId;
+        if(!is_null($facetResponse)) {
+            foreach ($facetResponse->values as $bxFacet) {
+                if($bxFacet->hierarchyId == $categoryId) {
+                    return $categoryId;
+                }
             }
         }
         return null;
@@ -762,6 +764,28 @@ class BxFacets
         return $categoryValueArray;
     }
 
+    public function getCategoryIdsFromLevel($level) {
+        $facetResponse = $this->getFacetResponse($this->getCategoryFieldName());
+        $ids = [];
+        if(!is_null($facetResponse)) {
+            foreach ($facetResponse->values as $category) {
+                if(sizeof($category->hierarchy) == $level + 2){
+                    $ids[] = $category->hierarchyId;
+                }
+            }
+        }
+        return $ids;
+    }
+
+    public function getSelectedCategoryIds()
+    {
+        $ids = array();
+        if (isset($this->facets['category_id'])){
+            $ids = $this->facets['category_id']['selectedValues'];
+        }
+        return $ids;
+    }
+
     public function getCategories($ranking='alphabetical', $minCategoryLevel=0) {
         return $this->getFacetValues($this->getCategoryFieldName(), $ranking, $minCategoryLevel);
     }
@@ -776,28 +800,36 @@ class BxFacets
         return array_keys($this->getFacetKeysValues($fieldName, $ranking, $minCategoryLevel));
     }
 
+    private $facetValueArrayCache = array();
     protected function getFacetValueArray($fieldName, $facetValue) {
-
+        $hash = $fieldName . ' - ' . $facetValue;
+        if(isset($this->facetValueArrayCache[$hash])) {
+            return $this->facetValueArrayCache[$hash];
+        }
+        $keyValues = $this->getFacetKeysValues($fieldName, 'alphabetical', $this->lastSetMinCategoryLevel);
         if(($fieldName == $this->priceFieldName) && ($this->selectedPriceValues != null)){
+            $fv = reset($keyValues);
             $from = round($this->selectedPriceValues[0]->rangeFromInclusive, 2);
-            $to = round($this->selectedPriceValues[0]->rangeToExclusive, 2);
+            $to = $this->selectedPriceValues[0]->rangeToExclusive;
+            if($this->priceRangeMargin) {
+                $to -= 0.01;
+            }
+            $to = round($to, 2);
             $valueLabel = $from . ' - ' . $to;
             $paramValue = "$from-$to";
-            $hitCount = $this->getFacetResponse($fieldName)->values[0]->hitCount;
-            $this->addNotification('getFacetValueArray-1', json_encode(array($fieldName, $facetValue, $valueLabel, $paramValue, $hitCount, true, false)));
-            return array($valueLabel, $paramValue, $hitCount, true, false);
+            $this->facetValueArrayCache[$hash] = array($valueLabel, $paramValue, $fv->hitCount, true, false);
+            return $this->facetValueArrayCache[$hash];
         }
-
-        $keyValues = $this->getFacetKeysValues($fieldName, 'alphabetical', $this->lastSetMinCategoryLevel);
-
         if(is_array($facetValue)){
             $facetValue = reset($facetValue);
         }
         if(!isset($keyValues[$facetValue]) && $fieldName == $this->getCategoryFieldName()) {
             $facetResponse = $this->getFacetResponse($this->getCategoryFieldName());
-            foreach ($facetResponse->values as $bxFacet) {
-                if($bxFacet->hierarchyId == $facetValue) {
-                    $keyValues[$facetValue] = $bxFacet;
+            if(!is_null($facetResponse)) {
+                foreach ($facetResponse->values as $bxFacet) {
+                    if($bxFacet->hierarchyId == $facetValue) {
+                        $keyValues[$facetValue] = $bxFacet;
+                    }
                 }
             }
         }
@@ -811,21 +843,21 @@ class BxFacets
         switch($type) {
             case 'hierarchical':
                 $parts = explode("/", $fv->stringValue);
-                $this->addNotification('getFacetValueArray-2', json_encode(array($fieldName, $facetValue, $parts[sizeof($parts)-1], $parts[0], $fv->hitCount, $fv->selected, $hidden)));
-                return array($parts[sizeof($parts)-1], $parts[0], $fv->hitCount, $fv->selected, $hidden);
+                $this->facetValueArrayCache[$hash] =  array($parts[sizeof($parts)-1], $parts[0], $fv->hitCount, $fv->selected, $hidden);
+                return $this->facetValueArrayCache[$hash];
             case 'ranged':
                 $from = round($fv->rangeFromInclusive, 2);
                 $to = round($fv->rangeToExclusive, 2);
                 $valueLabel = $from . ' - ' . $to;
                 $paramValue = $fv->stringValue;
                 $paramValue = "$from-$to";
-                $this->addNotification('getFacetValueArray-3', json_encode(array($fieldName, $facetValue, $valueLabel, $paramValue, $fv->hitCount, $fv->selected, $hidden)));
-                return array($valueLabel, $paramValue, $fv->hitCount, $fv->selected, $hidden);
+                $this->facetValueArrayCache[$hash] =  array($valueLabel, $paramValue, $fv->hitCount, $fv->selected, $hidden);
+                return $this->facetValueArrayCache[$hash];
 
             default:
                 $fv = $keyValues[$facetValue];
-                $this->addNotification('getFacetValueArray-4', json_encode(array($fieldName, $facetValue, $fv->stringValue, $fv->stringValue, $fv->hitCount, $fv->selected, $hidden)));
-                return array($fv->stringValue, $fv->stringValue, $fv->hitCount, $fv->selected, $hidden);
+                $this->facetValueArrayCache[$hash] =  array($fv->stringValue, $fv->stringValue, $fv->hitCount, $fv->selected, $hidden);
+                return $this->facetValueArrayCache[$hash];
         }
     }
 
@@ -890,6 +922,20 @@ class BxFacets
     public function isFacetValueSelected($fieldName, $facetValue) {
         list($label, $parameterValue, $hitCount, $selected) = $this->getFacetValueArray($fieldName, $facetValue);
         return $selected;
+    }
+
+    public function getFacetValueIcon($fieldName, $facetValue, $language = null, $defaultValue = '') {
+        $facetValue = strtolower($facetValue);
+        $iconMap = json_decode($this->getFacetExtraInfo($fieldName, 'iconMap'));
+        foreach ($iconMap as $icon) {
+            if($language && $icon->language != $language) {
+                continue;
+            }
+            if($facetValue == strtolower($icon->value)) {
+                return $icon->icon;
+            }
+        }
+        return $defaultValue;
     }
 
     public function getThriftFacets() {

@@ -22,7 +22,6 @@
 
 namespace Thrift\Factory;
 
-use Thrift\Factory\TProtocolFactory;
 use Thrift\Protocol\TJSONProtocol;
 
 /**
@@ -30,12 +29,12 @@ use Thrift\Protocol\TJSONProtocol;
  */
 class TJSONProtocolFactory implements TProtocolFactory
 {
-	public function __construct()
-	{
-	}
+    public function __construct()
+    {
+    }
 
-	public function getProtocol($trans)
-	{
-		return new TJSONProtocol($trans);
-	}
+    public function getProtocol($trans)
+    {
+        return new TJSONProtocol($trans);
+    }
 }

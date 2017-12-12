@@ -1,4 +1,5 @@
 {extends file="parent:frontend/search/fuzzy.tpl"}
+
 {block name="frontend_index_content_left"}
     {if count($bxSubPhraseResults) == 0 && !$bxNoResult}
         {$smarty.block.parent}
@@ -20,6 +21,9 @@
 {/block}
 
 {block name='frontend_index_content'}
+
+  {include file='frontend/plugins/boxalino/search/searchMessage.tpl'}
+
     {if $bxHasOtherItemTypes}
         <div class="tab-menu--search">
             <div class="tab--navigation">

@@ -5,12 +5,12 @@
  */
 class Shopware_Plugins_Frontend_Boxalino_FrontendInterceptor
     extends Shopware_Plugins_Frontend_Boxalino_Interceptor {
-    
+
     private $_productRecommendations = array(
         'sRelatedArticles' => 'boxalino_accessories_recommendation',
         'sSimilarArticles' => 'boxalino_similar_recommendation'
     );
-    
+
     private $_productRecommendationsGeneric = array(
         'sCrossBoughtToo' => 'boxalino_complementary_recommendation',
         'sCrossSimilarShown' => 'boxalino_related_recommendation'
@@ -22,7 +22,7 @@ class Shopware_Plugins_Frontend_Boxalino_FrontendInterceptor
      * @return boolean
      */
     public function intercept(Enlight_Event_EventArgs $arguments) {
-        
+
         $this->init($arguments);
         if (!$this->Config()->get('boxalino_active')) {
             return null;
@@ -33,8 +33,8 @@ class Shopware_Plugins_Frontend_Boxalino_FrontendInterceptor
             case 'detail':
                 $sArticle = $this->View()->sArticle;
                 if(is_null($sArticle) || !isset($sArticle['articleID']))break;
+                $this->View()->addTemplateDir($this->Bootstrap()->Path() . 'Views/emotion/');
                 if ($this->Config()->get('boxalino_detail_recommendation_ajax')) {
-                    $this->View()->addTemplateDir($this->Bootstrap()->Path() . 'Views/emotion/');
                     if(version_compare(Shopware::VERSION, '5.3.0', '>=')) {
                         $this->View()->extendsTemplate('frontend/plugins/boxalino/detail/index_ajax_5_3.tpl');
                     } else {
@@ -71,6 +71,22 @@ class Shopware_Plugins_Frontend_Boxalino_FrontendInterceptor
                         }
                     }
                     $this->View()->assign('sArticle', $sArticle);
+                }
+                if ($this->Config()->get('boxalino_detail_blog_recommendation')) {
+                    $choiceId = $this->Config()->get('boxalino_detail_blog_recommendation_name');
+                    $min = $this->Config()->get('boxalino_detail_blog_recommendation_min');
+                    $max = $this->Config()->get('boxalino_detail_blog_recommendation_max');
+                    $id = trim(strip_tags(htmlspecialchars_decode(stripslashes($this->Request()->sArticle))));
+                    $this->Helper()->getRecommendation($choiceId, $max, $min, 0, $id, 'product', false, array(), true);
+                    $blogIds = $this->Helper()->getRecommendation($choiceId, $max, $min, 0, $id, 'product', true, array(), true);
+                    foreach ($blogIds as $index => $id) {
+                        $blogIds[$index] = str_replace('blog_', '', $id);
+                    }
+                    $this->View()->extendsTemplate('frontend/plugins/boxalino/detail/content.tpl');
+                    $this->View()->extendsTemplate('frontend/plugins/boxalino/_includes/product_slider_item.tpl');
+                    $blogArticles = $this->Helper()->getBlogs($blogIds);
+                    $blogArticles = $this->enhanceBlogArticles($blogArticles);
+                    $this->View()->assign('sBlogArticles', $blogArticles);
                 }
                 $script = Shopware_Plugins_Frontend_Boxalino_EventReporter::reportProductView($sArticle['articleDetailsID']);
                 break;
@@ -109,6 +125,49 @@ class Shopware_Plugins_Frontend_Boxalino_FrontendInterceptor
         return false;
     }
 
+    public function get($name) {
+        return Shopware()->Container()->get($name);
+    }
+
+    private function enhanceBlogArticles($blogArticles) {
+        $mediaIds = array_map(function ($blogArticle) {
+            if (isset($blogArticle['media']) && $blogArticle['media'][0]['mediaId']) {
+                return $blogArticle['media'][0]['mediaId'];
+            }
+        }, $blogArticles);
+
+        $context = $this->Bootstrap()->get('shopware_storefront.context_service')->getShopContext();
+        $medias = $this->Bootstrap()->get('shopware_storefront.media_service')->getList($mediaIds, $context);
+
+
+        foreach ($blogArticles as $key => $blogArticle) {
+            //adding number of comments to the blog article
+            $blogArticles[$key]["numberOfComments"] = count($blogArticle["comments"]);
+
+            //adding thumbnails to the blog article
+            if (empty($blogArticle["media"][0]['mediaId'])) {
+                continue;
+            }
+
+            $mediaId = $blogArticle["media"][0]['mediaId'];
+
+            if (!isset($medias[$mediaId])) {
+                continue;
+            }
+
+            /**@var $media \Shopware\Bundle\StoreFrontBundle\Struct\Media*/
+            $media = $medias[$mediaId];
+            $media = $this->get('legacy_struct_converter')->convertMediaStruct($media);
+
+            if (Shopware()->Shop()->getTemplate()->getVersion() < 3) {
+                $blogArticles[$key]["preview"]["thumbNails"] = array_column($media['thumbnails'], 'source');
+            } else {
+                $blogArticles[$key]['media'] = $media;
+            }
+        }
+        return $blogArticles;
+    }
+
     /**
      * @return mixed|string
      */
@@ -122,7 +181,7 @@ class Shopware_Plugins_Frontend_Boxalino_FrontendInterceptor
 
         return $term;
     }
-    
+
     /**
      * basket recommendations
      * @param Enlight_Event_EventArgs $arguments
@@ -143,7 +202,7 @@ class Shopware_Plugins_Frontend_Boxalino_FrontendInterceptor
         $basket = $this->Helper()->getBasket($arguments);
         $contextItems = $basket['content'];
         if (empty($contextItems)) return null;
-        
+
         usort($contextItems, function($a, $b) {
             return $b['price'] - $a['price'];
         });
@@ -211,6 +270,16 @@ class Shopware_Plugins_Frontend_Boxalino_FrontendInterceptor
         return $arguments->getReturn();
     }
 
+    public function getBannerInfo() {
+        if (!$this->Config()->get('boxalino_active')) {
+            return null;
+        }
+
+        $data = $this->Helper()->addBanner();
+
+        return $data;
+    }
+
     /**
      * add script if tracking enabled
      * @param string $script
@@ -222,7 +291,12 @@ class Shopware_Plugins_Frontend_Boxalino_FrontendInterceptor
         if ($script != null && $this->Config()->get('boxalino_tracking_enabled')) {
             $this->View()->assign('report_script', $script);
         }
+        $force = false;
+        if($_REQUEST['dev_bx_debug'] == 'true') {
+            $force = true;
+        }
+        $this->View()->assign('bxForce', $force);
         $this->View()->assign('bxHelper', $this->Helper());
     }
-    
+
 }

@@ -205,8 +205,89 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
             $this->log->info("BxIndexLog: Preparing products - blogs.");
             $this->exportItemBlogs($account, $files);
             $this->log->info("BxIndexLog: Finished products - blogs.");
+            $this->exportItemVotes($files);
+            $this->exportProductStreams($files);
         }
         return $export_products;
+    }
+
+    /**
+     * @param $files
+     */
+    private function exportProductStreams($files) {
+
+        $db = $this->db;
+        $data = array();
+        $header = true;
+        $count = 0;
+        $sql = $db->select()
+            ->from(array('a' => 's_articles'), array())
+            ->join(
+                array('d' => 's_articles_details'),
+                $this->qi('d.articleID') . ' = ' . $this->qi('a.id') . ' AND ' .
+                $this->qi('d.kind') . ' <> ' . $db->quote(3),
+                array('id')
+            )
+            ->join(
+                array('s_s' => 's_product_streams_selection'),
+                $this->qi('s_s.article_id') . ' = ' . $this->qi('a.id'),
+                array('stream_id')
+            );
+        if ($this->delta) {
+            $sql->where('a.id IN(?)', $this->deltaIds);
+        }
+        $stmt = $db->query($sql);
+        while ($row = $stmt->fetch()) {
+            if (!isset($this->shopProductIds[$row['id']])) {
+                continue;
+            }
+            if ($header) {
+                $data[] = array_keys($row);
+                $header = false;
+            }
+
+            $data[] = $row;
+            if($count++%2 == 0) {
+                $files->savepartToCsv('product_stream.csv', $data);
+            }
+
+        }
+        $files->savepartToCsv('product_stream.csv', $data);
+        $attributeSourceKey = $this->bxData->addCSVItemFile($files->getPath('product_stream.csv'), 'id');
+        $this->bxData->addSourceStringField($attributeSourceKey, "stream_id", "stream_id");
+    }
+
+    /**
+     * @param $account
+     * @param $files
+     */
+    private function exportItemVotes($files) {
+
+        $db = $this->db;
+        $data = array();
+        $header = true;
+        $sql = $db->select()
+            ->from(array('a' => 's_articles_vote'), array('vote' => 'points'))
+            ->join(array('a_d' => 's_articles_details'), 'a.articleID = a_d.articleID', array('a_d.id'))
+            ->where('a.active = 1');
+        if ($this->delta) {
+            $sql->where('a.articleID IN(?)', $this->deltaIds);
+        }
+
+        $stmt = $db->query($sql);
+        while ($row = $stmt->fetch()) {
+            if (!isset($this->shopProductIds[$row['id']])) {
+                continue;
+            }
+            if ($header) {
+                $data[] = array_keys($row);
+                $header = false;
+            }
+            $data[] = $row;
+        }
+        $files->savepartToCsv('product_vote.csv', $data);
+        $attributeSourceKey = $this->bxData->addCSVItemFile($files->getPath('product_vote.csv'), 'id');
+        $this->bxData->addSourceStringField($attributeSourceKey, "vote", "vote");
     }
 
     /**
@@ -263,13 +344,14 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
             }
             $data[$row['id']] = array("id" => $row['id'], "price" => number_format($price,2, '.', ''), "discounted" => number_format($discount,2, '.', ''), "articleID" => $row['articleID']);
 
-            if (($row['laststock'] == 1 && $row['instock'] == 0) && $row['active'] == 1) {
-                if(isset($grouped_price[$row['articleID']]) && $grouped_price[$row['articleID']] < number_format($discount,2, '.', '')) {
+            if ($row['active'] == 1) {
+                if(isset($grouped_price[$row['articleID']]) && ($grouped_price[$row['articleID']] < number_format($discount,2, '.', ''))) {
                     continue;
                 }
                 $grouped_price[$row['articleID']] = number_format($discount,2, '.', '');
             }
         }
+
         foreach ($data as $index => $d) {
             if($index == 0) continue;
             $articleID = $d['articleID'];

@@ -97,7 +97,9 @@ class Shopware_Controllers_Frontend_RecommendationSlider extends Enlight_Control
      * Recommendation for boxalino emotion slider
      */
     public function productStreamSliderRecommendationsAction() {
-
+        if ($_REQUEST['dev_bx_debug'] == 'true') {
+            $t1 = microtime(true);
+        }
         $helper = Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper::instance();
         $helper->setRequest($this->request);
         $choiceId = $this->Request()->getQuery('bxChoiceId');
@@ -105,11 +107,34 @@ class Shopware_Controllers_Frontend_RecommendationSlider extends Enlight_Control
         $context = $this->Request()->getQuery('category_id');
         $context = Shopware()->Shop()->getCategory()->getId() == $context ? null : $context;
         $helper->getRecommendation($choiceId, $count, $count, 0, $context, 'category', false);
+        if ($_REQUEST['dev_bx_debug'] == 'true') {
+            $helper->addNotification("Recommendation Slider before response took: " . (microtime(true) - $t1) * 1000 . "ms.");
+        }
+        if ($_REQUEST['dev_bx_debug'] == 'true') {
+            $t2 = microtime(true);
+        }
         $hitsIds = $helper->getRecommendation($choiceId);
+        if ($_REQUEST['dev_bx_debug'] == 'true') {
+            $helper->addNotification("Recommendation Slider response took: " . (microtime(true) - $t2) * 1000 . "ms.");
+        }
+        if ($_REQUEST['dev_bx_debug'] == 'true') {
+            $t3 = microtime(true);
+        }
         if($hitsIds) {
             $this->View()->loadTemplate('frontend/_includes/product_slider_items.tpl');
+            if ($_REQUEST['dev_bx_debug'] == 'true') {
+                $t4 = microtime(true);
+            }
             $this->View()->assign('articles', $helper->getLocalArticles($hitsIds));
+            if ($_REQUEST['dev_bx_debug'] == 'true') {
+                $helper->addNotification("Recommendation Slider getLocalArticles took: " . (microtime(true) - $t4) * 1000 . "ms. IDS: " .json_encode($hitsIds));
+            }
             $this->View()->assign('productBoxLayout', "emotion");
+        }
+        if ($_REQUEST['dev_bx_debug'] == 'true') {
+            $helper->addNotification("Recommendation Slider after response took: " . (microtime(true) - $t3) * 1000 . "ms.");
+            $helper->addNotification("Recommendation Slider took in total:" . (microtime(true) - $t1) * 1000 . "ms.");
+            $helper->callNotification(true);
         }
     }
 

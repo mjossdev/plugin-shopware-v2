@@ -14,25 +14,27 @@ class BxClient
 	private $p13n_username;
 	private $p13n_password;
 	private $domain;
-	
+
 	private $isTest = null;
 
 	private $autocompleteRequests = null;
 	private $autocompleteResponses = null;
-	
+
 	private $chooseRequests = array();
 	private $chooseResponses = null;
-	
+
+	private $bundleChooseRequests = array();
+
 	const VISITOR_COOKIE_TIME = 31536000;
 
 	private $_timeout = 2;
 	private $requestContextParameters = array();
-	
+
 	private $sessionId = null;
 	private $profileId = null;
-	
+
 	private $requestMap = array();
-	
+
 	private $socketHost = null;
 	private $socketPort = null;
 	private $socketSendTimeout = null;
@@ -71,22 +73,26 @@ class BxClient
 		}
 		$this->domain = $domain;
 	}
-	
+
+	public function setHost($host) {
+	    $this->host = $host;
+    }
+
 	public function setTestMode($isTest) {
 		$this->isTest = $isTest;
 	}
-	
+
 	public function setSocket($socketHost, $socketPort=4040, $socketSendTimeout=1000, $socketRecvTimeout=1000) {
 		$this->socketHost = $socketHost;
 		$this->socketPort = $socketPort;
 		$this->socketSendTimeout = $socketSendTimeout;
 		$this->socketRecvTimeout = $socketRecvTimeout;
 	}
-	
+
 	public function setRequestMap($requestMap) {
 		$this->requestMap = $requestMap;
 	}
-	
+
 	public function getRequestMap() {
 		return $this->requestMap;
 	}
@@ -97,7 +103,7 @@ class BxClient
 
 	public static function LOAD_CLASSES($libPath) {
         require_once($libPath . '/Thrift/ClassLoader/ThriftClassLoader.php');
-		
+
 		$cl = new \Thrift\ClassLoader\ThriftClassLoader(false);
 		$cl->registerNamespace('Thrift', $libPath);
 		$cl->register(true);
@@ -116,33 +122,33 @@ class BxClient
 		require_once($libPath . "/BxAutocompleteResponse.php");
 		require_once($libPath . "/BxData.php");
 	}
-	
+
 	public function getAccount($checkDev = true) {
 		if($checkDev && $this->isDev) {
 			return $this->account . '_dev';
 		}
 		return $this->account;
 	}
-	
+
 	public function getUsername() {
 		return $this->getAccount(false);
 	}
-	
+
 	public function getPassword() {
 		return $this->password;
 	}
-	
+
 	public function setSessionAndProfile($sessionId, $profileId) {
 		$this->sessionId = $sessionId;
 		$this->profileId = $profileId;
 	}
-	
+
 	public function getSessionAndProfile() {
-		
+
 		if($this->sessionId != null && $this->profileId != null) {
 			return array($this->sessionId, $this->profileId);
 		}
-		
+
 		if (empty($_COOKIE['cems'])) {
 			$sessionId = session_id();
 			if (empty($sessionId)) {
@@ -171,21 +177,21 @@ class BxClient
 			@setcookie('cems', $sessionId, 0, '/', $this->domain);
 			@setcookie('cemv', $profileId, time() + self::VISITOR_COOKIE_TIME, '/', $this->domain);
 		}
-		
+
 		$this->sessionId = $sessionId;
 		$this->profileId = $profileId;
-		
+
 		return array($this->sessionId, $this->profileId);
 	}
-	
+
 	private function getUserRecord() {
 		$userRecord = new \com\boxalino\p13n\api\thrift\UserRecord();
 		$userRecord->username = $this->getAccount();
 		return $userRecord;
 	}
-	
+
 	private function getP13n($timeout=2, $useCurlIfAvailable=true){
-		
+
 		if($this->socketHost != null) {
 			$transport = new \Thrift\Transport\TSocket($this->socketHost, $this->socketPort);
 			$transport->setSendTimeout($this->socketSendTimeout);
@@ -207,13 +213,13 @@ class BxClient
 		$transport->open();
 		return $client;
 	}
-	
+
 	public function getChoiceRequest($inquiries, $requestContext = null) {
-		
+
 		$choiceRequest = new \com\boxalino\p13n\api\thrift\ChoiceRequest();
 
 		list($sessionid, $profileid) = $this->getSessionAndProfile();
-		
+
 		$choiceRequest->userRecord = $this->getUserRecord();
 		$choiceRequest->profileId = $profileid;
 		$choiceRequest->inquiries = $inquiries;
@@ -224,7 +230,7 @@ class BxClient
 
 		return $choiceRequest;
 	}
-	
+
 	protected function getIP()
 	{
 		$ip = null;
@@ -246,21 +252,21 @@ class BxClient
 		$protocol = strpos(strtolower(@$_SERVER['SERVER_PROTOCOL']), 'https') === false ? 'http' : 'https';
 		$hostname = @$_SERVER['HTTP_HOST'];
 		$requesturi = @$_SERVER['REQUEST_URI'];
-		
+
 		if($hostname == "") {
 			return "";
 		}
 
 		return $protocol . '://' . $hostname . $requesturi;
 	}
-	
+
 	public function addRequestContextParameter($name, $values) {
 		if(!is_array($values)) {
 			$values = array($values);
 		}
 		$this->requestContextParameters[$name] = $values;
 	}
-	
+
 	public function resetRequestContextParameter() {
 		$this->requestContextParameters = array();
 	}
@@ -291,7 +297,7 @@ class BxClient
 		}
 		return $params;
 	}
-	
+
 	protected function getRequestContext()
 	{
 		$requestContext = new \com\boxalino\p13n\api\thrift\RequestContext();
@@ -309,7 +315,7 @@ class BxClient
 
 		return $requestContext;
 	}
-	
+
 	private function throwCorrectP13nException($e) {
 		if(strpos($e->getMessage(), 'Could not connect ') !== false) {
 			throw new \Exception('The connection to our server failed even before checking your credentials. This might be typically caused by 2 possible things: wrong values in host, port, schema or uri (typical value should be host=cdn.bx-cloud.com, port=443, uri =/p13n.web/p13n and schema=https, your values are : host=' . $this->host . ', port=' . $this->port . ', schema=' . $this->schema . ', uri=' . $this->uri . '). Another possibility, is that your server environment has a problem with ssl certificate (peer certificate cannot be authenticated with given ca certificates), which you can either fix, or avoid the problem by adding the line "curl_setopt(self::$curlHandle, CURLOPT_SSL_VERIFYPEER, false);" in the file "lib\Thrift\Transport\P13nTCurlClient" after the call to curl_init in the function flush. Full error message=' . $e->getMessage());
@@ -341,6 +347,10 @@ class BxClient
 	private function p13nchoose($choiceRequest) {
 		try {
 			$choiceResponse = $this->getP13n($this->_timeout)->choose($choiceRequest);
+            if($_REQUEST['dev_bx_debug'] == 'true'){
+                $this->addNotification('bxRequest', $choiceRequest);
+                $this->addNotification('bxResponse', $choiceResponse);
+            }
 			if(isset($this->requestMap['dev_bx_disp']) && $this->requestMap['dev_bx_disp'] == 'true') {
 				echo "<pre><h1>Choice Request</h1>";
 				var_dump($choiceRequest);
@@ -354,17 +364,44 @@ class BxClient
 			$this->throwCorrectP13nException($e);
 		}
 	}
-	
+
+    private function p13nchooseAll($choiceRequestBundle) {
+        try {
+            $bundleChoiceResponse = $this->getP13n($this->_timeout)->chooseAll($choiceRequestBundle);
+            if(isset($this->requestMap['dev_bx_disp']) && $this->requestMap['dev_bx_disp'] == 'true') {
+                echo "<pre><h1>Bundle Choice Request</h1>";
+                var_dump($choiceRequestBundle);
+                echo "<br><h1>Bundle Choice Response</h1>";
+                var_dump($bundleChoiceResponse);
+                echo "</pre>";
+                exit;
+            }
+            return $bundleChoiceResponse;
+        } catch(\Exception $e) {
+            var_dump($e->getMessage());exit;
+            $this->throwCorrectP13nException($e);
+        }
+    }
+
 	public function addRequest($request) {
 		$request->setDefaultIndexId($this->getAccount());
 		$request->setDefaultRequestMap($this->requestMap);
 		$this->chooseRequests[] = $request;
 	}
-	
+
+	public function addBundleRequest($requests) {
+	    foreach ($requests as $request) {
+            $request->setDefaultIndexId($this->getAccount());
+            $request->setDefaultRequestMap($this->requestMap);
+        }
+	    $this->bundleChooseRequests[] = $requests;
+    }
+
 	public function resetRequests() {
 		$this->chooseRequests = array();
+		$this->bundleChooseRequests = array();
 	}
-	
+
 	public function getRequest($index=0) {
 		if(sizeof($this->chooseRequests) <= $index) {
 			return null;
@@ -390,9 +427,9 @@ class BxClient
 		}
 		return $requests;
 	}
-	
+
 	public function getThriftChoiceRequest() {
-		
+
 		if(sizeof($this->chooseRequests) == 0 && sizeof($this->autocompleteRequests) > 0) {
 			list($sessionid, $profileid) = $this->getSessionAndProfile();
 			$userRecord = $this->getUserRecord();
@@ -401,11 +438,11 @@ class BxClient
 			}, $this->autocompleteRequests);
 			return $p13nrequests;
 		}
-		
+
 		$choiceInquiries = array();
-		
+
 		foreach($this->chooseRequests as $request) {
-			
+
 			$choiceInquiry = new \com\boxalino\p13n\api\thrift\ChoiceInquiry();
 			$choiceInquiry->choiceId = $request->getChoiceId();
 			if($this->isTest === true || ($this->isDev && $this->isTest === null)) {
@@ -415,26 +452,75 @@ class BxClient
 			$choiceInquiry->contextItems = $request->getContextItems();
 			$choiceInquiry->minHitCount = $request->getMin();
 			$choiceInquiry->withRelaxation = $request->getWithRelaxation();
-			
+
 			$choiceInquiries[] = $choiceInquiry;
 		}
 
 		$choiceRequest = $this->getChoiceRequest($choiceInquiries, $this->getRequestContext());
 		return $choiceRequest;
 	}
-	
-	protected function choose() {
-		$this->chooseResponses = $this->p13nchoose($this->getThriftChoiceRequest());
+
+    public function getBundleChoiceRequest($inquiries, $requestContext = null) {
+
+        $choiceRequest = new \com\boxalino\p13n\api\thrift\ChoiceRequest();
+        list($sessionid, $profileid) = $this->getSessionAndProfile();
+
+        $choiceRequest->userRecord = $this->getUserRecord();
+        $choiceRequest->profileId = $profileid;
+        $choiceRequest->inquiries = $inquiries;
+        if($requestContext == null) {
+            $requestContext = $this->getRequestContext();
+        }
+        $choiceRequest->requestContext = $requestContext;
+        return $choiceRequest;
+    }
+
+    public function getThriftBundleChoiceRequest() {
+
+	    $bundleRequest = array();
+        foreach($this->bundleChooseRequests as $bundleChooseRequest) {
+            $choiceInquiries = array();
+            foreach ($bundleChooseRequest as $request) {
+                $this->addRequest($request);
+                $choiceInquiry = new \com\boxalino\p13n\api\thrift\ChoiceInquiry();
+                $choiceInquiry->choiceId = $request->getChoiceId();
+                if($this->isTest === true || ($this->isDev && $this->isTest === null)) {
+                    $choiceInquiry->choiceId .= "_debugtest";
+                }
+                $choiceInquiry->simpleSearchQuery = $request->getSimpleSearchQuery($this->getAccount());
+                $choiceInquiry->contextItems = $request->getContextItems();
+                $choiceInquiry->minHitCount = $request->getMin();
+                $choiceInquiry->withRelaxation = $request->getWithRelaxation();
+                $choiceInquiries[] = $choiceInquiry;
+            }
+            $bundleRequest[] = $this->getBundleChoiceRequest($choiceInquiries, $this->getRequestContext());
+        }
+        return new \com\boxalino\p13n\api\thrift\ChoiceRequestBundle(['requests' => $bundleRequest]);
+    }
+
+	protected function choose($chooseAll=false) {
+	    if($chooseAll) {
+	        $bundleResponse = $this->p13nchooseAll($this->getThriftBundleChoiceRequest());
+            $variants = array();
+	        foreach ($bundleResponse->responses as $choiceResponse) {
+                $variants = array_merge($variants, $choiceResponse->variants);
+            }
+
+            $response = new \com\boxalino\p13n\api\thrift\ChoiceResponse(['variants' => $variants]);
+        } else {
+            $response = $this->p13nchoose($this->getThriftChoiceRequest());
+        }
+		$this->chooseResponses = $response ;
 	}
-	
+
 	public function flushResponses() {
 		$this->autocompleteResponses = null;
 		$this->chooseResponses = null;
 	}
-	
-	public function getResponse() {
+
+	public function getResponse($chooseAll=false) {
 		if(!$this->chooseResponses) {
-			$this->choose();
+			$this->choose($chooseAll);
 		}
 		$bxChooseResponse = new \com\boxalino\bxclient\v1\BxChooseResponse($this->chooseResponses, $this->chooseRequests);
         $bxChooseResponse->setNotificationMode($this->getNotificationMode());
@@ -448,18 +534,18 @@ class BxClient
 	public function setAutocompleteRequest($request) {
 		$this->setAutocompleteRequests(array($request));
 	}
-	
+
 	public function setAutocompleteRequests($requests) {
 		foreach ($requests as $request) {
 			$this->enhanceAutoCompleterequest($request);
 		}
 		$this->autocompleteRequests = $requests;
 	}
-	
+
 	private function enhanceAutoCompleterequest(&$request) {
 		$request->setDefaultIndexId($this->getAccount());
 	}
-	
+
 	private function p13nautocomplete($autocompleteRequest) {
 		try {
 			$choiceResponse = $this->getP13n($this->_timeout)->autocomplete($autocompleteRequest);
@@ -476,7 +562,7 @@ class BxClient
 			$this->throwCorrectP13nException($e);
 		}
 	}
-	
+
 	public function autocomplete()
 	{
 		list($sessionid, $profileid) = $this->getSessionAndProfile();
@@ -491,7 +577,7 @@ class BxClient
 		}, $this->p13nautocompleteAll($p13nrequests));
 
 	}
-		
+
 	public function getAutocompleteResponse() {
 		$responses = $this->getAutocompleteResponses();
 		if(isset($responses[0])) {
@@ -499,7 +585,7 @@ class BxClient
 		}
 		return null;
 	}
-	
+
 	private function p13nautocompleteAll($requests) {
 		$requestBundle = new \com\boxalino\p13n\api\thrift\AutocompleteRequestBundle();
 		$requestBundle->requests = $requests;
@@ -518,7 +604,7 @@ class BxClient
 			$this->throwCorrectP13nException($e);
 		}
 	}
-			
+
 	public function getAutocompleteResponses() {
 		if (!$this->autocompleteResponses) {
 			$this->autocomplete();
@@ -556,5 +642,5 @@ class BxClient
             exit;
         }
     }
-	
+
 }

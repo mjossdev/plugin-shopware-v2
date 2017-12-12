@@ -142,7 +142,8 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
         $jsFiles = array(
             __DIR__ . '/Views/responsive/frontend/_resources/javascript/jquery.bx_register_add_article.js',
             __DIR__ . '/Views/responsive/frontend/_resources/javascript/jquery.search_enhancements.js',
-            __DIR__ . '/Views/responsive/frontend/_resources/javascript/boxalinoFacets.js'
+            __DIR__ . '/Views/responsive/frontend/_resources/javascript/boxalinoFacets.js',
+            __DIR__ . '/Views/responsive/frontend/_resources/javascript/jssor.slider-26.2.0.min.js'
         );
         return new Doctrine\Common\Collections\ArrayCollection($jsFiles);
     }
@@ -156,6 +157,10 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
             ), new \Shopware\Components\Theme\LessDefinition(
                 array(),
                 array(__DIR__ . '/Views/responsive/frontend/_resources/less/search.less'),
+                __DIR__
+            ), new \Shopware\Components\Theme\LessDefinition(
+                array(),
+                array(__DIR__ . '/Views/responsive/frontend/_resources/less/portfolio.less'),
                 __DIR__
             )
         );
@@ -201,6 +206,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
         $this->subscribeEvent('Enlight_Controller_Action_Frontend_AjaxSearch_Index', 'onAjaxSearch');
         $this->subscribeEvent('Enlight_Controller_Action_PostDispatchSecure_Widgets_Recommendation', 'onRecommendation');
         $this->subscribeEvent('Enlight_Controller_Action_PostDispatchSecure_Widgets_Emotion', 'onEmotion');
+        $this->subscribeEvent('Enlight_Controller_Action_PostDispatchSecure_Frontend_Blog', 'onBlog');
 
         // service extension
         $this->subscribeEvent('Enlight_Bootstrap_AfterInitResource_shopware_storefront.', 'onAjaxSearch');
@@ -274,6 +280,46 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
             ));
         }
         $component = $this->createEmotionComponent(array(
+            'name' => 'Boxalino Portfolio Recommendations',
+            'template' => 'boxalino_portfolio_recommendations',
+            'description' => 'Display Boxalino product recommendations for specific customer.',
+            'convertFunction' => null
+        ));
+        if ($component->getFields()->count() == 0) {
+            $component->createTextField(array(
+                'name' => 'choiceId_portfolio',
+                'fieldLabel' => 'Choice id for portfolio',
+                'allowBlank' => false,
+                'position' => 0
+            ));
+            $component->createTextField(array(
+                'name' => 'choiceId_re-buy',
+                'fieldLabel' => 'Choice id for re-buy',
+                'allowBlank' => false,
+                'position' => 1
+            ));
+            $component->createNumberField(array(
+                'name' => 'article_slider_max_number_rebuy',
+                'fieldLabel' => 'Maximum number of articles for re-buy',
+                'allowBlank' => false,
+                'defaultValue' => 10,
+                'position' => 2
+            ));
+            $component->createTextField(array(
+                'name' => 'choiceId_re-orient',
+                'fieldLabel' => 'Choice id for re-orient',
+                'allowBlank' => false,
+                'position' => 3
+            ));
+            $component->createNumberField(array(
+                'name' => 'article_slider_max_number_reorient',
+                'fieldLabel' => 'Maximum number of articles for re-orient',
+                'allowBlank' => false,
+                'defaultValue' => 10,
+                'position' => 4
+            ));
+        }
+        $component = $this->createEmotionComponent(array(
             'name' => 'Boxalino CPO Finder',
             'template' => 'boxalino_product_finder',
             'description' => 'Boxalino CPO Finder',
@@ -310,9 +356,15 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
                 'allowBlank' => true
             ));
         }
+        $this->registerBannerEmotion();
+
+        $this->subscribeEvent(
+            'Enlight_Controller_Action_PostDispatchSecure_Widgets_Campaign',
+            'extendsEmotionTemplates'
+        );
         $this->subscribeEvent(
             'Shopware_Controllers_Widgets_Emotion_AddElement',
-            'convertRecommendationSlider'
+            'convertEmotion'
         );
         $this->registerController('Frontend', 'RecommendationSlider');
         $this->registerController('Frontend', 'BxDebug');
@@ -326,12 +378,27 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
         }
     }
 
-    public function onEmotion(Enlight_Event_EventArgs $arguments) {
-        $view = $arguments->getSubject()->View();
-        $view->addTemplateDir($this->Path() . 'Views/emotion/');
+    public function getShortLocale()
+    {
+        $locale = Shopware()->Shop()->getLocale();
+        $shortLocale = $locale->getLocale();
+        $position = strpos($shortLocale, '_');
+        if ($position !== false)
+            $shortLocale = substr($shortLocale, 0, $position);
+        return $shortLocale;
     }
 
-    public function convertRecommendationSlider(Enlight_Event_EventArgs $args) {
+    //Banner
+    public function registerBannerEmotion(){
+      $component = $this->createEmotionComponent(array(
+          'name' => 'Boxalino Banner',
+          'template' => 'boxalino_banner',
+          'description' => 'Display Boxalino banner.',
+          'convertFunction' => null
+      ));
+    }
+
+    public function convertEmotion($args) {
         $data = $args->getReturn();
 
         if ($args['element']['component']['template'] == "boxalino_product_finder") {
@@ -343,6 +410,58 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
             return $data;
         }
 
+        if ($args['element']['component']['name'] == "Boxalino Banner") {
+            $httpCache = $this->HttpCache();
+            if($httpCache){
+                $httpCache->disableControllerCache();
+            }
+            $data = $this->onBanner();
+            return $data;
+        }
+
+        if ($args['element']['component']['name'] == "Boxalino Portfolio Recommendations") {
+            if($_REQUEST['dev_bx_debug'] == 'true'){
+                $t1 = microtime(true);
+                $helper = Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper::instance();
+                $helper->addNotification("convertEmotion start at: " . $t1);
+            }
+            $httpCache = $this->HttpCache();
+            if($_REQUEST['dev_bx_debug'] == 'true'){
+                $helper = Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper::instance();
+                $t4 = (microtime(true) - $t1) * 1000 ;
+                $helper->addNotification("HttpCache() took: " . $t4 . "ms.");
+            }
+            if($httpCache){
+                if($_REQUEST['dev_bx_debug'] == 'true'){
+                    $t6 = microtime(true);
+                }
+                $httpCache->disableControllerCache();
+                if($_REQUEST['dev_bx_debug'] == 'true'){
+                    $helper = Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper::instance();
+                    $t6 = (microtime(true) - $t6) * 1000 ;
+                    $helper->addNotification("disableControllerCache() took: " . $t6 . "ms.");
+                }
+            }
+            if($_REQUEST['dev_bx_debug'] == 'true'){
+                $helper = Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper::instance();
+                $t2 = (microtime(true) - $t1) * 1000 ;
+                $helper->addNotification("Pre Portfolio Recommendation took: " . $t2 . "ms.");
+            }
+            $data['portfolio'] = $this->onPortfolioRecommendation($args);
+            if($_REQUEST['dev_bx_debug'] == 'true'){
+                $t3 = microtime(true);
+            }
+            $data['lang'] = $this->getShortLocale();
+            if($_REQUEST['dev_bx_debug'] == 'true'){
+                $t1 = (microtime(true) - $t1) * 1000 ;
+                $t3 = (microtime(true) - $t3) * 1000 ;
+                $helper = Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper::instance();
+                $helper->addNotification("Post PortfolioRecommendation took: " . $t3 . "ms.");
+                $helper->addNotification("Total time of Portfolio: " . $t1 . "ms.");
+                $helper->callNotification(true);
+            }
+            return $data;
+        }
         if ($args['element']['component']['name'] != "Boxalino Slider Recommendations") {
             return $data;
         }
@@ -388,6 +507,17 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
 
     }
 
+    public function onBlog(Enlight_Event_EventArgs $arguments) {
+
+        if($arguments->getRequest()->getActionName() == 'detail'){
+            try{
+                $this->searchInterceptor->blog($arguments);
+            }catch (\Exception $e) {
+                $this->logException($e, __FUNCTION__, $arguments->getSubject()->Request()->getRequestUri());
+            }
+        }
+    }
+
     public function onBackendPerformance(Enlight_Event_EventArgs $arguments){
         try {
             $controller = $arguments->getSubject();
@@ -401,11 +531,33 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
         }
     }
 
+    public function onEmotion(Enlight_Event_EventArgs $arguments) {
+        $view = $arguments->getSubject()->View();
+        $view->addTemplateDir($this->Path() . 'Views/emotion/');
+        $view->extendsTemplate('frontend/plugins/boxalino/listing/product-box/box-emotion.tpl');
+    }
+
+    public function onPortfolioRecommendation(Enlight_Event_EventArgs $arguments) {
+        try {
+            return $this->searchInterceptor->portfolio($arguments);
+        } catch (\Exception $e) {
+            $this->logException($e, __FUNCTION__);
+        }
+    }
+
+    public function onBanner() {
+        try {
+            return $this->frontendInterceptor->getBannerInfo();
+        } catch (\Exception $e) {
+            $this->logException($e, __FUNCTION__);
+        }
+    }
+
     public function onCPOFinder($data) {
         try {
             return $this->searchInterceptor->CPOFinder($data);
         } catch (\Exception $e) {
-            $this->logException($e, __FUNCTION__);
+                  $this->logException($e, __FUNCTION__);
         }
     }
 

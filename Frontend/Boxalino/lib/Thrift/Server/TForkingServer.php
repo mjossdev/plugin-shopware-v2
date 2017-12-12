@@ -2,7 +2,6 @@
 
 namespace Thrift\Server;
 
-use Thrift\Server\TServer;
 use Thrift\Transport\TTransport;
 use Thrift\Exception\TException;
 use Thrift\Exception\TTransportException;
@@ -12,7 +11,8 @@ use Thrift\Exception\TTransportException;
  *
  * @package thrift.server
  */
-class TForkingServer extends TServer {
+class TForkingServer extends TServer
+{
   /**
    * Flag for the main serving loop
    *
@@ -34,31 +34,29 @@ class TForkingServer extends TServer {
    *
    * @return void
    */
-  public function serve() {
-	$this->transport_->listen();
+  public function serve()
+  {
+    $this->transport_->listen();
 
-	while (!$this->stop_) {
-	  try {
-		$transport = $this->transport_->accept();
+    while (!$this->stop_) {
+      try {
+        $transport = $this->transport_->accept();
 
-		if ($transport != null) {
-		  $pid = pcntl_fork();
+        if ($transport != null) {
+          $pid = pcntl_fork();
 
-		  if ($pid > 0) {
-			$this->handleParent($transport, $pid);
-		  }
-		  else if ($pid === 0) {
-			$this->handleChild($transport);
-		  }
-		  else {
-			throw new TException('Failed to fork');
-		  }
-		}
-	  }
-	  catch (TTransportException $e) { }
+          if ($pid > 0) {
+            $this->handleParent($transport, $pid);
+          } elseif ($pid === 0) {
+            $this->handleChild($transport);
+          } else {
+            throw new TException('Failed to fork');
+          }
+        }
+      } catch (TTransportException $e) { }
 
-	  $this->collectChildren();
-	}
+      $this->collectChildren();
+    }
   }
 
   /**
@@ -68,8 +66,9 @@ class TForkingServer extends TServer {
    * @param int $pid
    * @return void
    */
-  private function handleParent(TTransport $transport, $pid) {
-	$this->children_[$pid] = $transport;
+  private function handleParent(TTransport $transport, $pid)
+  {
+    $this->children_[$pid] = $transport;
   }
 
   /**
@@ -78,18 +77,18 @@ class TForkingServer extends TServer {
    * @param TTransport $transport
    * @return void
    */
-  private function handleChild(TTransport $transport) {
-	try {
-	  $inputTransport = $this->inputTransportFactory_->getTransport($transport);
-	  $outputTransport = $this->outputTransportFactory_->getTransport($transport);
-	  $inputProtocol = $this->inputProtocolFactory_->getProtocol($inputTransport);
-	  $outputProtocol = $this->outputProtocolFactory_->getProtocol($outputTransport);
-	  while ($this->processor_->process($inputProtocol, $outputProtocol)) { }
-	  @$transport->close();
-	}
-	catch (TTransportException $e) { }
+  private function handleChild(TTransport $transport)
+  {
+    try {
+      $inputTransport = $this->inputTransportFactory_->getTransport($transport);
+      $outputTransport = $this->outputTransportFactory_->getTransport($transport);
+      $inputProtocol = $this->inputProtocolFactory_->getProtocol($inputTransport);
+      $outputProtocol = $this->outputProtocolFactory_->getProtocol($outputTransport);
+      while ($this->processor_->process($inputProtocol, $outputProtocol)) { }
+      @$transport->close();
+    } catch (TTransportException $e) { }
 
-	  return null;
+    exit(0);
   }
 
   /**
@@ -97,13 +96,14 @@ class TForkingServer extends TServer {
    *
    * @return void
    */
-  private function collectChildren() {
-	foreach ($this->children_ as $pid => $transport) {
-	  if (pcntl_waitpid($pid, $status, WNOHANG) > 0) {
-		unset($this->children_[$pid]);
-		if ($transport) @$transport->close();
-	  }
-	}
+  private function collectChildren()
+  {
+    foreach ($this->children_ as $pid => $transport) {
+      if (pcntl_waitpid($pid, $status, WNOHANG) > 0) {
+        unset($this->children_[$pid]);
+        if ($transport) @$transport->close();
+      }
+    }
   }
 
   /**
@@ -112,8 +112,9 @@ class TForkingServer extends TServer {
    *
    * @return void
    */
-  public function stop() {
-	$this->transport_->close();
-	$this->stop_ = true;
+  public function stop()
+  {
+    $this->transport_->close();
+    $this->stop_ = true;
   }
 }
