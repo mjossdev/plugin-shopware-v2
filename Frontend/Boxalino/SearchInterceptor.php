@@ -1401,19 +1401,8 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
 
                         $selectedCategoryId = $bxFacets->getSelectedCategoryIds();
                         if(version_compare(Shopware::VERSION, '5.3.0', '<')) {
-                            if(reset($selectedCategoryId) == Shopware()->Shop()->getCategory()->getId()) {
-                                foreach (range(0, 10) as $i) {
-                                    $ids = array_merge($ids, $bxFacets->getCategoryIdsFromLevel($i));
-                                    if(empty($selectedCategoryId) && $i == 1) break;
-                                    if(in_array(end($selectedCategoryId) , $ids)) {
-                                        $ids = array_merge($ids, $bxFacets->getCategoryIdsFromLevel(++$i));
-                                        break;
-                                    }
-                                }
-                            } else {
-                                foreach ($bxFacets->getCategories() as $c) {
-                                    $ids [] = reset(explode('/', $c));
-                                }
+                            foreach ($bxFacets->getCategories() as $c) {
+                                $ids [] = reset(explode('/', $c));
                             }
                             if (!$categoryFieldName = $mapper->getShortAlias('sCategory')) {
                                 $categoryFieldName = 'sCategory';
