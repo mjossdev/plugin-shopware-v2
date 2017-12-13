@@ -899,15 +899,15 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
 
         if($useTranslation) {
             $sql
-                ->join(array('t' => 's_core_translations'), 'f_o.id = t.objectkey', array('objectdata'))
-                ->where('t.objecttype = ?', 'propertyoption')
-                ->where('t.objectlanguage = ?', $shop_id);
+                ->joinLeft(array('t' => 's_core_translations'),
+                    'f_o.id = t.objectkey AND t.objecttype = ' . $db->quote('propertyoption') . ' AND t.objectlanguage = ' . $shop_id,
+                    array('objectdata'));
         }
         $stmt = $db->query($sql);
 
         if($stmt->rowCount()) {
             while($row = $stmt->fetch()){
-                if($useTranslation) {
+                if($useTranslation && isset($row['objectdata'])) {
                     $translation = unserialize($row['objectdata']);
                     $row['name'] = isset($translation['optionName']) && $translation['optionName'] != '' ?
                         $translation['optionName'] : $row['name'];
