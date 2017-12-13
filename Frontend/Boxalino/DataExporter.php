@@ -980,7 +980,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
                     array('d.id', 'ac.categoryID')
                 )
                 ->joinLeft(array('c' => 's_categories'), 'ac.categoryID = c.id', array())
-                ->where('c.path LIKE \'%|' . $category_id . '|\'');
+                ->where('c.path LIKE \'%|' . $category_id . '|%\'');
             if ($this->delta) {
                 $sql->where('d.articleID IN(?)', $this->deltaIds);
             }
