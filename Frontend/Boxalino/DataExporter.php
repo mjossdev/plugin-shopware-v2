@@ -158,7 +158,8 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
                     $this->log->info('BxIndexLog: Finished account: ' . $account);
                 }
             }
-        } catch(\Exception $e) {
+        } catch(\Throwable $e) {
+            error_log("BxIndexLog: failed with exception: " .$e->getMessage());
             $this->log->info("BxIndexLog: failed with exception: " . $e->getMessage());
         }
         $this->log->info("BxIndexLog: End of boxalino $type data sync ");
@@ -876,7 +877,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
         $selectFields[] = 'a.id';
         $header = true;
         $countMax = 2000000;
-        $limit = 1000;
+        $limit = 1000000;
         $doneCases = array();
         $categoryShopIds = $this->_config->getShopCategoryIds($account);
         foreach ($this->_config->getAccountLanguages($account) as $shop_id => $language) {
@@ -894,9 +895,11 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
                 if ($this->delta) {
                     $sql->where('a.articleID IN(?)', $this->deltaIds);
                 }
+                $currentCount = 0;
                 $stmt = $db->query($sql);
                 if($stmt->rowCount()) {
                     while ($row = $stmt->fetch()) {
+                        $currentCount++;
                         if(!isset($this->shopProductIds[$row['id']])) {
                             continue;
                         }
@@ -910,8 +913,15 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
                         $data[] = $row;
                         $doneCases[$row['id']] = true;
                         $totalCount++;
+                        if(sizeof($data) > 10000) {
+                            $files->savePartToCsv('product_translations.csv', $data);
+                            $data = [];
+                        }
                     }
                 } else {
+                    break;
+                }
+                if($currentCount > $limit-1) {
                     break;
                 }
                 $files->savepartToCsv('product_translations.csv', $data);
@@ -944,6 +954,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
         $languages = $this->_config->getAccountLanguages($account);
         $select = $db->select()->from(array('c' => 's_categories'), array('id', 'parent', 'description', 'path'));
         $stmt = $db->query($select);
+        $this->log->info("BxIndexLog: Preparing products - start categories.");
         if($stmt->rowCount()) {
             while($r = $stmt->fetch()){
                 $value = $r['description'];
@@ -961,6 +972,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
                 $categories[$r['id']] = $category;
             }
         }
+        $this->log->info("BxIndexLog: Preparing products - end categories.");
         $files->savePartToCsv('categories.csv', $categories);
         $categories = null;
         $this->bxData->addCategoryFile($files->getPath('categories.csv'), 'category_id', 'parent_id', $language_headers);
@@ -969,6 +981,8 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
         $doneCases = array();
         $header = true;
         $categoryShopIds = $this->_config->getShopCategoryIds($account);
+
+        $this->log->info("BxIndexLog: Preparing products - start product categories.");
         foreach ($languages as $shop_id => $language) {
             $category_id = $categoryShopIds[$shop_id];
             $sql = $db->select()
@@ -997,7 +1011,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
                         $header = false;
                     }
                     $data[] = $row;
-                    if($data > 10000) {
+                    if(sizeof($data) > 10000) {
                         $files->savePartToCsv('product_categories.csv', $data);
                         $data = [];
                     }
@@ -1010,6 +1024,8 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
                 break;
             }
         }
+
+        $this->log->info("BxIndexLog: Preparing products - end product categories.");
         $doneCases = null;
         $productToCategoriesSourceKey = $this->bxData->addCSVItemFile($files->getPath('product_categories.csv'), 'id');
         $this->bxData->setCategoryField($productToCategoriesSourceKey, 'categoryID');
@@ -1026,8 +1042,8 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
         $product_attributes = $this->getProductAttributes($account);
         $product_properties = array_flip($product_attributes);
 
-        $countMax = 1000000;
-        $limit = 1000;
+        $countMax = 100000000;
+        $limit = 1000000;
         $header = true;
         $data = array();
         $categoryShopIds = $this->_config->getShopCategoryIds($account);
@@ -1057,8 +1073,10 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
                 }
                 $start = microtime(true);
                 $stmt = $db->query($sql);
+                $currentCount = 0;
                 if ($stmt->rowCount()) {
                     while ($row = $stmt->fetch()) {
+                        $currentCount++;
                         if($log) {
                             $end = (microtime(true) - $start) * 1000;
                             $this->log->info("Main product query (shop:$shop_id) took: $end ms, memory: " . memory_get_usage(true));
@@ -1100,6 +1118,9 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
 
                 $files->savePartToCsv('products.csv', $data);
                 $page++;
+                if($currentCount < $limit -1) {
+                    break;
+                }
             }
         }
         $end =  $end = (microtime(true) - $startforeach) * 1000;
