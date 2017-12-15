@@ -296,11 +296,13 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
      */
     private function categoryShowFilter($category_id) {
         $show = true;
-        $db = Shopware()->Db();
-        $sql = $db->select()->from(array('c' => 's_categories'))
-            ->where('c.id = ?', $category_id);
-        $result = $db->fetchRow($sql);
-        return !$result['hidefilter'];
+		if($category_id) {
+			$db = Shopware()->Db();
+			$sql = $db->select()->from(array('c' => 's_categories'))
+			->where('c.id = ?', $category_id);
+			$show = $db->fetchRow($sql);
+		}
+        return $show;
     }
 
     /**
