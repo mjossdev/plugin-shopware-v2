@@ -921,7 +921,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
                 } else {
                     break;
                 }
-                if($currentCount > $limit-1) {
+                if($currentCount < $limit-1) {
                     break;
                 }
                 $files->savepartToCsv('product_translations.csv', $data);
