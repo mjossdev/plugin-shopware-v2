@@ -136,6 +136,8 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                 $filter['products_stream_id'] = [$streamId];
             }
         }
+
+        $showFacets = $this->categoryShowFilter($catId);
         if($supplier = $this->Request()->getParam('sSupplier')) {
             if(strpos($supplier, '|') === false){
                 $supplier_name = $this->getSupplierName($supplier);
@@ -156,14 +158,14 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         $sort =  $this->getSortOrder($criteria, $viewData['sSort'], true);
         $queryText = $this->Request()->getParams()['q'];
         $facets = $criteria->getFacets();
-        $options = $this->getFacetConfig($facets);
-        $this->Helper()->addSearch($queryText, $pageOffset, $hitCount, 'product', $sort, $options, $filter);
+        $options = $showFacets ? $this->getFacetConfig($facets) : [];
+        $this->Helper()->addSearch($queryText, $pageOffset, $hitCount, 'product', $sort, $options, $filter, !is_null($streamId));
         $this->View()->addTemplateDir($this->Bootstrap()->Path() . 'Views/emotion/');
 
         if(version_compare(Shopware::VERSION, '5.3.0', '>=')) {
             $body['totalCount'] = $this->Helper()->getTotalHitCount();
             if ($this->Request()->getParam('loadFacets')) {
-                $facets = $this->updateFacetsWithResult($facets, $context);
+                $facets = $showFacets ? $this->updateFacetsWithResult($facets, $context) : [];
                 $body['facets'] = array_values($facets);
             }
             if ($this->Request()->getParam('loadProducts')) {
@@ -265,7 +267,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                     $filterValues = $condition->getValueIds();
                     $option_id = $this->getOptionIdFromValue(reset($filterValues));
                     $shop_id  = $this->Helper()->getShopId();
-                    $useTranslation = $this->useTranslation($shop_id);
+                    $useTranslation = $this->useTranslation($shop_id, 'propertyvalue');
                     $result = $this->getFacetValuesResult($option_id, $filterValues, $useTranslation, $shop_id);
                     $values = array();
                     foreach ($result as $r) {
@@ -286,6 +288,19 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             }
         }
         return $filter;
+    }
+
+    /**
+     * @param $category_id
+     * @return bool
+     */
+    private function categoryShowFilter($category_id) {
+        $show = true;
+        $db = Shopware()->Db();
+        $sql = $db->select()->from(array('c' => 's_categories'))
+            ->where('c.id = ?', $category_id);
+        $result = $db->fetchRow($sql);
+        return !$result['hidefilter'];
     }
 
     /**
@@ -326,6 +341,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             }
         }
 
+        $showFacets = $this->categoryShowFilter($catId);
         if(isset($viewData['manufacturer']) && !empty($viewData['manufacturer'])) {
             $filter['products_brand'] = [$viewData['manufacturer']->getName()];
         }
@@ -343,7 +359,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             $this->Helper()->addNotification("Navigation before createFacets took in total: " . $t1 . "ms.");
         }
         $facets = $criteria->getFacets();
-        $options = $this->getFacetConfig($facets);
+        $options = $showFacets ? $this->getFacetConfig($facets) : [];
         $sort = $this->getSortOrder($criteria, $viewData['sSort'], true);
 
         $hitCount = $criteria->getLimit();
@@ -356,7 +372,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             $afterStart = microtime(true);
             $this->Helper()->addNotification("Navigation after response: " . $afterStart);
         }
-        $facets = $this->updateFacetsWithResult($facets, $context);
+        $facets = $showFacets ? $this->updateFacetsWithResult($facets, $context) : [];
         $articles = $this->Helper()->getLocalArticles($this->Helper()->getHitFieldValues('products_ordernumber'));
         $this->View()->addTemplateDir($this->Bootstrap()->Path() . 'Views/emotion/');
         if(version_compare(Shopware::VERSION, '5.3.0', '<')) {
