@@ -928,7 +928,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                     $row['name'] = isset($translation['optionName']) && $translation['optionName'] != '' ?
                         $translation['optionName'] : $row['name'];
                 }
-                $options['products_optionID_mapped_' . $row['id']] = ['label' => $row['name']];
+                $options['products_optionID_mapped_' . $row['id']] = ['label' => trim($row['name'])];
             }
         }
         return $options;
