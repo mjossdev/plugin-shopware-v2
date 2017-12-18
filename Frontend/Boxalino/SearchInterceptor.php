@@ -1055,7 +1055,8 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                     }
                     break;
                 case 'vote_average':
-                    $vote = isset($params['rating']) ? range($params['rating'], 4) : null;
+                    $top = (version_compare(Shopware::VERSION, '5.3.0', '<')) ? 5 : 4;
+                    $vote = isset($params['rating']) ? range($params['rating'], $top) : null;
                     $options['di_rating']['label'] = $snippetManager->get('vote_average', 'Bewertung');
                     if($vote) {
                         $options['di_rating']['value'] = $vote;
@@ -1523,15 +1524,22 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                     }
                     $facet = $facets['vote_average'];
                     $values = $bxFacets->getFacetValues($fieldName);
-                    $values = array_reverse($values);
                     $data = array();
                     $selectedValue = null;
                     $selected = $bxFacets->isSelected($fieldName);
-                    foreach ($values as $value) {
-                        if($value == 0) continue;
-                        $count = $bxFacets->getFacetValueCount($fieldName, $value);
-                        $data[] = new ValueListItem($value, (string) $count, $bxFacets->isFacetValueSelected($fieldName, $value));
+                    if(version_compare(Shopware::VERSION, '5.3.0', '<')) {
+                        foreach (range(1, 5) as $i) {
+                            $returned = array_search($i, $values);
+                            $data[] = new ValueListItem($i, (string) '', $returned ? $bxFacets->isFacetValueSelected($fieldName, $i) : false);
+                        }
+                    } else {
+                        $values = array_reverse($values);
+                        foreach ($values as $value) {
+                            if($value == 0) continue;
+                            $count = $bxFacets->getFacetValueCount($fieldName, $value);
+                            $data[] = new ValueListItem($value, (string) $count, $bxFacets->isFacetValueSelected($fieldName, $value));
 
+                        }
                     }
                     if (!$facetFieldName = $mapper->getShortAlias('rating')) {
                         $facetFieldName = 'rating';
