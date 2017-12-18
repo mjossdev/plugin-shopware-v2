@@ -176,38 +176,54 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
 
         $this->log->info("BxIndexLog: Preparing products - main.");
         $export_products = $this->exportMainProducts($account, $files);
+        $this->log->info("Main product after memory: " . memory_get_usage(true));
+
         $this->log->info("BxIndexLog: Finished products - main.");
         if ($export_products) {
             $this->log->info("BxIndexLog: Preparing products - categories.");
             $this->exportItemCategories($account, $files);
+            $this->log->info("exportItemCategories after memory: " . memory_get_usage(true));
             $this->log->info("BxIndexLog: Finished products - categories.");
             $this->log->info("BxIndexLog: Preparing products - translations.");
             $this->exportItemTranslationFields($account, $files);
+            $this->log->info("exportItemTranslationFields after memory: " . memory_get_usage(true));
             $this->log->info("BxIndexLog: Finished products - translations.");
             $this->log->info("BxIndexLog: Preparing products - brands.");
             $this->exportItemBrands($files);
+            $this->log->info("exportItemBrands after memory: " . memory_get_usage(true));
             $this->log->info("BxIndexLog: Finished products - brands.");
             $this->log->info("BxIndexLog: Preparing products - facets.");
             $this->exportItemFacets($account, $files);
+            $this->log->info("exportItemFacets after memory: " . memory_get_usage(true));
             $this->log->info("BxIndexLog: Finished products - facets.");
             $this->log->info("BxIndexLog: Preparing products - price.");
             $this->exportItemPrices($account, $files);
+            $this->log->info("exportItemPrices after memory: " . memory_get_usage(true));
             $this->log->info("BxIndexLog: Finished products - price.");
             if ($this->_config->exportProductImages($account)) {
                 $this->log->info("BxIndexLog: Preparing products - image.");
                 $this->exportItemImages($account, $files);
+                $this->log->info("exportItemImages after memory: " . memory_get_usage(true));
                 $this->log->info("BxIndexLog: Finished products - image.");
             }
             if ($this->_config->exportProductUrl($account)) {
                 $this->log->info("BxIndexLog: Preparing products - url.");
                 $this->exportItemUrls($account, $files);
+                $this->log->info("exportItemUrls after memory: " . memory_get_usage(true));
                 $this->log->info("BxIndexLog: Finished products - url.");
             }
             $this->log->info("BxIndexLog: Preparing products - blogs.");
             $this->exportItemBlogs($account, $files);
+            $this->log->info("exportItemBlogs after memory: " . memory_get_usage(true));
             $this->log->info("BxIndexLog: Finished products - blogs.");
+            $this->log->info("BxIndexLog: Preparing products - votes.");
             $this->exportItemVotes($files);
+            $this->log->info("exportItemVotes after memory: " . memory_get_usage(true));
+            $this->log->info("BxIndexLog: Finished products - votes.");
+            $this->log->info("BxIndexLog: Preparing products - product streams.");
             $this->exportProductStreams($files);
+            $this->log->info("exportProductStreams after memory: " . memory_get_usage(true));
+            $this->log->info("BxIndexLog: Finished products - product streams.");
         }
         return $export_products;
     }
@@ -877,7 +893,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
         $selectFields[] = 'a.id';
         $header = true;
         $countMax = 2000000;
-        $limit = 1000000;
+        $limit = 10000;
         $doneCases = array();
         $categoryShopIds = $this->_config->getShopCategoryIds($account);
         foreach ($this->_config->getAccountLanguages($account) as $shop_id => $language) {
@@ -913,7 +929,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
                         $data[] = $row;
                         $doneCases[$row['id']] = true;
                         $totalCount++;
-                        if(sizeof($data) > 10000) {
+                        if(sizeof($data) > 1000) {
                             $files->savePartToCsv('product_translations.csv', $data);
                             $data = [];
                         }
@@ -1103,6 +1119,10 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
                         }
                         $data[] = $row;
                         $totalCount++;
+                        if(sizeof($data)  > 1000){
+                            $files->savePartToCsv('products.csv', $data);
+                            $data = [];
+                        }
                     }
                     if($logCount++%5 == 0) {
                         $end = (microtime(true) - $start) * 1000;
@@ -1117,13 +1137,14 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
                 }
 
                 $files->savePartToCsv('products.csv', $data);
+                $data = [];
                 $page++;
                 if($currentCount < $limit -1) {
                     break;
                 }
             }
         }
-        $end =  $end = (microtime(true) - $startforeach) * 1000;
+        $end =  (microtime(true) - $startforeach) * 1000;
         $this->log->info("All shops for main product took: $end ms, memory: " . memory_get_usage(true));
         $mainSourceKey = $this->bxData->addMainCSVItemFile($files->getPath('products.csv'), 'id');
         $this->bxData->addSourceStringField($mainSourceKey, 'bx_purchasable', 'purchasable');
@@ -1153,6 +1174,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
             $this->shopProductIds[$id] = true;
         }
         $files->savePartToCsv('product_shop.csv', $data);
+        $data = null;
         $sourceKey = $this->bxData->addCSVItemFile($files->getPath('product_shop.csv'), 'id');
         $this->bxData->addSourceStringField($sourceKey, 'shop_id', 'shop_id');
         $this->bxData->addFieldParameter($sourceKey,'shop_id', 'splitValues', '|');
