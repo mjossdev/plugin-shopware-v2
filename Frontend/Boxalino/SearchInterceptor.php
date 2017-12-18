@@ -105,10 +105,21 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
      */
     public function listingAjax(Enlight_Event_EventArgs $arguments) {
 
-        if (!$this->Config()->get('boxalino_active') || !$this->Config()->get('boxalino_navigation_enabled')) {
+        if (!$this->Config()->get('boxalino_active')) {
             return null;
         }
         $this->init($arguments);
+
+        if(is_null($this->Request()->getParam('q'))) {
+            if(!$this->Config()->get('boxalino_navigation_enabled')){
+                return null;
+            }
+        } else {
+            if(!$this->Config()->get('boxalino_search_enabled')){
+                return null;
+            }
+        }
+
         if($this->Request()->getActionName() == 'productNavigation'){
             return null;
         }
@@ -132,6 +143,9 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             if($streamConfig['conditions']){
                 $conditions = $this->unserialize(json_decode($streamConfig['conditions'], true));
                 $filter = $this->getConditionFilter($conditions);
+                if(is_null($filter)) {
+                    return null;
+                }
             } else {
                 $filter['products_stream_id'] = [$streamId];
             }
@@ -284,6 +298,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                     $filter['products_brand'] = $this->getManufacturerById($filterValues);
                     break;
                 default:
+                    return null;
                     break;
             }
         }
@@ -338,6 +353,9 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             if($streamConfig['conditions']){
                 $conditions = $this->unserialize(json_decode($streamConfig['conditions'], true));
                 $filter = $this->getConditionFilter($conditions);
+                if(is_null($filter)) {
+                    return null;
+                }
             } else {
                 $filter['products_stream_id'] = [$streamId];
             }
