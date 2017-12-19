@@ -315,7 +315,8 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
 			$db = Shopware()->Db();
 			$sql = $db->select()->from(array('c' => 's_categories'))
 			->where('c.id = ?', $category_id);
-			$show = $db->fetchRow($sql);
+			$result = $db->fetchRow($sql);
+			$show = !$result['hidefilter'];
 		}
         return $show;
     }
