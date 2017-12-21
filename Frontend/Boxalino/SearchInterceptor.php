@@ -1528,20 +1528,22 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                     $data = array();
                     $selectedValue = null;
                     $selected = $bxFacets->isSelected($fieldName);
+                    $selectedValues = $bxFacets->getSelectedValues($fieldName);
+                    $setMin = !empty($selectedValues) ? min($selectedValues) : null;
+
                     if(version_compare(Shopware::VERSION, '5.3.0', '<')) {
                         foreach (range(1, 5) as $i) {
-                            $returned = array_search($i, $values);
-                            $data[] = new ValueListItem($i, (string) '', $returned ? $bxFacets->isFacetValueSelected($fieldName, $i) : false);
+                            $data[] = new ValueListItem($i, (string) '', $setMin == $i);
                         }
                     } else {
                         $values = array_reverse($values);
                         foreach ($values as $value) {
                             if($value == 0) continue;
                             $count = $bxFacets->getFacetValueCount($fieldName, $value);
-                            $data[] = new ValueListItem($value, (string) $count, $bxFacets->isFacetValueSelected($fieldName, $value));
-
+                            $data[] = new ValueListItem($value, (string) $count, $setMin == $value);
                         }
                     }
+
                     if (!$facetFieldName = $mapper->getShortAlias('rating')) {
                         $facetFieldName = 'rating';
                     }
