@@ -84,6 +84,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
             $this->log->info("BxIndexLog: Start of boxalino {$type} data sync.");
             $this->_config = new Shopware_Plugins_Frontend_Boxalino_Helper_BxIndexConfig();
 
+            $this->log->info("BxIndexLog: Exporting for accounts: " . implode(', ', $this->_config->getAccounts()));
             foreach ($this->_config->getAccounts() as $account) {
 
                 $this->log->info("BxIndexLog: Exporting store ID : {$this->_config->getAccountStoreId($account)}");
@@ -95,9 +96,9 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
                 $this->log->info("BxIndexLog: verify credentials for account: " . $account);
                 try {
                     $this->bxData->verifyCredentials();
-                } catch (\Exception $e){
-                    $this->log->error("BxIndexException: {$e->getMessage()}");
-                    throw $e;
+                } catch (\Throwable $e){
+                    $this->log->error("BxIndexLog: verifyCredentials failed with exception: {$e->getMessage()}");
+                    continue;
                 }
 
                 $this->log->info('BxIndexLog: Preparing the attributes and category data for each language of the account: ' . $account);
@@ -129,13 +130,14 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
                         try {
                             $this->log->info('BxIndexLog: Push the XML configuration file to the Data Indexing server for account: ' . $account);
                             $this->bxData->pushDataSpecifications();
-                        } catch (\Exception $e) {
+                        } catch (\Throwable $e) {
                             $value = @json_decode($e->getMessage(), true);
                             if (isset($value['error_type_number']) && $value['error_type_number'] == 3) {
                                 $this->log->info('BxIndexLog: Try to push the XML file a second time, error 3 happens always at the very first time but not after: ' . $account);
                                 $this->bxData->pushDataSpecifications();
                             } else {
-                                throw $e;
+                                $this->log->info("BxIndexLog: pushDataSpecifications failed with exception: " . $e->getMessage());
+                                continue;
                             }
                         }
 
@@ -146,14 +148,14 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
                         if (sizeof($changes['changes']) > 0 && !$publish) {
                             $this->log->info("BxIndexLog: changes in configuration detected but not published as publish configuration automatically option has not been activated for account: " . $account);
                         }
-                        $this->log->info('BxIndexLog: Push the Zip data file to the Data Indexing server for account: ' . $account);
+                        $this->log->info('BxIndexLog: NORMAL - stop waiting for Data Intelligence processing for account: ' . $account);
 
                     }
-                    $this->log->info('BxIndexLog: pushing to DI');
+                    $this->log->info('BxIndexLog: pushing to DI for account: ' . $account);
                     try {
                         $this->bxData->pushData();
-                    } catch (\Exception $e){
-                        $this->log->info("BxIndexLog: pushData failed with exception: " . $e->getMessage());
+                    } catch (\Throwable $e){
+                        $this->log->info("BxIndexLog: pushData failed with exception for : " . $e->getMessage());
                     }
                     $this->log->info('BxIndexLog: Finished account: ' . $account);
                 }
@@ -909,76 +911,76 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
         $data = array();
         $selectFields = array();
         $attributeValueHeader = array();
-        foreach ($this->translationFields as $field) {
-
-            $attributeValueHeader[$field] = array();
-            foreach ($this->_config->getAccountLanguages($account) as $shop_id => $language) {
+        $translationJoins = array();
+        $select = $db->select();
+        foreach ($this->_config->getAccountLanguages($account) as $shop_id => $language) {
+            $select->joinLeft(array("t_{$language}" => "s_articles_translations"), "t_{$language}.articleID = sa.id AND t_{$language}.languageID = {$shop_id}", array());
+            $translationJoins[$shop_id] = "t_{$language}";
+            foreach ($this->translationFields as $field) {
+                if(!isset($attributeValueHeader[$field])){
+                    $attributeValueHeader[$field] = array();
+                }
                 $column = "{$field}_{$language}";
                 $attributeValueHeader[$field][$language] = $column;
-                $table = $this->getTableNameForTranslationColumn($field);
-                $a_ref = $table == 's_articles' ? 'a.articleID' : 'a.id';
-                $b_ref = $table == 's_articles' ? 'b.id' : 'b.articledetailsID';
-                $innerSelect = $db->select()
-                    ->from(array('b'=> $table),array(new Zend_Db_Expr("CASE WHEN t.{$field} IS NULL OR CHAR_LENGTH(t.{$field}) < 1 THEN b.{$field} ELSE t.{$field} END as value")))
-                    ->joinLeft(array('t' => 's_articles_translations'),"t.articleID = b.id AND t.languageID = {$shop_id}", array())
-                    ->where("{$a_ref} = {$b_ref}");
-                $selectFields[$column] = new Zend_Db_Expr("($innerSelect)");
+                $mainTableRef = strpos($field, 'attr') !== false ? 'b.' . $field : 'sa.' . $field;
+                $translationRef = 't_' . $language . '.' . $field;
+                $selectFields[$column] = new Zend_Db_Expr("CASE WHEN {$translationRef} IS NULL OR CHAR_LENGTH({$translationRef}) < 1 THEN {$mainTableRef} ELSE {$translationRef} END");
             }
         }
         $selectFields[] = 'a.id';
         $header = true;
         $countMax = 2000000;
-        $limit = 10000;
+        $limit = 1000000;
         $doneCases = array();
-        $categoryShopIds = $this->_config->getShopCategoryIds($account);
-        foreach ($this->_config->getAccountLanguages($account) as $shop_id => $language) {
-            $totalCount = 0;
-            $page = 1;
-            $category_id = $categoryShopIds[$shop_id];
-            while($countMax > $totalCount + $limit) {
-                $sql = $db->select()
-                    ->from(array('a' => 's_articles_details'), $selectFields)
-                    ->join(array('a_c' => 's_articles_categories'), 'a_c.articleID = a.articleID', array())
-                    ->joinLeft(array('c' => 's_categories'), 'c.id = a_c.categoryID', array())
-                    ->where('c.path LIKE \'%|' . $category_id . '|%\'')
-                    ->limit($limit, ($page - 1) * $limit)
-                    ->order('a.id');
-                if ($this->delta) {
-                    $sql->where('a.articleID IN(?)', $this->deltaIds);
-                }
-                $currentCount = 0;
-                $stmt = $db->query($sql);
-                if($stmt->rowCount()) {
-                    while ($row = $stmt->fetch()) {
-                        $currentCount++;
-                        if(!isset($this->shopProductIds[$row['id']])) {
-                            continue;
-                        }
-                        if(isset($doneCases[$row['id']])){
-                            continue;
-                        }
-                        if($header) {
-                            $data[] = array_keys($row);
-                            $header = false;
-                        }
-                        $data[] = $row;
-                        $doneCases[$row['id']] = true;
-                        $totalCount++;
-                        if(sizeof($data) > 1000) {
-                            $files->savePartToCsv('product_translations.csv', $data);
-                            $data = [];
-                        }
-                    }
-                } else {
-                    break;
-                }
-                if($currentCount < $limit-1) {
-                    break;
-                }
-                $files->savepartToCsv('product_translations.csv', $data);
-                $page++;
+
+        $totalCount = 0;
+        $page = 1;
+        $select->from(array('sa' => 's_articles'), $selectFields)
+            ->join(array('a' => 's_articles_details'), 'a.articleID = sa.id', array())
+            ->joinLeft(array('b' => 's_articles_attributes'), 'a.id = b.articledetailsID', array())
+            ->order('sa.id');
+
+        while($countMax > $totalCount + $limit) {
+            $sql = clone $select;
+            $sql->limit($limit, ($page - 1) * $limit);
+
+            if ($this->delta) {
+                $sql->where('a.articleID IN(?)', $this->deltaIds);
             }
+
+            $currentCount = 0;
+            $stmt = $db->query($sql);
+            if($stmt->rowCount()) {
+                while ($row = $stmt->fetch()) {
+                    $currentCount++;
+                    if(!isset($this->shopProductIds[$row['id']])) {
+                        continue;
+                    }
+                    if(isset($doneCases[$row['id']])){
+                        continue;
+                    }
+                    if($header) {
+                        $data[] = array_keys($row);
+                        $header = false;
+                    }
+                    $data[] = $row;
+                    $doneCases[$row['id']] = true;
+                    $totalCount++;
+                    if(sizeof($data) > 1000) {
+                        $files->savePartToCsv('product_translations.csv', $data);
+                        $data = [];
+                    }
+                }
+            } else {
+                break;
+            }
+            if($currentCount < $limit-1) {
+                break;
+            }
+            $files->savepartToCsv('product_translations.csv', $data);
+            $page++;
         }
+
         $files->savepartToCsv('product_translations.csv', $data);
         $doneCases = null;
         $attributeSourceKey = $this->bxData->addCSVItemFile($files->getPath('product_translations.csv'), 'id');
