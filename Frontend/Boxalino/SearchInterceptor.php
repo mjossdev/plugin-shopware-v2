@@ -285,7 +285,14 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                     $result = $this->getFacetValuesResult($option_id, $filterValues, $useTranslation, $shop_id);
                     $values = array();
                     foreach ($result as $r) {
-                        $values[] = $r['value'];
+                        if(!empty($r['value'])){
+                            if($useTranslation == true && isset($r['objectdata'])) {
+                                $translation = unserialize($r['objectdata']);
+                                $r['value'] = isset($translation['optionValue']) && $translation['optionValue'] != '' ?
+                                    $translation['optionValue'] : $r['value'];
+                            }
+                            $values[] = trim($r['value']);
+                        }
                     }
                     $filter['products_optionID_' . $option_id] = $values;
                     break;
@@ -1180,27 +1187,16 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             ->from(array('v' => 's_filter_values', array()))
             ->where($where_statement)
             ->where('v.optionID = ?', $option_id);
-        $result = $db->fetchAll($sql);
         if($translation == true) {
-            $where_statement = '';
-            foreach ($values as $index => $value) {
-                $id = end(explode("_bx_", $value));
-                if($index > 0) {
-                    $where_statement .= ' OR ';
-                }
-                $where_statement .= 'v.objectkey LIKE '. $db->quote($id);
-            }
-            $sql = $db->select()
-                ->from(array('v' => 's_core_translations', array()))
-                ->join(array('f_v' => 's_filter_values'), 'f_v.id = v.objectkey', array('f_v.media_id'))
-                ->where($where_statement)
-                ->where('f_v.optionID = ?', $option_id)
-                ->where('v.objecttype = ?', 'propertyvalue')
-                ->where('v.objectlanguage = ?', $shop_id);
-            $result = array_merge($result, $db->fetchAll($sql));
+            $sql = $sql
+                ->joinLeft(array('t' => 's_core_translations'),
+                    't.objectkey = v.id AND t.objecttype = ' . $db->quote('propertyvalue') . ' AND t.objectlanguage = ' . $shop_id,
+                    array('objectdata'));
         }
+        $result = $db->fetchAll($sql);
         return $result;
     }
+
     private function getCategoriesOfParent($categories, $parentId)
     {
         $result = [];
@@ -1304,9 +1300,10 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         }
 
         foreach ($result as $r) {
-            if($useTranslation == true && isset($r['objectkey'])) {
-                $r['id'] = $r['objectkey'];
-                $r['value'] = unserialize($r['objectdata'])['optionValue'];
+            if($useTranslation == true && isset($r['objectdata'])) {
+                $translation = unserialize($r['objectdata']);
+                $r['value'] = isset($translation['optionValue']) && $translation['optionValue'] != '' ?
+                    $translation['optionValue'] : $r['value'];
             }
             $label = trim($r['value']);
             $key = $label . "_bx_{$r['id']}";
