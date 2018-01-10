@@ -305,8 +305,6 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         if($_REQUEST['dev_bx_debug'] == 'true'){
             $t2 = microtime(true);
         }
-        self::$bxClient->setHost('api.bx-cloud.com');
-        self::$bxClient->setTestMode(true);
         $test['overall'] = microtime(true);
         $lang = $this->getShortLocale();
         $bxRequest = new \com\boxalino\bxclient\v1\BxSearchRequest($lang, "", 0, $data['choiceId_portfolio']);
