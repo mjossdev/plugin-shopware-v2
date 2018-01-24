@@ -375,6 +375,10 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         }
         $context  = $this->get('shopware_storefront.context_service')->getProductContext();
         /* @var Shopware\Bundle\SearchBundle\Criteria $criteria */
+        if($this->Config()->get('boxalino_navigation_sorting')) {
+            $this->Request()->setParam('sSort', 7);
+        }
+
         if(is_null($this->Request()->getParam('sSort'))) {
             $default = $this->get('config')->get('defaultListingSorting');
             $this->Request()->setParam('sSort', $default);
@@ -420,7 +424,8 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             'facets' => $facets,
             'sNumberArticles' => $totalHitCount,
             'sArticles' => $articles,
-            'facetOptions' => $this->facetOptions
+            'facetOptions' => $this->facetOptions,
+            'sSort' => $this->Request()->getParam('sSort')
         );
         $templateProperties = array_merge($viewData, $templateProperties);
         $this->View()->assign($templateProperties);
@@ -486,6 +491,10 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         /* @var ProductContextInterface $context */
         $context  = $this->get('shopware_storefront.context_service')->getShopContext();
         /* @var Shopware\Bundle\SearchBundle\Criteria $criteria */
+        if($this->Config()->get('boxalino_navigation_sorting')) {
+            $this->Request()->setParam('sSort', 7);
+        }
+
         if(is_null($this->Request()->getParam('sSort'))) {
             $default = $this->get('config')->get('defaultListingSorting');
             $this->Request()->setParam('sSort', $default);
@@ -1645,6 +1654,9 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         /* @var Shopware\Bundle\SearchBundle\Sorting\Sorting $sort */
         $sort = current($criteria->getSortings());
         $dir = null;
+        if($listing && $this->Config()->get('boxalino_navigation_sorting')){
+            return array();
+        }
         switch ($sort->getName()) {
             case 'popularity':
                 $field = 'products_sales';
