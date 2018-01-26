@@ -151,6 +151,9 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             }
         }
 
+        if($this->Config()->get('boxalino_navigation_disable_cache')) {
+            $this->Bootstrap()->disableHttpCache();
+        }
         $showFacets = $this->categoryShowFilter($catId);
         if($supplier = $this->Request()->getParam('sSupplier')) {
             if(strpos($supplier, '|') === false){
@@ -160,9 +163,18 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         }
         $context  = $this->get('shopware_storefront.context_service')->getShopContext();
         /* @var Shopware\Bundle\SearchBundle\Criteria $criteria */
-        if(is_null($this->Request()->getParam('sSort'))) {
-            $default = $this->get('config')->get('defaultListingSorting');
-            $this->Request()->setParam('sSort', $default);
+        $orderParam = $this->get('query_alias_mapper')->getShortAlias('sSort');
+        if($this->Request()->has($orderParam)) {
+            $viewData['sSort'] = $this->Request()->getParam($orderParam);
+        }
+        if(is_null($this->Request()->getParam('sSort')) && is_null($this->Request()->getParam($orderParam))) {
+            if($this->Config()->get('boxalino_navigation_sorting')) {
+                $viewData['sSort'] = null;
+                $this->Request()->setParam('sSort', 7);
+            } else {
+                $default = $this->get('config')->get('defaultListingSorting');
+                $this->Request()->setParam('sSort', $default);
+            }
         }
         $criteria = $this->get('shopware_search.store_front_criteria_factory')->createSearchCriteria($this->Request(), $context);
         $criteria->removeCondition("term");
@@ -368,20 +380,25 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                 $filter['products_stream_id'] = [$streamId];
             }
         }
-
+        if($this->Config()->get('boxalino_navigation_disable_cache')) {
+            $this->Bootstrap()->disableHttpCache();
+        }
         $showFacets = $this->categoryShowFilter($catId);
         if(isset($viewData['manufacturer']) && !empty($viewData['manufacturer'])) {
             $filter['products_brand'] = [$viewData['manufacturer']->getName()];
         }
         $context  = $this->get('shopware_storefront.context_service')->getProductContext();
         /* @var Shopware\Bundle\SearchBundle\Criteria $criteria */
-        if($this->Config()->get('boxalino_navigation_sorting')) {
-            $this->Request()->setParam('sSort', 7);
-        }
+        $orderParam = $this->get('query_alias_mapper')->getShortAlias('sSort');
 
-        if(is_null($this->Request()->getParam('sSort'))) {
-            $default = $this->get('config')->get('defaultListingSorting');
-            $this->Request()->setParam('sSort', $default);
+        if(is_null($this->Request()->getParam('sSort')) && is_null($this->Request()->getParam($orderParam))) {
+            if($this->Config()->get('boxalino_navigation_sorting')) {
+                $viewData['sSort'] = null;
+                $this->Request()->setParam('sSort', 7);
+            } else {
+                $default = $this->get('config')->get('defaultListingSorting');
+                $this->Request()->setParam('sSort', $default);
+            }
         }
         $criteria = $this->get('shopware_search.store_front_criteria_factory')->createSearchCriteria($this->Request(), $context);
         $criteria->removeCondition("term");
@@ -491,13 +508,14 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         /* @var ProductContextInterface $context */
         $context  = $this->get('shopware_storefront.context_service')->getShopContext();
         /* @var Shopware\Bundle\SearchBundle\Criteria $criteria */
-        if($this->Config()->get('boxalino_navigation_sorting')) {
-            $this->Request()->setParam('sSort', 7);
-        }
 
         if(is_null($this->Request()->getParam('sSort'))) {
-            $default = $this->get('config')->get('defaultListingSorting');
-            $this->Request()->setParam('sSort', $default);
+            if($this->Config()->get('boxalino_navigation_sorting')){
+                $this->Request()->setParam('sSort', 7);
+            } else {
+                $default = $this->get('config')->get('defaultListingSorting');
+                $this->Request()->setParam('sSort', $default);
+            }
         }
         $criteria = $this->get('shopware_search.store_front_criteria_factory')->createSearchCriteria($this->Request(), $context);
 
@@ -1654,9 +1672,10 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         /* @var Shopware\Bundle\SearchBundle\Sorting\Sorting $sort */
         $sort = current($criteria->getSortings());
         $dir = null;
-        if($listing && $this->Config()->get('boxalino_navigation_sorting')){
+        if($listing && is_null($default_sort) && $this->Config()->get('boxalino_navigation_sorting')){
             return array();
         }
+
         switch ($sort->getName()) {
             case 'popularity':
                 $field = 'products_sales';

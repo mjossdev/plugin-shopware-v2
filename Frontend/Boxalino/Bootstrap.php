@@ -31,7 +31,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
     }
 
     public function getVersion() {
-        return '1.6.1';
+        return '1.6.2';
     }
 
     public function getInfo() {
@@ -349,14 +349,18 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
       ));
     }
 
+    public function disableHttpCache() {
+        $httpCache = $this->HttpCache();
+        if($httpCache) {
+            $httpCache->disableControllerCache();
+        }
+    }
+
     public function convertEmotion($args) {
         $data = $args->getReturn();
 
         if ($args['element']['component']['name'] == "Boxalino Banner") {
-            $httpCache = $this->HttpCache();
-            if($httpCache){
-                $httpCache->disableControllerCache();
-            }
+            $this->disableHttpCache();
             $data = $this->onBanner();
             return $data;
         }
@@ -367,22 +371,11 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
                 $helper = Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper::instance();
                 $helper->addNotification("convertEmotion start at: " . $t1);
             }
-            $httpCache = $this->HttpCache();
+            $this->disableHttpCache();
             if($_REQUEST['dev_bx_debug'] == 'true'){
                 $helper = Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper::instance();
                 $t4 = (microtime(true) - $t1) * 1000 ;
                 $helper->addNotification("HttpCache() took: " . $t4 . "ms.");
-            }
-            if($httpCache){
-                if($_REQUEST['dev_bx_debug'] == 'true'){
-                    $t6 = microtime(true);
-                }
-                $httpCache->disableControllerCache();
-                if($_REQUEST['dev_bx_debug'] == 'true'){
-                    $helper = Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper::instance();
-                    $t6 = (microtime(true) - $t6) * 1000 ;
-                    $helper->addNotification("disableControllerCache() took: " . $t6 . "ms.");
-                }
             }
             if($_REQUEST['dev_bx_debug'] == 'true'){
                 $helper = Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper::instance();
