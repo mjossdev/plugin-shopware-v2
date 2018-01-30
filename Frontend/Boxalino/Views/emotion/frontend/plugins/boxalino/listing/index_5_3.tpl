@@ -14,7 +14,21 @@
                 $.subscribe('plugin/swListingActions/onOpenFilterPanel', function() {
                     expandFacets(facetOptions);
                 });
+
                 $.subscribe('plugin/swListingActions/onGetFilterResultFinished', function(m,r,i) {
+                    if(facetOptions['mode'] === 'filter_ajax_reload'){
+                        setTimeout(function() {
+                            $('div.filter--active-container').children().each(function(i, e) {
+                                var param = $(e).attr('data-filter-param');
+                                if(param !== 'reset') {
+                                    var label = $('.filter--facet-container').find("label[for='"+param+"']").html();
+                                    var replaceHtml = $(e).find('span').prop('outerHTML') + label;
+                                    $(e).html(replaceHtml);
+                                }
+                            });
+                        }, 1);
+                    }
+
                     var el = $('.bx-tab-article-count');
                     if(el.length){
                         el.text(i.totalCount);

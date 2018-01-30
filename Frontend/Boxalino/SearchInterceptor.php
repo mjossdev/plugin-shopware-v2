@@ -151,7 +151,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             }
         }
 
-        if($this->Config()->get('boxalino_navigation_disable_cache')) {
+        if(!$this->Config()->get('boxalino_navigation_activate_cache')) {
             $this->Bootstrap()->disableHttpCache();
         }
         $showFacets = $this->categoryShowFilter($catId);
@@ -380,7 +380,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                 $filter['products_stream_id'] = [$streamId];
             }
         }
-        if($this->Config()->get('boxalino_navigation_disable_cache')) {
+        if(!$this->Config()->get('boxalino_navigation_activate_cache')) {
             $this->Bootstrap()->disableHttpCache();
         }
         $showFacets = $this->categoryShowFilter($catId);
@@ -1383,7 +1383,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
     protected function updateFacetsWithResult($facets, $context) {
         $start = microtime(true);
         $lang = substr(Shopware()->Shop()->getLocale()->getLocale(), 0, 2);
-
+        $this->facetOptions['mode'] = Shopware()->Config()->get('listingMode');
         $bxFacets = $this->Helper()->getFacets();
         $propertyFacets = [];
         $filters = array();
@@ -1597,7 +1597,11 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                                 'fieldName' => $fieldName,
                                 'expanded' => $bxFacets->isFacetExpanded($fieldName, false)
                             ];
-                            $filters[] = $returnFacet;
+                            if( $this->facetOptions['mode'] == 'filter_ajax_reload'){
+                                $propertyFacets[] = $returnFacet;
+                            } else {
+                                $filters[] = $returnFacet;
+                            }
                         }
                     }
                     if($_REQUEST['dev_bx_debug'] == 'true'){
@@ -1611,7 +1615,11 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             $t1 = (microtime(true) - $start) * 1000 ;
             $this->Helper()->addNotification("Search updateFacets after for loop: " . $t1 . "ms.");
         }
-//        $filters[] = new Shopware\Bundle\SearchBundle\FacetResult\FacetResultGroup($propertyFacets, null, 'property');
+
+        if( $this->facetOptions['mode'] == 'filter_ajax_reload') {
+            $filters[] = new Shopware\Bundle\SearchBundle\FacetResult\FacetResultGroup($propertyFacets, null, 'property');
+        }
+
         if($_REQUEST['dev_bx_debug'] == 'true'){
             $t1 = (microtime(true) - $start) * 1000 ;
             $this->Helper()->addNotification("Search updateFacets after took: " . $t1 . "ms.");
