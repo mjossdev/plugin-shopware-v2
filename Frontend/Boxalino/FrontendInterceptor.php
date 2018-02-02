@@ -97,17 +97,6 @@ class Shopware_Plugins_Frontend_Boxalino_FrontendInterceptor
                 $script = Shopware_Plugins_Frontend_Boxalino_EventReporter::reportCategoryView($this->Request()->sCategory);
                 break;
             case 'recommendation':
-                $action = $this->Request()->getParam('action');
-                if ($action == 'viewed' || $action == 'bought') {
-                    $configOption = $action == 'viewed' ? $this->_productRecommendationsGeneric['sCrossSimilarShown'] :
-                        $this->_productRecommendationsGeneric['sCrossBoughtToo'];
-                    if ($this->Config()->get("{$configOption}_enabled")) {
-                        $hitIds = $this->Helper()->getRecommendation($this->Config()->get("{$configOption}_name"));
-                        $this->View()->assign("{$action}Articles", $this->Helper()->getLocalArticles($hitIds));
-                    }
-                } else {
-                    return null;
-                }
                 break;
             case 'checkout':
             case 'account':
@@ -181,7 +170,67 @@ class Shopware_Plugins_Frontend_Boxalino_FrontendInterceptor
 
         return $term;
     }
-    
+
+    protected static $similarReq = false;
+    /**
+     * @param Enlight_Event_EventArgs $arguments
+     * @return array
+     */
+    public function similarRecommendation(Enlight_Event_EventArgs $arguments) {
+        if (!$this->Config()->get('boxalino_active') || !$this->Config()->get('boxalino_related_recommendation_hook')) {
+            return $arguments->getSubject()->executeParent(
+                $arguments->getMethod(),
+                $arguments->getArgs()
+            );
+        }
+        $choice_id = $this->Config()->get('boxalino_related_recommendation_name');
+        if(!self::$similarReq) {
+            $articleID = $arguments->getArgs()[0];
+            $min = $this->Config()->get('boxalino_related_recommendation_min');
+            $max = $this->Config()->get('boxalino_related_recommendation_max');
+            $context = $articleID;
+            $this->Helper()->getRecommendation($choice_id, $max, $min, 0, $context, 'product', false, array(), false);
+            self::$similarReq = true;
+        }
+        $hitIds = $this->Helper()->getRecommendation($choice_id);
+        $return = array();
+        foreach ($hitIds as $ordernumber) {
+            $id = Shopware()->Modules()->Articles()->sGetArticleIdByOrderNumber($ordernumber);
+            $return[] = ['id' => $id, 'ordernumber' => $ordernumber, 'sales' => 1];
+        }
+        return $return;
+    }
+
+    protected static $alsoReq = false;
+    /**
+     * @param Enlight_Event_EventArgs $arguments
+     * @return array
+     */
+    public function alsoBoughtRecommendation(Enlight_Event_EventArgs $arguments) {
+        if (!$this->Config()->get('boxalino_active') || !$this->Config()->get('boxalino_complementary_recommendation_hook')) {
+            return $arguments->getSubject()->executeParent(
+                $arguments->getMethod(),
+                $arguments->getArgs()
+            );
+        }
+        $choice_id = $this->Config()->get('boxalino_complementary_recommendation_name');
+        if(!self::$alsoReq) {
+            $articleID = $arguments->getArgs()[0];
+            $min = $this->Config()->get('boxalino_complementary_recommendation_min');
+            $max = $this->Config()->get('boxalino_complementary_recommendation_max');
+            $context = $articleID;
+            $this->Helper()->getRecommendation($choice_id, $max, $min, 0, $context, 'product', false, array(), false);
+            self::$alsoReq = true;
+        }
+        $hitIds = $this->Helper()->getRecommendation($choice_id);
+        $return = array();
+        foreach ($hitIds as $ordernumber) {
+            $id = Shopware()->Modules()->Articles()->sGetArticleIdByOrderNumber($ordernumber);
+            $return[] = ['id' => $id, 'ordernumber' => $ordernumber, 'sales' => 1];
+        }
+        return $return;
+    }
+
     /**
      * basket recommendations
      * @param Enlight_Event_EventArgs $arguments
@@ -189,16 +238,31 @@ class Shopware_Plugins_Frontend_Boxalino_FrontendInterceptor
      */
     public function basket(Enlight_Event_EventArgs $arguments) {
 
+        if (!$this->Config()->get('boxalino_active')) {
+            return null;
+        }
+
         $this->init($arguments);
-        if (!$this->Config()->get('boxalino_active') || !$this->Config()->get('boxalino_cart_recommendation_enabled')) {
+        if ($this->Request()->getControllerName() != 'checkout') {
+            return null;
+        }
+        if($this->Request()->getActionName() != 'ajaxCart' && $this->Request()->getActionName() != 'cart'){
             return null;
         }
 
-        if($this->Request()->getActionName() != 'ajaxCart'){
+        if($this->Request()->getActionName() == 'ajaxCart' && !$this->Config()->get('boxalino_cart_recommendation_enabled')){
             return null;
         }
 
-        $choiceId = $this->Config()->get('boxalino_cart_recommendation_name');
+        if($this->Request()->getActionName() == 'cart' && !$this->Config()->get('boxalino_cart_recommendation_checkout')){
+            return null;
+        }
+
+        $viewData = $this->View()->getAssign();
+        if(isset($viewData['bxBasket'])) {
+            return null;
+        }
+
         $basket = $this->Helper()->getBasket($arguments);
         $contextItems = $basket['content'];
         if (empty($contextItems)) return null;
@@ -206,16 +270,43 @@ class Shopware_Plugins_Frontend_Boxalino_FrontendInterceptor
         usort($contextItems, function($a, $b) {
             return $b['price'] - $a['price'];
         });
-        $contextItems = array_map(function($contextItem) {
+
+        $contextParams = array();
+        $contextItems = array_map(function($contextItem) use (&$contextParams) {
+            try{
+                $article = Shopware()->Modules()->Articles()->sGetArticleById(
+                    $contextItem['articleID']
+                );
+            } catch(\Exception $e) {
+            }
+            if($article) {
+                foreach ($this->_productRecommendations as $key => $recommendation) {
+                    if(!isset($contextParams['bx_' . $key . '_' . $article['articleID']])){
+                        $contextParams['bx_' . $key . '_' . $article['articleID']] = array();
+                    }
+                    if(isset($article[$key])){
+                        foreach ($article[$key] as $rec) {
+                            $contextParams['bx_' . $key . '_' . $article['articleID']][] = $rec['articleID'];
+                        }
+                    }
+                }
+            }
             return ['id' => $contextItem['articleID'] ,'price' => $contextItem['price']];
         }, $contextItems);
+
+        $choiceId = $this->Config()->get('boxalino_cart_recommendation_name');
         $max = $this->Config()->get('boxalino_cart_recommendation_max');
         $min = $this->Config()->get('boxalino_cart_recommendation_min');
-        $this->Helper()->getRecommendation($choiceId, $max, $min, 0, $contextItems, 'basket', false);
+        $this->Helper()->getRecommendation($choiceId, $max, $min, 0, $contextItems, 'basket', false, array(), false, $contextParams);
         $hitIds = $this->Helper()->getRecommendation($choiceId);
         $this->View()->addTemplateDir($this->Bootstrap()->Path() . 'Views/emotion/');
-        $this->View()->extendsTemplate('frontend/plugins/boxalino/checkout/ajax_cart.tpl');
+        if($this->Request()->getActionName() == 'ajaxCart') {
+            $this->View()->extendsTemplate('frontend/plugins/boxalino/checkout/ajax_cart.tpl');
+        } else {
+            $this->View()->extendsTemplate('frontend/plugins/boxalino/checkout/cart.tpl');
+        }
         $this->View()->assign('sRecommendations', $this->Helper()->getLocalArticles($hitIds));
+        $this->View()->assign('bxBasket', true);
         return null;
     }
 

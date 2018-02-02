@@ -869,7 +869,8 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
      * @param bool $execute
      * @return array
      */
-    public function getRecommendation($choiceId, $max = 5, $min = 5, $offset = 0, $context = array(), $type = '', $execute = true, $excludes = array(), $isBlog = false) {
+    public function getRecommendation($choiceId, $max = 5, $min = 5, $offset = 0, $context = array(), $type = '',
+                                      $execute = true, $excludes = array(), $isBlog = false, $requestContextParams = array()) {
 
         if(!$execute){
             if ($max >= 0) {
@@ -899,6 +900,9 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
                         $bxRequest->setFilters($filters);
                         $categoryValues = is_array($context) ? $context : array($context);
                         self::$bxClient->addRequestContextParameter('current_category_id', $categoryValues);
+                }
+                foreach ($requestContextParams as $key => $requestContextParam) {
+                    self::$bxClient->addRequestContextParameter($key, $requestContextParam);
                 }
                 $bxRequest->setFilters($filters);
 
@@ -1145,7 +1149,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         $articles = array();
         foreach ($ids as $id) {
             if(isset($unsortedArticles[$id])){
-                $articles[] = $unsortedArticles[$id];
+                $articles[$unsortedArticles[$id]['ordernumber']] = $unsortedArticles[$id];
             }
         }
         return $articles;

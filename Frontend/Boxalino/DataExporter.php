@@ -932,8 +932,9 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
         $countMax = 2000000;
         $limit = 1000000;
         $doneCases = array();
-
+        $log = true;
         $totalCount = 0;
+        $start = microtime(true);
         $page = 1;
         $select->from(array('sa' => 's_articles'), $selectFields)
             ->join(array('a' => 's_articles_details'), 'a.articleID = sa.id', array())
@@ -949,10 +950,16 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
             }
 
             $currentCount = 0;
+            $this->log->info("Translation query: " . $db->quote($sql));
             $stmt = $db->query($sql);
             if($stmt->rowCount()) {
                 while ($row = $stmt->fetch()) {
                     $currentCount++;
+                    if($currentCount%10000 == 0 || $log) {
+                        $end = (microtime(true) - $start) * 1000;
+                        $this->log->info("Translation process at count: {$currentCount}, took: {$end} ms, memory: " . memory_get_usage(true));
+                        $log = false;
+                    }
                     if(!isset($this->shopProductIds[$row['id']])) {
                         continue;
                     }
@@ -984,7 +991,8 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
         $files->savepartToCsv('product_translations.csv', $data);
         $doneCases = null;
         $attributeSourceKey = $this->bxData->addCSVItemFile($files->getPath('product_translations.csv'), 'id');
-
+        $end = (microtime(true) - $start) * 1000;
+        $this->log->info("Translation process finished and took: {$end} ms, memory: " . memory_get_usage(true));
         foreach ($attributeValueHeader as $field => $values) {
             if ($field == 'name') {
                 $this->bxData->addSourceTitleField($attributeSourceKey, $values);

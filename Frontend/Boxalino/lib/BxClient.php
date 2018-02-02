@@ -420,7 +420,7 @@ class BxClient
 		return $requests;
 	}
 	
-	public function getThriftChoiceRequest() {
+	public function getThriftChoiceRequest($size=0) {
 		
 		if(sizeof($this->chooseRequests) == 0 && sizeof($this->autocompleteRequests) > 0) {
 			list($sessionid, $profileid) = $this->getSessionAndProfile();
@@ -432,8 +432,8 @@ class BxClient
 		}
 		
 		$choiceInquiries = array();
-		
-		foreach($this->chooseRequests as $request) {
+        $requests = $size === 0 ? $this->chooseRequests : array_slice($this->chooseRequests, -$size);
+		foreach($requests as $request) {
 			
 			$choiceInquiry = new \com\boxalino\p13n\api\thrift\ChoiceInquiry();
 			$choiceInquiry->choiceId = $request->getChoiceId();
@@ -490,7 +490,7 @@ class BxClient
         return new \com\boxalino\p13n\api\thrift\ChoiceRequestBundle(['requests' => $bundleRequest]);
     }
 	
-	protected function choose($chooseAll=false) {
+	protected function choose($chooseAll=false, $size=0) {
 	    if($chooseAll) {
 	        $bundleResponse = $this->p13nchooseAll($this->getThriftBundleChoiceRequest());
             $variants = array();
@@ -500,7 +500,10 @@ class BxClient
 
             $response = new \com\boxalino\p13n\api\thrift\ChoiceResponse(['variants' => $variants]);
         } else {
-            $response = $this->p13nchoose($this->getThriftChoiceRequest());
+            $response = $this->p13nchoose($this->getThriftChoiceRequest($size));
+            if($size > 0) {
+                $response->variants = array_merge($this->chooseResponses->variants, $response->variants);
+            }
         }
 		$this->chooseResponses = $response ;
 	}
@@ -513,7 +516,9 @@ class BxClient
 	public function getResponse($chooseAll=false) {
 		if(!$this->chooseResponses) {
 			$this->choose($chooseAll);
-		}
+		}elseif ($size = sizeof($this->chooseRequests) - sizeof($this->chooseResponses->variants)) {
+            $this->choose($chooseAll, $size);
+        }
 		$bxChooseResponse = new \com\boxalino\bxclient\v1\BxChooseResponse($this->chooseResponses, $this->chooseRequests);
         $bxChooseResponse->setNotificationMode($this->getNotificationMode());
 		return $bxChooseResponse;

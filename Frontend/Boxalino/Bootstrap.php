@@ -31,7 +31,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
     }
 
     public function getVersion() {
-        return '1.6.3';
+        return '1.6.4';
     }
 
     public function getInfo() {
@@ -226,6 +226,38 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
         // add relevance (boxalino sort option) to listing
         $this->subscribeEvent('Enlight_Controller_Action_PostDispatchSecure_Backend_Performance', 'onBackendPerformance');
         $this->subscribeEvent('Enlight_Controller_Dispatcher_ControllerPath_Backend_BoxalinoPerformance', 'boxalinoBackendControllerPerformance');
+
+        //sMarketing recommendation overwrite
+        $this->subscribeEvent('sMarketing::sGetAlsoBoughtArticles::replace', 'alsoBoughtRec');
+        $this->subscribeEvent('sMarketing::sGetSimilaryShownArticles::replace', 'similarRec');
+    }
+
+    public function alsoBoughtRec(Enlight_Hook_HookArgs $arguments){
+        try{
+            $arguments->setReturn($this->frontendInterceptor->alsoBoughtRecommendation($arguments));
+        } catch (\Exception $e) {
+            $this->logException($e, __FUNCTION__, Shopware()->Front()->Request()->getRequestUri());
+            $arguments->setReturn(
+                $arguments->getSubject()->executeParent(
+                    $arguments->getMethod(),
+                    $arguments->getArgs()
+                ));
+        }
+        return null;
+    }
+
+    public function similarRec(Enlight_Hook_HookArgs $arguments){
+        try{
+            $arguments->setReturn($this->frontendInterceptor->similarRecommendation($arguments));
+        } catch (\Exception $e) {
+            $this->logException($e, __FUNCTION__, Shopware()->Front()->Request()->getRequestUri());
+            $arguments->setReturn(
+                $arguments->getSubject()->executeParent(
+                    $arguments->getMethod(),
+                    $arguments->getArgs()
+                ));
+        }
+        return null;
     }
 
     private function registerEmotions() {

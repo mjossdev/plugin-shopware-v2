@@ -391,6 +391,10 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         /* @var Shopware\Bundle\SearchBundle\Criteria $criteria */
         $orderParam = $this->get('query_alias_mapper')->getShortAlias('sSort');
 
+        if(is_null($this->Request()->getParam($orderParam))) {
+            $viewData['sSort'] = null;
+            $this->Request()->setParam('sSort', 7);
+        }
         if(is_null($this->Request()->getParam('sSort')) && is_null($this->Request()->getParam($orderParam))) {
             if($this->Config()->get('boxalino_navigation_sorting')) {
                 $viewData['sSort'] = null;
@@ -433,12 +437,17 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         } else {
             $this->View()->extendsTemplate('frontend/plugins/boxalino/listing/filter/_includes/filter-multi-selection.tpl');
             $this->View()->extendsTemplate('frontend/plugins/boxalino/listing/index_5_3.tpl');
+            $service = Shopware()->Container()->get('shopware_storefront.custom_sorting_service');
+            $sortingIds = $this->container->get('config')->get('searchSortings');
+            $sortingIds = array_filter(explode('|', $sortingIds));
+            $sortings = $service->getList($sortingIds, $context);
         }
         $totalHitCount = $this->Helper()->getTotalHitCount();
         $templateProperties = array(
             'bxFacets' => $this->Helper()->getFacets(),
             'criteria' => $criteria,
             'facets' => $facets,
+            'sortings' => $sortings,
             'sNumberArticles' => $totalHitCount,
             'sArticles' => $articles,
             'facetOptions' => $this->facetOptions,
@@ -572,6 +581,11 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             $facets = array();
         } else {
             if ($totalHitCount = $this->Helper()->getTotalHitCount()) {
+                if($totalHitCount == 1 && $config->get('boxalino_redirect_search_enabled')) {
+                    $ids = $this->Helper()->getEntitiesIds();
+                    $location = $this->Controller()->Front()->Router()->assemble(array('sViewport' => 'detail', 'sArticle' => $ids[0]));
+                    return $this->Controller()->redirect($location);
+                }
                 if ($this->Helper()->areResultsCorrected()) {
                     $corrected = true;
                     $term = $this->Helper()->getCorrectedQuery();
