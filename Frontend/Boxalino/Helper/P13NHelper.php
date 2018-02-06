@@ -145,9 +145,10 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         $facets = $this->prepareFacets($options);
         $bxRequest->setFacets($facets);
 
-        if ($sort != null && isset($sort['field'])) {
-            $sortFields = new \com\boxalino\bxclient\v1\BxSortFields($sort['field'], $sort['reverse']);
-            $bxRequest->setSortFields($sortFields);
+        if ($sort != null && is_array($sort)) {
+            foreach ($sort as $s) {
+                $bxRequest->addSortField($s['field'], $s['reverse']);
+            }
         }
 
         self::$bxClient->addRequest($bxRequest);

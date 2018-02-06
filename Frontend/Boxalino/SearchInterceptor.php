@@ -1694,6 +1694,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         /* @var Shopware\Bundle\SearchBundle\Sorting\Sorting $sort */
         $sort = current($criteria->getSortings());
         $dir = null;
+        $additionalSort = null;
         if($listing && is_null($default_sort) && $this->Config()->get('boxalino_navigation_sorting')){
             return array();
         }
@@ -1709,14 +1710,16 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                 $field = 'title';
                 break;
             case 'release_date':
-                $field = 'products_releasedate';
+                $field = 'products_datum';
+                $additionalSort = true;
                 break;
             default:
                 if ($listing == true) {
                     $default_sort = is_null($default_sort) ? $this->getDefaultSort() : $default_sort;
                     switch ($default_sort) {
                         case 1:
-                            $field = 'products_releasedate';
+                            $field = 'products_datum';
+                            $additionalSort = true;
                             break 2;
                         case 2:
                             $field = 'products_sales';
@@ -1737,7 +1740,8 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                             break 2;
                         default:
                             if ($this->Config()->get('boxalino_navigation_sorting') == false) {
-                                $field = 'products_releasedate';
+                                $field = 'products_datum';
+                                $additionalSort = true;
                                 break 2;
                             }
                             break;
@@ -1745,11 +1749,17 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                 }
                 return array();
         }
-
-        return array(
+        $sortReturn[] = array(
             'field' => $field,
             'reverse' => (is_null($dir) ? $sort->getDirection() == Shopware\Bundle\SearchBundle\SortingInterface::SORT_DESC : $dir)
         );
+        if($additionalSort) {
+            $sortReturn[] = array(
+                'field' => 'products_changetime',
+                'reverse' => (is_null($dir) ? $sort->getDirection() == Shopware\Bundle\SearchBundle\SortingInterface::SORT_DESC : $dir)
+            );
+        }
+        return $sortReturn;
     }
 
     /**

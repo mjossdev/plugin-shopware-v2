@@ -306,6 +306,9 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
             }
             $data[] = $row;
         }
+        if($header) {
+            $data[] = array('average', 'articleID');
+        }
         $files->savepartToCsv('vote.csv', $data);
         $referenceKey = $this->bxData->addResourceFile($files->getPath('vote.csv'), 'articleID', ['average']);
 
@@ -1209,7 +1212,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
                 continue;
             }
             $this->bxData->addSourceStringField($mainSourceKey, $property, $property);
-            if ($property == 'group_id' || $property == 'releasedate') {
+            if ($property == 'group_id' || $property == 'releasedate' || $property == 'datum' || $property == 'changetime') {
                 $this->bxData->addFieldParameter($mainSourceKey, $property, 'multiValued', 'false');
             }
         }
