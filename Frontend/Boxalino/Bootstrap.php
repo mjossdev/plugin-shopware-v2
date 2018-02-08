@@ -350,7 +350,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
                 'defaultValue' => 20
             ));
             $component->createTextField(array(
-                'name' => 'choice_id',
+                'name' => 'choice_id_productfinder',
                 'fieldLabel' => 'Choice ID',
                 'supportText' => 'Override Choide ID for this widget',
                 'allowBlank' => true
@@ -403,6 +403,11 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
 
         if ($args['element']['component']['template'] == "boxalino_product_finder") {
 
+            $httpCache = $this->HttpCache();
+            if($httpCache){
+                $httpCache->disableControllerCache();
+            }
+          
             $data['category_id'] = $this->getEmotionCategoryId($args['element']['emotionId']);
             $locale = substr(Shopware()->Shop()->getLocale()->toString(), 0, 2);
             $data['locale'] = $locale;

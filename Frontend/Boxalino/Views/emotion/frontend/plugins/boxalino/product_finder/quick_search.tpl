@@ -1,35 +1,15 @@
 {block name="frontend_quick_finder_content"}
 <div class="wrapper" style="margin:0">
 
-  <div class="left" style="width:20%; float:left;">
+  <div class="quickFinder" style="">
 
-    <div class="leftContent" style="width:80%;left:0;right:0;margin-left:auto;margin-right:auto;">
-
-    </div>
-
-    <div class="button" style=="width:60%;left:0;right:0;margin-left:auto;margin-right:auto;">
+    <div class="content" style="">
 
     </div>
 
-  </div>
+    <div class="button" style="">
 
-  <div class="center" style="width:80%; float: left;">
-
-    <div class="centerContent" style="width: 100%;">
-
-      <div class="centerContentHeader" style="text-align:center;">
-
-      </div>
-
-      <div class="centerContentContainer" style="text-align:center;">
-
-      </div>
-
-      <div class="currentQuestionOptions" style="width:100%;">
-
-      </div>
-
-  </div>
+    </div>
 
   </div>
 
@@ -49,14 +29,6 @@ facets.init(json);
 
 // Get the field name of the expert facet
 var expertFieldName =  facets.getDataOwnerFacet();
-
-  // get quickFinderCover
-
-  var quickFinderCover = facets.getFacetExtraInfo(expertFieldName, 'quickFinderCover');
-
-  // append Cover to Template
-
-  jQuery('.centerContent').append('<img src=' + quickFinderCover + '>');
 
   // Returns all the experts
 
@@ -83,12 +55,12 @@ var expertFieldName =  facets.getDataOwnerFacet();
 
   // append default expert to template
 
-  jQuery('.leftContent').append('<div class="img"><img src="https://' + defaultExpertQuestionImage + '" alt="" style="width:100%;border-radius: 50%"></div><div class="text"><p style="font-size: 0.8rem;">' + quickFinderIntro + '</p></div>');
+  jQuery('.content').append('<img src="https://' + defaultExpertQuestionImage + '" alt="" style="width:90%;border-radius: 50%;right:0;left:0;margin-left:auto;margin-right:auto;"><div class="text"><p style="font-size: 1.2rem;text-align:center;">' + quickFinderIntro + '</p></div>');
 
   createButton();
 
   function createButton() {
-      $('.button').append($('<button id="b-find" style="left:0;right:0;margin-right:auto;margin-left:auto;background-color: #993366; border:none; color:white; text-align:center;font-size: 0.7rem;">ZUM PRODUKTEFINDER</button>'));
+      $('.button').append($('<button id="b-find" style="background-color: #993366; border:none; color:white; text-align:center;width:100%;font-size:1.2rem;">ZUM PRODUKTEFINDER</button>'));
       $('#b-find').on('click', function (e) {
           var urlString = '{url controller=cat sCategory=$Data.cpo_finder_link}',
               params = facets.getFacetParameters();

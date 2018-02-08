@@ -1,5 +1,5 @@
 {block name="frontend_product_finder_content"}
-<div class="wrapper" style="margin:0">
+<div class="wrapper" style="margin:0;">
 
   <div class="left" style="width:25%; float:left;">
 
@@ -13,7 +13,7 @@
 
     <div class="centerContent" style="width: 100%;left:0;right:0;border: 1px solid; padding:10px">
 
-      <div class="centerContentHeader" style="text-align:center;">
+      <div class="centerContentHeader" style="">
 
       </div>
 
@@ -22,6 +22,10 @@
       </div>
 
       <div class="currentQuestionOptions" style="width:100%;">
+
+      </div>
+
+      <div class="showMoreLess" style="width:100%;text-align:center;">
 
       </div>
 
@@ -39,7 +43,7 @@
 
   <div class="right" style="float:right;width:15%">
 
-    <div class="rightContent" style="width:90%;margin-right:auto;margin-left:auto;right:0; left:0;">
+    <div class="rightContent" style="width:100%;margin-right:auto;margin-left:auto;right:0; left:0;">
 
       <div class="rightTitle" style="text-align:center;">
 
@@ -47,7 +51,7 @@
 
       </div>
 
-      <div class="rightCriteria" style="padding-left: 15px;">
+      <div class="rightCriteria" style="padding-left: 20px;">
 
       </div>
 
@@ -56,36 +60,67 @@
     </div>
 
 </div>
+{* listing *}
 
-<div class="cpo-finder-listing-wrapper">
-        {block name="frontend_cpo_finder_listing_present"}
-            {if $Data.top_match}
-                <div class="cpo-finder-listing bx-present" style="display:none">
-                    {foreach $Data.top_match as $sArticle}
-                            {include file="frontend/listing/box_article.tpl" productBoxLayout='image'}
-                    {/foreach}
-                </div>
-            {/if}
-        {/block}
-        {block name="frontend_cpo_finder_listing_listing"}
-            {if $Data.highlighted_articles}
-                {if $Data.top_match}
-                    <div class="cpo-finder-listing bx-listing" style="display:none;">
-                        {foreach $Data.highlighted_articles as $sArticle}
-                            {include file="frontend/listing/box_article.tpl" productBoxLayout='emotion'}
-                        {/foreach}
-                    </div>
-                {/if}
-            {/if}
-        {/block}
-        {block name="frontend_cpo_finder_listing_question"}
-            <div class="cpo-finder-listing" style="display:none;width:100%;float:left">
-                {foreach $Data.sArticles as $sArticle}
-                    {include file="frontend/listing/box_article.tpl" productBoxLayout='minimal'}
+<div class="listingBlock">
+
+  <div class="cpo-finder-listing-wrapper" style="width:75%; float:right;">
+    {block name="frontend_cpo_finder_listing_present"}
+        {if $Data.top_match}
+            <div class="cpo-finder-listing bx-present" style="display:none;">
+                {foreach $Data.top_match as $sArticle}
+
+                {include file="frontend/detail/content/header.tpl"}
+
+                <div class="product--detail-upper block-group">
+                    {* Product image *}
+                    {block name='frontend_detail_index_image_container'}
+                        <div class="product--image-container image-slider{if $sArticle.image && {config name=sUSEZOOMPLUS}} product--image-zoom{/if}"
+                            {if $sArticle.image}
+                            data-image-slider="true"
+                            data-image-gallery="true"
+                            data-maxZoom="{$theme.lightboxZoomFactor}"
+                            data-thumbnails=".image--thumbnails"
+                            {/if}>
+                            {include file="frontend/detail/image.tpl"}
+                        </div>
+                    {/block}
+
+                  </div>
+
+                    {* "Buy now" box container *}
+                    {include file="frontend/detail/content/buy_container.tpl" Shop = $Data.shop}
                 {/foreach}
             </div>
-        {/block}
-    </div>
+        {/if}
+    {/block}
+    {block name="frontend_cpo_finder_listing_listing"}
+         {* {if $Data.highlighted_articles} *}
+            {* {if $Data.top_match} *}
+                <div class="cpo-finder-listing bx-listing-emotion" style="display:none;">
+                    {foreach $Data.highlighted_articles as $sArticle}
+                         {include file="frontend/listing/box_article.tpl" productBoxLayout='image'}
+                    {/foreach}
+                </div>
+            {* {else}
+                <div class="cpo-finder-listing bx-listing-slider" style="display:none;">
+                    {include file="widgets/emotion/components/component_article_slider.tpl" Data = $Data.slider_data}
+                </div>
+            {/if} *}
+        {* {/if} *}
+    {/block}
+    {block name="frontend_cpo_finder_listing_question"}
+        <div class="cpo-finder-listing bx-listing-listing" style="display:none;width:100%;float:left;">
+            {* {foreach $Data.sArticles as $sArticle} *}
+            <div class="search--results">
+                {include file='frontend/listing/listing.tpl' showListing=true sArticles=$Data.sArticles}
+            </div>
+            {* {/foreach} *}
+        </div>
+    {/block}
+  </div>
+
+</div>
 
 {/block}
 
@@ -99,26 +134,38 @@
         selectedValues = {};
     facets.init(json);
 
+    // Get the current facet
+
+    var currentFacet = null;
+    var questions = facets.getAdditionalFacets();
+    for(var i = 0; i < questions.length; i++) {
+        var fieldName = questions[i];
+        if(facets.getCurrentSelects(fieldName) === null) {
+            currentFacet = fieldName;
+            break;
+        }
+    }
+
+    console.log(currentFacet);
+
     // Get the field name of the expert facet
     var expertFieldName =  facets.getDataOwnerFacet();
 
-    // check if data owner id selected
+    // Returns all the experts
+    var expertFacetValues = facets.getFacetValues(expertFieldName)[expertFieldName];
 
-    if (facets.getCurrentSelects(expertFieldName) == null) {
+    // default expert
 
-      // Returns all the experts
-      var expertFacetValues = facets.getFacetValues(expertFieldName)[expertFieldName];
+    var defaultExpert = null;
+    expertFacetValues.forEach(function(value) {
+        //checks each sommelier if set to default
+        if(facets.getFacetValueExtraInfo(expertFieldName, value, 'is-initial')) {
+            defaultExpert = value;
+        }
+    });
 
-
-      // default expert
-
-      var defaultExpert = null;
-      expertFacetValues.forEach(function(value) {
-          //checks each sommelier if set to default
-          if(facets.getFacetValueExtraInfo(expertFieldName, value, 'is-initial')) {
-              defaultExpert = value;
-          }
-      });
+    // check if data owner facet is selected
+    if (currentFacet == expertFieldName) {
 
       // name, persona & image for default expert
 
@@ -153,18 +200,6 @@
         createFieldListener(value);
 
       });
-
-      // Get the current facet
-
-      var currentFacet = null;
-      var questions = facets.getAdditionalFacets();
-      for(var i = 0; i < questions.length; i++) {
-          var fieldName = questions[i];
-          if(facets.getCurrentSelects(fieldName) === null) {
-              currentFacet = fieldName;
-              break;
-          }
-      }
 
       // get dataOwnerHeader
 
@@ -205,9 +240,6 @@
 
     }else{
 
-      // Returns selected expert
-      var selectedExpert = facets.getCurrentSelects(expertFieldName)[0];
-
       // Get the current facet
 
       var currentFacet = null;
@@ -224,16 +256,34 @@
 
       var finderQuestion = facets.getFacetExtraInfo(currentFacet, 'finderQuestion');
 
-      // create selected expert
+      if (facets.getCurrentSelects(expertFieldName)) {
 
-      var expertQuestionImg =   facets.getFacetValueExtraInfo(expertFieldName, selectedExpert, 'question-img');
-      var expertFirstName =     facets.getFacetValueExtraInfo(expertFieldName, selectedExpert, 'first-name');
-      var expertLastName =      facets.getFacetValueExtraInfo(expertFieldName, selectedExpert, 'last-name');
-      var expertPersona =       facets.getFacetValueExtraInfo(expertFieldName, selectedExpert, 'persona');
-      var expertExpertise =     facets.getFacetValueExtraInfo(expertFieldName, selectedExpert, 'expertise');
-      var expertIntroSentence = facets.getFacetValueExtraInfo(expertFieldName, selectedExpert, 'intro-sentence');
-      var expertResultSentence = facets.getFacetValueExtraInfo(expertFieldName, selectedExpert, 'sentence-result-level10');
-      var expertCharacteristics = facets.getFacetValueExtraInfo(expertFieldName, selectedExpert, 'characteristics');
+      // Returns selected expert
+      var selectedExpert = facets.getCurrentSelects(expertFieldName)[0];
+
+        // create selected expert
+
+        var expertQuestionImg =   facets.getFacetValueExtraInfo(expertFieldName, selectedExpert, 'question-img');
+        var expertFirstName =     facets.getFacetValueExtraInfo(expertFieldName, selectedExpert, 'first-name');
+        var expertLastName =      facets.getFacetValueExtraInfo(expertFieldName, selectedExpert, 'last-name');
+        var expertPersona =       facets.getFacetValueExtraInfo(expertFieldName, selectedExpert, 'persona');
+        var expertExpertise =     facets.getFacetValueExtraInfo(expertFieldName, selectedExpert, 'expertise');
+        var expertIntroSentence = facets.getFacetValueExtraInfo(expertFieldName, selectedExpert, 'intro-sentence');
+        var expertQuestionSentence = facets.getFacetValueExtraInfo(expertFieldName, selectedExpert, 'question-sentence');
+        var expertCharacteristics = facets.getFacetValueExtraInfo(expertFieldName, selectedExpert, 'characteristics');
+
+      }else {
+
+        var expertQuestionImg =   facets.getFacetValueExtraInfo(expertFieldName, defaultExpert, 'question-img');
+        var expertFirstName =     facets.getFacetValueExtraInfo(expertFieldName, defaultExpert, 'first-name');
+        var expertLastName =      facets.getFacetValueExtraInfo(expertFieldName, defaultExpert, 'last-name');
+        var expertPersona =       facets.getFacetValueExtraInfo(expertFieldName, defaultExpert, 'persona');
+        var expertExpertise =     facets.getFacetValueExtraInfo(expertFieldName, defaultExpert, 'expertise');
+        var expertIntroSentence = facets.getFacetValueExtraInfo(expertFieldName, defaultExpert, 'intro-sentence');
+        var expertQuestionSentence = facets.getFacetValueExtraInfo(expertFieldName, defaultExpert, 'question-sentence');
+        var expertCharacteristics = facets.getFacetValueExtraInfo(expertFieldName, defaultExpert, 'characteristics');
+
+      }
 
       // get current facet values
       var currentFacetValues =   facets.getFacetValues(currentFacet)[currentFacet];
@@ -250,13 +300,27 @@
 
       // append intro sentance
 
-      if (currentFacet == null) {
+      if (currentFacet != null) {
 
-        jQuery('.centerContentHeader').append('<h2 style="margin:0;margin-bottom: 5px;">"' + expertResultSentence[lang] + '"</h2>');
+        facetLabel = facets.getFacetExtraInfo(currentFacet, 'finderQuestion');
 
-      }else {
+        // only show intro sentance on the first question
 
-        jQuery('.centerContentHeader').append('<h2 style="margin:0;margin-bottom: 5px;">"' + expertIntroSentence[lang] + '"</h2>');
+        if (currentFacet == questions[1]) {
+
+          jQuery('.centerContentHeader').append('<h2 style="margin:0;margin-bottom: 5px;">' + expertIntroSentence[lang] + '</h2>');
+          jQuery('.centerContentHeader').append('<h2 style="margin:0;margin-bottom: 5px;">' + facetLabel + '</h2>');
+
+        }
+
+        else {
+
+          // otherwise show question header
+
+          jQuery('.centerContentHeader').append('<h2 style="margin:0;margin-bottom: 5px;">' + expertQuestionSentence[lang] + '</h2>');
+          jQuery('.centerContentHeader').append('<h2 style="margin:0;margin-bottom: 5px;">' + facetLabel + '</h2>');
+
+        }
 
       }
 
@@ -274,7 +338,7 @@
 
         container = jQuery('.currentQuestionOptions');
 
-        var fieldContainer = jQuery('<div class="' + currentFacet + '" style="width:100%; display:inline-block;vertical-align:top"></div>');
+        var fieldContainer = jQuery('<div class="' + currentFacet + '_container" style="width:100%; display:inline-block;vertical-align:top"></div>');
         var facetValues = facets.getFacetValues(currentFacet)[currentFacet];
         var visualisation = facets.getFacetExtraInfo(currentFacet, 'visualisation');
 
@@ -284,6 +348,14 @@
         facets.getFacets().forEach(function(fieldName) {
             createFieldListener(fieldName);
         });
+
+        // only show as many as defined
+
+        var displaySize = facets.getFacetExtraInfo(currentFacet, 'enumDisplayMaxSize');
+
+        if (displaySize) {
+          $('.' + currentFacet + ':gt(' + (displaySize - 1) + ')').hide();
+        }
 
 
       }
@@ -295,24 +367,72 @@
           switch(elementType) {
               case 'checkbox':
 
-                element = $('<div><h4 style="margin:0">' + facetLabel + '</h4></div>');
+                element = $('<div></div>');
 
                   values.forEach(function(value){
 
                   var checked = facets.isFacetValueSelected(field, value) ? "checked='checked'" : "";
-                  element.append($('<input class="' + field + '_check" ' + checked + ' name="' + value + '" type="checkbox" value="' + value + '">' + value + '</p></div></div>'));
+                  element.append($('<input class="' + field + '_check" ' + checked + ' name="' + field + '" type="checkbox" value="' + value + '">' + value + '</p></div></div>'));
 
                   });
                 break;
               case 'multiselect':
-                  element = $('<div><h4 style="margin:0">' + facetLabel + '</h4></div>');
+                  element = $('<div></div>');
+
+                  var displayMode = facets.getFacetExtraInfo(field, 'display-mode');
+                  var facetExtraInfo = facets.getFacetExtraInfo(field, 'facetValueExtraInfo');
+
+                  if (displayMode == 'imageWithLabel') {
                   values.forEach(function(value) {
-                      var facetExtraInfo = facets.getFacetExtraInfo(field, 'facetValueExtraInfo')[value];
+                      var facetExtraInfoValues = facetExtraInfo[value];
                       var checked = facets.isFacetValueSelected(field, value) ? "checked='checked'" : "";
-                        element.append($('<div class="' + field + '" style="width:33%; display:inline-block;vertical-align:top"><div class="questionImg" style="width:90%; left:0;right:0;margin-right:auto;margin-left:auto;"><img src="https://' + facetExtraInfo['image'] + '" style="width:100%; border-radius: 50%"></div><div class="criteriaQuestionText" style="font-family:arial; font-size:14"><p style="text-align:center;"><input class="' + field + '_check" ' + checked + ' name="' + value + '" type="checkbox" value="' + value + '">' + facetExtraInfo['additional_text'] + '</p></div></div>'));
+                        element.append($('<div class="' + field + '" style="width:33%; display:inline-block;vertical-align:top"><div class="questionImg" style="width:90%; left:0;right:0;margin-right:auto;margin-left:auto;"><img src="https://' + facetExtraInfoValues['image'] + '" style="width:100%;"></div><div class="criteriaQuestionText" style="font-family:arial; font-size:14"><p style="text-align:left;"><input class="' + field + '_check" ' + checked + ' name="' + value + '" type="checkbox" value="' + value + '">' + facetExtraInfoValues['additional_text'] + '</p></div></div>'));
                   });
+                  }
+
+                  else {
+
+                    values.forEach(function(value) {
+                        var checked = facets.isFacetValueSelected(field, value) ? "checked='checked'" : "";
+                          element.append($('<div class="' + field + '" style="width:33%; display:inline-block;vertical-align:top"><div class="questionImg" style="width:90%; left:0;right:0;margin-right:auto;margin-left:auto;"></div><div class="criteriaQuestionText" style="font-family:arial; font-size:14"><p style="text-align:left;"><input class="' + field + '_check" ' + checked + ' name="' + value + '" type="checkbox" value="' + value + '">' + value + '</p></div></div>'));
+                    });
+
+                  }
+
                   break;
               case 'radio':
+
+              element = $('<form style="background-color:#fff;"></form>');
+
+              var displayMode = facets.getFacetExtraInfo(field, 'display-mode');
+              var facetExtraInfo = facets.getFacetExtraInfo(field, 'facetValueExtraInfo');
+
+              if (displayMode == 'imageWithLabel') {
+              values.forEach(function(value) {
+                  var facetExtraInfoValues = facetExtraInfo[value];
+                  var checked = facets.isFacetValueSelected(field, value) ? "checked='checked'" : "";
+                    element.append($('<div class="' + field + '" style="width:33%; display:inline-block;vertical-align:top"><div class="questionImg" style="width:90%; left:0;right:0;margin-right:auto;margin-left:auto;"><img src="https://' + facetExtraInfoValues['image'] + '" style="width:100%; "></div><div class="criteriaQuestionText" style="font-family:arial; font-size:14"><p style="text-align:left;"><input class="' + field + '_check" ' + checked + ' name="' + field + '" type="checkbox" value="' + value + '">' + facetExtraInfoValues['additional_text'] + '</p></div></div>'));
+              });
+              }
+
+              else if (displayMode == 'onlyLabel'){
+
+                values.forEach(function(value) {
+                    var facetExtraInfoValues = facetExtraInfo[value];
+                    var checked = facets.isFacetValueSelected(field, value) ? "checked='checked'" : "";
+                      element.append($('<div class="' + field + '" style="width:33%; display:inline-block;vertical-align:top"><div class="criteriaQuestionText" style="font-family:arial; font-size:14"><p style="text-align:left;"><input class="' + field + '_check" ' + checked + ' name="' + field + '" type="checkbox" value="' + value + '">' + facetExtraInfoValues['additional_text'] + '</p></div></div>'));
+                });
+
+              }
+
+              else {
+
+                values.forEach(function(value) {
+                    var checked = facets.isFacetValueSelected(field, value) ? "checked='checked'" : "";
+                      element.append($('<p style="text-align:left;display: inline-block;width: 33%;"><input class="' + field + '_check" ' + checked + ' name="' + field + '" type="radio" value="' + value + '">' + value + '</p>'));
+                });
+
+              }
 
                   break;
               case 'dropdown':
@@ -355,7 +475,9 @@
       function createFieldListener(field) {
           var type = facets.getFacetExtraInfo(field, 'visualisation');
           $("." + field + "_check").on('change', function() {
-              if(type == 'checkbox') {
+            // console.log("set select field", field, "value", $(this).attr('value'));
+              if(type == 'radio') {
+                facets.removeSelect(field);
                   if($(this).is(':checked')) {
                       facets.addSelect(field, $(this).attr('value'));
                   } else {
@@ -388,13 +510,73 @@
           }
       }
 
+        // selected facets
+
+        var selects = facets.getCurrentSelects();
+
+        jQuery('.rightCriteria').append('<br>');
+
+        if (selects) {
+
+          for(var key in selects){
+
+            if (key != 'bxi_data_owner_expert' && selects[key] != '*') {
+
+              // facet Label
+
+              facetLabel = facets.getFacetLabel(key, lang);
+
+              jQuery('.rightCriteria').append('<b>' + facetLabel + '</b><br>');
+
+              // if there is additional info, use that
+
+              facetExtraInfo = facets.getFacetExtraInfo(key, 'facetValueExtraInfo');
+
+              if (facetExtraInfo) {
+
+                jQuery('.rightCriteria').append('<p id="' + selects[key] + '_option" style="margin: 0;">- ' + facetExtraInfo[selects[key]]['additional_text'] + '</p>');
+              }
+
+              // otherwise use value from DI
+
+              else {
+
+                selects[key].forEach(function (key){
+
+                jQuery('.rightCriteria').append('<p id="' + key + '_option" style="margin: 0;">- ' + key + '</p>');
+
+                });
+
+              }
+
+            }
+
+          }
+
+        }
+
       // create buttons
 
       function createButton() {
 
-        // if current facet is set. Create all four buttons
+        // if current facet is set. Create all buttons
 
         if (currentFacet) {
+
+          var displaySize = facets.getFacetExtraInfo(currentFacet, 'enumDisplayMaxSize');
+          var facetValues = facets.getFacetValues(currentFacet)[currentFacet];
+
+          // if maxsize is defined add the show more/less buttons
+
+          if (displaySize && displaySize < facetValues.length) {
+
+            jQuery('.showMoreLess').append('<button id="cpo-finder-additional" type="button" name="additionalButton" style="background-color: #fff; border:none; color:black; text-align:center;">Mehr Anzeigen</button>');
+
+            jQuery('.showMoreLess').append('<button id="cpo-finder-fewer" type="button" name="fewerButton" style="background-color: #fff; border:none; color:black; text-align:center;display:none">Weniger Anzeigen</button>');
+
+          }
+
+          // create other buttons
 
           jQuery('.buttonContainer').append('<button id="cpo-finder-back" type="button" name="backButton" style="background-color: #fff; border:none; color:black; text-align:center;float: left;margin-top:1%;">Zur&uuml;ck</button>');
 
@@ -402,7 +584,7 @@
 
           jQuery('.buttonContainer').append('<button id="cpo-finder-skip" type="button" name="backButton" style="background-color: #707070; border:none; color:white; text-align:center;float: right;height:40px;width:130px;margin-top:1%;margin-right:1%;">&Uuml;BERSPRINGEN</button>');
 
-          jQuery('.buttonContainerBelow').append('<button id="cpo-finder-show-products" style="background-color: #fff; border:none; color:black; text-align:center;float: right;margin-top: 1%;margin-right: 1%;">Ergebnisse anzeigen</button>');
+          jQuery('.buttonContainerBelow').append('<button id="cpo-finder-show-products" style="background-color: #fff; border:none; color:black; text-align:center;float: right;margin-top: 1%;margin-right: 1%;">Ergebnisse bis ' + (Math.floor(Math.random() * 46) + 54) + '% anzeigen</button>');
 
         // otherwise only show back button and show the products
 
@@ -410,33 +592,54 @@
 
           jQuery('.buttonContainer').append('<button id="cpo-finder-back" type="button" name="backButton" style="background-color: #fff; border:none; color:black; text-align:center;float: left;margin-top:1%;">Zur&uuml;ck</button>');
 
-          $('.cpo-finder-listing-wrapper').find('.cpo-finder-listing').each(function (i, e) {
-            $(e).show();
-          });
+          jQuery('.buttonContainerBelow').hide();
 
-        }
+          var expertResultSentence10 = facets.getFacetValueExtraInfo(expertFieldName, selectedExpert, 'sentence-result-level10');
+          var expertResultSentence5  = facets.getFacetValueExtraInfo(expertFieldName, selectedExpert, 'sentence-results-level5');
+          var expertResultSentence1  = facets.getFacetValueExtraInfo(expertFieldName, selectedExpert, 'sentence-results-level1');
 
-      }
+          var selects = facets.getCurrentSelects();
+          var count = 0;
 
-    }
+          if (selects) {
+            for(var key in selects){
+              if (key != 'bxi_data_owner_expert' && selects[key] != '*') {
+                count++;
+              }
+            }
+          }
 
-      // selected facets
+          if (count >= 2) {
 
-      var selects = facets.getCurrentSelects();
+            jQuery('.centerContentHeader').append('<h2 style="margin:0;margin-bottom: 5px;">' + expertResultSentence10[lang] + '</h2>');
+            $('.bx-present').show();
+            $('.bx-listing-emotion').show();
+            $('.bx-listing-slider').show();
+            $('.bx-listing-listing').show();
 
-      if (selects) {
+          }
 
-        for(var key in selects){
+          if (count == 1) {
 
-          if (key != 'bxi_data_owner_expert' && selects[key] != '*') {
+            jQuery('.centerContentHeader').append('<h2 style="margin:0;margin-bottom: 5px;">' + expertResultSentence5[lang] + '</h2>');
+            $('.bx-listing-emotion').show();
+            $('.bx-listing-slider').show();
+            $('.bx-listing-listing').show();
 
-            jQuery('.rightCriteria').append(' - ' + selects[key] + '<br>');
+          }
+
+          if (count == 0) {
+
+            jQuery('.centerContentHeader').append('<h2 style="margin:0;margin-bottom: 5px;">' + expertResultSentence1[lang] + '</h2>');
+            $('.bx-listing-listing').show();
 
           }
 
         }
 
       }
+
+    }
 
       // find button logic
 
@@ -465,6 +668,29 @@
             }
         });
         window.location = url + paramString;
+    });
+
+    // show more/less button logic
+
+    var displaySize = facets.getFacetExtraInfo(currentFacet, 'enumDisplayMaxSize');
+    $('.' + currentFacet + ':gt(' + (displaySize - 1) + ')').hide();
+
+    $('#cpo-finder-additional').on('click', function (e){
+
+      $('.' + currentFacet).show();
+
+      $('#cpo-finder-additional').hide();
+      $('#cpo-finder-fewer').show();
+
+    });
+
+    $('#cpo-finder-fewer').on('click', function (e){
+
+      $('.' + currentFacet + ':gt(' + (displaySize - 1) + ')').hide();
+
+      $('#cpo-finder-fewer').hide();
+      $('#cpo-finder-additional').show();
+
     });
 
     // skip button logic
@@ -513,10 +739,40 @@
 
     // show products button logic
 
-    $('#cpo-finder-show-products').on('click', function (e) {
-      $('.cpo-finder-listing-wrapper').find('.cpo-finder-listing').each(function (i, e) {
-        $(e).show();
-      });
+    $('#cpo-finder-show-products').on('click', function () {
+
+      var selects = facets.getCurrentSelects();
+      var count = 0;
+
+      if (selects) {
+        for(var key in selects){
+          if (key != 'bxi_data_owner_expert' && selects[key] != '*') {
+            count++;
+          }
+        }
+      }
+
+
+      if (count >= 2) {
+
+        $('.bx-present').show();
+        $('.bx-listing-emotion').show();
+        $('.bx-listing-listing').show();
+
+      }
+
+      if (count == 1) {
+
+        $('.bx-listing-emotion').show();
+        $('.bx-listing-listing').show();
+
+      }
+
+      if (count == 0) {
+
+        $('.bx-listing-listing').show();
+
+      }
     });
 
 </script>

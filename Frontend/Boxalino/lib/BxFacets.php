@@ -177,16 +177,8 @@ class BxFacets
         return $this->getFacetExtraInfoFacets('position', 'right', false, $returnHidden);
     }
 
-    public function getSoftFacets($returnHidden=false) {
-        return $this->getFacetExtraInfoFacets('isSoftFacet', 'true', false, $returnHidden, true);
-    }
-
-    public function getQuickSearchFacets($returnHidden=false) {
-        return $this->getFacetExtraInfoFacets('isQuickSearch', 'true', false, $returnHidden, true);
-    }
-
     public function getCPOFinderFacets($returnHidden=false){
-        return array_unique(array_merge( $this->getQuickSearchFacets($returnHidden), $this->getSoftFacets($returnHidden)), SORT_REGULAR);
+      return $this->getFacetExtraInfoFacets('finderFacet', 'true', false, $returnHidden, true);
     }
 
     public function getFacetResponseExtraInfo($facetResponse, $extraInfoKey, $defaultExtraInfoValue = null) {

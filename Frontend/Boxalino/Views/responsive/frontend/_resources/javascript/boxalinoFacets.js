@@ -4,7 +4,7 @@
     function init() {
         var bxFacets = {},
             lastSelect = '',
-            separator = '',
+            separator = '|',
             level = 1,
             currentSelects = {},
             boostParameter = false,
@@ -42,6 +42,7 @@
 
         function checkParams(){
             window.location.search.substr(1).split("&").forEach(function(param) {
+                param = param.replace('[]', '');
                 var contextPrefix = getContextParameterPrefix(),
                     prefix = getParameterPrefix(),
                     facetName = '',
@@ -318,12 +319,27 @@
             return icon;
         }
 
-        function getFacetValueExtraInfo(field, value, info_key) {
+        function getFacetValueExtraInfo(field, value, info_key, filterParam) {
             var info = null;
             if(info_key === 'hidden') {
                 if(bxFacets.hasOwnProperty(field)) {
-                    if(bxFacets[field]['hidden_values'] !== undefined) {
-                        return bxFacets[field]['hidden_values'].includes(value);
+                    if(typeof filterParam !== 'undefined' && typeof filterParam === 'string' && filterParam !== '') {
+                        var displaySize = getFacetExtraInfo(field, 'enumDisplayMaxSize');
+                        if(displaySize) {
+                            displaySize = parseInt(displaySize);
+                            var filteredValues = getFacetValues(field ,filterParam)[field];
+                            var valuesSize = filteredValues.length;
+                            for(var i = 0; i < valuesSize; i++) {
+                                var val = filteredValues[i];
+                                if(val === value && displaySize < i+1) {
+                                    return true;
+                                }
+                            }
+                        }
+                    } else {
+                        if(bxFacets[field]['hidden_values'] !== undefined) {
+                            return bxFacets[field]['hidden_values'].indexOf(value) !== -1;
+                        }
                     }
                 }
                 return false;
@@ -353,7 +369,7 @@
         function getAdditionalFacets(){
             var fieldNames =[];
             getFacets().forEach(function(fieldName) {
-                if('true' === getFacetExtraInfo(fieldName, 'isSoftFacet') && null === getFacetExtraInfo(fieldName, 'isQuickSearch')){
+                if(null === getFacetExtraInfo(fieldName, 'isQuickSearch')){
                     fieldNames.push(fieldName);
                 }
             });
@@ -385,8 +401,10 @@
                                 paramName =  contextParameterPrefix + fieldName;
                                 if(boostParameter) {
                                     urlParameter = paramName + '_' + encodeURIComponent(facet_value);
-                                } else {
+                                } else if(currentSelects[fieldName].length == 1){
                                     urlParameter = paramName + '=' + encodeURIComponent(facet_value);
+                                } else {
+                                    urlParameter = paramName + '[]=' + encodeURIComponent(facet_value);
                                 }
                                 parameters.push(urlParameter);
                             });

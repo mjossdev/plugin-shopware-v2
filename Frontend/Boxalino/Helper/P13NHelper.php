@@ -171,6 +171,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         $this->setPrefixContextParameter($bxRequest->getRequestWeightedParametersPrefix());
         $this->checkPrefixContextParameter($this->getPrefixContextParameter());
         $bxRequest->setGroupBy($this->getEntityIdFieldName($type));
+        $bxRequest->setHitsGroupsAsHits(true);
         $bxRequest->setReturnFields($this->getReturnFields());
 
         $filters = [];
@@ -180,7 +181,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
             }
         }
         $filters = array_merge($filters, $this->checkFilterParameter());
-        $filters = array_merge($filters, $this->getSystemFilters($type, 'finder', true));
+        $filters = array_merge($filters, $this->getSystemFilters($type, 'finder'));
         $bxRequest->setFilters($filters);
         $this->addBxRequest($bxRequest, $type);
     }

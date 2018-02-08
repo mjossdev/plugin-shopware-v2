@@ -38,11 +38,6 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
     protected $shopCategorySelect = false;
 
     /**
-     * @var int
-     */
-    protected $finderLevel;
-
-    /**
      * Shopware_Plugins_Frontend_Boxalino_SearchInterceptor constructor.
      * @param Shopware_Plugins_Frontend_Boxalino_Bootstrap $bootstrap
      */
@@ -70,9 +65,24 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
     }
 
     public function getFinderLevel(){
-
-      return $this->finderLevel;
-
+        $ids = $this->Helper()->getEntitiesIds();
+        $level = 10;
+        $h = 0;
+        foreach ($ids as $id) {
+            if($this->Helper()->getHitVariable($id, 'highlighted')){
+                if($h++ >= 2){
+                    $level = 5;
+                    break;
+                }
+            }
+            if($h == 0) {
+                $level = 1;
+                break;
+            } else {
+                break;
+            }
+        }
+        return $level;
     }
 
     public function CPOFinder($data) {
@@ -82,11 +92,10 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
 
         $return = $data;
         $filter['category_id'] = $data['category_id'];
-        $choice_id = $return['choice_id'] == '' ? 'productfinder' : $return['choice_id'];
+        $choice_id = $return['choice_id_productfinder'] == '' ? 'productfinder' : $return['choice_id_productfinder'];
         $hitCount = $return['cpo_finder_page_size'];
         $this->Helper()->addFinder($hitCount, $choice_id, $filter, 'product', $return['widget_type']);
         $data['json_facets'] = $this->convertFacetsToJson();
-
         if($return['widget_type'] == '2'){
             $articles = $this->Helper()->getLocalArticles($this->Helper()->getHitFieldValues('products_ordernumber'));
             $type = $this->checkParams();
@@ -94,10 +103,9 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             $top_match = null;
             $highlight_count = 0;
             foreach($articles as $index => $article) {
-                //TODO Add highlighted from hit to article array
+                //TODO Add highlighted from hit to article
                 $id = $article['articleID'];
                 $score =  $this->Helper()->getHitVariable($id, 'score');
-
                 $highlighted =  false; // $this->Helper()->getHitVariable($id, 'highlighted');
                 if($type == 'listing' || $type== 'present'){
                     if($index < 5){
@@ -127,6 +135,8 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             $data['finderMode'] = $type;// $finderMode = ($highlight_count == 0 ? 'question' : ($highlight_count == 1 ? 'present' : 'listing'));
             $data['slider_data'] = ['no_border' => true, 'article_slider_arrows' => 1, 'article_slider_type' => 'selected_article',
                 'article_slider_max_number' => count($highlighted_articles), 'values' => $highlighted_articles, 'article_slider_title' => 'Zu Ihnen passende Produkte'];
+
+          $data['shop'] = Shopware()->Shop(); //$this->get('shopware_storefront.context_service')->getShopContext();
         }
         return $data;
     }
@@ -984,15 +994,15 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
 
         if($useTranslation) {
             $sql
-                ->joinLeft(array('t' => 's_core_translations'),
-                    'f_o.id = t.objectkey AND t.objecttype = ' . $db->quote('propertyoption') . ' AND t.objectlanguage = ' . $shop_id,
-                    array('objectdata'));
+                ->join(array('t' => 's_core_translations'), 'f_o.id = t.objectkey', array('objectdata'))
+                ->where('t.objecttype = ?', 'propertyoption')
+                ->where('t.objectlanguage = ?', $shop_id);
         }
         $stmt = $db->query($sql);
 
         if($stmt->rowCount()) {
             while($row = $stmt->fetch()){
-                if($useTranslation && isset($row['objectdata'])) {
+                if($useTranslation) {
                     $translation = unserialize($row['objectdata']);
                     $row['name'] = isset($translation['optionName']) && $translation['optionName'] != '' ?
                         $translation['optionName'] : $row['name'];
@@ -1887,9 +1897,10 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                 }
                 $json['facets'][$fieldName]['facetExtraInfo'] = $extraInfo;
             }
-            $json['parametersPrefix'] = 'bx';
+            $json['parametersPrefix'] = 'bx_';
             $json['contextParameterPrefix'] = $this->Helper()->getPrefixContextParameter();
             $json['level'] = $this->getFinderLevel();
+            $json['separator'] = '|';
 
         }
         return json_encode($json);
