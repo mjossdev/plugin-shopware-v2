@@ -142,6 +142,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
         $jsFiles = array(
             __DIR__ . '/Views/responsive/frontend/_resources/javascript/jquery.bx_register_add_article.js',
             __DIR__ . '/Views/responsive/frontend/_resources/javascript/jquery.search_enhancements.js',
+            __DIR__ . '/Views/responsive/frontend/_resources/javascript/boxalinoFacets.js',
             __DIR__ . '/Views/responsive/frontend/_resources/javascript/jssor.slider-26.2.0.min.js'
         );
         return new Doctrine\Common\Collections\ArrayCollection($jsFiles);
@@ -226,6 +227,9 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
         // add relevance (boxalino sort option) to listing
         $this->subscribeEvent('Enlight_Controller_Action_PostDispatchSecure_Backend_Performance', 'onBackendPerformance');
         $this->subscribeEvent('Enlight_Controller_Dispatcher_ControllerPath_Backend_BoxalinoPerformance', 'boxalinoBackendControllerPerformance');
+
+        // emotion backend
+        $this->subscribeEvent('Enlight_Controller_Action_PostDispatch_Backend_Emotion', 'onPostDispatchBackendEmotion');
 
         //sMarketing recommendation overwrite
         $this->subscribeEvent('sMarketing::sGetAlsoBoughtArticles::replace', 'alsoBoughtRec');
@@ -347,6 +351,43 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
                 'position' => 4
             ));
         }
+        $component = $this->createEmotionComponent(array(
+            'name' => 'Boxalino CPO Finder',
+            'template' => 'boxalino_product_finder',
+            'description' => 'Boxalino CPO Finder',
+            'convertFunction' => null
+        ));
+        if ($component->getFields()->count() == 0) {
+            $component->createComboBoxField(
+                array(
+                    'name' => 'widget_type',
+                    'fieldLabel' => 'Widget',
+                    'store' => 'Shopware.apps.BoxalinoEmotion.store.List',
+                    'displayField' => 'widget_type',
+                    'valueField' => 'id',
+                    'allowBlank' => false
+                )
+            );
+            $component->createComboBoxField(array(
+                "name" => "cpo_finder_link",
+                "fieldLabel" => "Product Finder Category",
+                "supportText" => "Select category to link to product finder",
+                "xtype" => "emotion-components-fields-category-selection"
+            ));
+            $component->createNumberField(array(
+                'name' => 'cpo_finder_page_size',
+                'fieldLabel' => 'Hit count',
+                'allowBlank' => true,
+                'supportText' => 'Number of products which are shown',
+                'defaultValue' => 20
+            ));
+            $component->createTextField(array(
+                'name' => 'choice_id_productfinder',
+                'fieldLabel' => 'Choice ID',
+                'supportText' => 'Override Choide ID for this widget',
+                'allowBlank' => true
+            ));
+        }
         $this->registerBannerEmotion();
 
         $this->subscribeEvent(
@@ -359,6 +400,14 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
         );
         $this->registerController('Frontend', 'RecommendationSlider');
         $this->registerController('Frontend', 'BxDebug');
+    }
+
+    public function onPostDispatchBackendEmotion(Enlight_Event_EventArgs $args) {
+        $view = $args->getSubject()->View();
+        $view->addTemplateDir($this->Path() . 'Views/');
+        if ($args->getRequest()->getActionName() === 'index') {
+            $view->extendsTemplate('backend/boxalino_emotion/app.js');
+        }
     }
 
     public function getShortLocale()
@@ -390,6 +439,20 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
 
     public function convertEmotion($args) {
         $data = $args->getReturn();
+
+        if ($args['element']['component']['template'] == "boxalino_product_finder") {
+
+            $httpCache = $this->HttpCache();
+            if($httpCache){
+                $httpCache->disableControllerCache();
+            }
+          
+            $data['category_id'] = $this->getEmotionCategoryId($args['element']['emotionId']);
+            $locale = substr(Shopware()->Shop()->getLocale()->toString(), 0, 2);
+            $data['locale'] = $locale;
+            $data = array_merge($data, $this->onCPOFinder($data));
+            return $data;
+        }
 
         if ($args['element']['component']['name'] == "Boxalino Banner") {
             $this->disableHttpCache();
@@ -517,6 +580,14 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
             return $this->frontendInterceptor->getBannerInfo();
         } catch (\Exception $e) {
             $this->logException($e, __FUNCTION__);
+        }
+    }
+
+    public function onCPOFinder($data) {
+        try {
+            return $this->searchInterceptor->CPOFinder($data);
+        } catch (\Exception $e) {
+                  $this->logException($e, __FUNCTION__);
         }
     }
 
@@ -702,6 +773,21 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
             $shops[$row['id']] = $row;
         }
         return $shops;
+    }
+
+    private function getEmotionCategoryId($emotionId){
+        $categoryId = null;
+        $db = Shopware()->Db();
+        $sql = $db->select()
+            ->from(array('e_c' => 's_emotion_categories'), array('category_id'))
+            ->where('e_c.emotion_id = ?', $emotionId);
+
+        if($result = $db->fetchRow($sql)){
+            $categoryId = $result['category_id'];
+        } else {
+            $categoryId = Shopware()->Shop()->getCategory()->getId();
+        }
+        return $categoryId;
     }
 
 }

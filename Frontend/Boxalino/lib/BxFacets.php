@@ -13,8 +13,6 @@ class BxFacets
 
     protected $priceFieldName = 'discountedPrice';
 
-    protected $priceRangeMargin = false;
-
     protected $notificationLog = array();
 
     protected $notificationMode = false;
@@ -37,7 +35,6 @@ class BxFacets
         return $this->notificationLog;
     }
 
-
     public function setSearchResults($searchResult) {
         $this->searchResult = $searchResult;
     }
@@ -52,11 +49,11 @@ class BxFacets
         return $this->filters;
     }
 
-    public function addCategoryFacet($selectedValue=null, $order=2, $maxCount=-1, $andSelectedValues = false, $label=null) {
+    public function addCategoryFacet($selectedValue=null, $order=2, $maxCount=-1) {
         if($selectedValue) {
-            $this->addFacet('category_id', $selectedValue, 'hierarchical', null, '1', false, 1, $andSelectedValues);
+            $this->addFacet('category_id', $selectedValue, 'hierarchical', '1', $maxCount);
         }
-        $this->addFacet($this->getCategoryFieldName(), null, 'hierarchical', $label, $order, false, $maxCount);
+        $this->addFacet($this->getCategoryFieldName(), null, 'hierarchical', null, $order, false, $maxCount);
     }
 
     public function addPriceRangeFacet($selectedValue=null, $order=2, $label='Price', $fieldName = 'discountedPrice', $maxCount=-1) {
@@ -68,12 +65,14 @@ class BxFacets
         $this->addFacet($fieldName, $selectedValue, 'ranged', $label, $order, $boundsOnly, $maxCount);
     }
 
-    public function addFacet($fieldName, $selectedValue=null, $type='string', $label=null, $order=2, $boundsOnly=false, $maxCount=-1, $andSelectedValues = false) {
+    public function addFacet($fieldName, $selectedValue=null, $type='string', $label=null, $order=2, $boundsOnly=false, $maxCount=-1) {
         $selectedValues = array();
         if(!is_null($selectedValue)) {
             $selectedValues = is_array($selectedValue) ? $selectedValue : [$selectedValue];
         }
-        $this->facets[$fieldName] = array('label'=>$label, 'type'=>$type, 'order'=>$order, 'selectedValues'=>$selectedValues, 'boundsOnly'=>$boundsOnly, 'maxCount'=>$maxCount, 'andSelectedValues' => $andSelectedValues);
+
+        $this->facets[$fieldName] = array('label'=>$label, 'type'=>$type, 'order'=>$order, 'selectedValues'=>$selectedValues, 'boundsOnly'=>$boundsOnly, 'maxCount'=>$maxCount);
+
     }
 
     public function setParameterPrefix($parameterPrefix) {
@@ -94,8 +93,7 @@ class BxFacets
 
     public function getFieldNames() {
         $fieldNames = array();
-
-        if($this->searchResult && (sizeof($this->facets) !== sizeof($this->searchResult->facetResponses))) {
+        if(sizeof($this->facets) !== sizeof($this->searchResult->facetResponses)) {
             foreach($this->searchResult->facetResponses as $facetResponse) {
                 if(!isset($this->facets[$facetResponse->fieldName])) {
                     $this->facets[$facetResponse->fieldName] = [
@@ -111,7 +109,7 @@ class BxFacets
         }
         foreach($this->facets as $fieldName => $facet) {
             $facetResponse = $this->getFacetResponse($fieldName);
-            if(!is_null($facetResponse) && (sizeof($facetResponse->values)>0 || sizeof($facet['selectedValues'])>0)) {
+            if(sizeof($facetResponse->values)>0) {
                 $fieldNames[$fieldName] = array('fieldName'=>$fieldName, 'returnedOrder'=> sizeof($fieldNames));
             }
         }
@@ -141,7 +139,7 @@ class BxFacets
         return $selectedFacets;
     }
 
-    public function getFacetExtraInfoFacets($extraInfoKey, $extraInfoValue, $default=false, $returnHidden=false) {
+    public function getFacetExtraInfoFacets($extraInfoKey, $extraInfoValue, $default=false, $returnHidden=false, $withSoftFacets=false) {
         $selectedFacets = array();
         foreach($this->getFieldNames() as $fieldName) {
             if (!$returnHidden && $this->isFacetHidden($fieldName)) {
@@ -152,6 +150,9 @@ class BxFacets
                 continue;
             }
             if ($this->getFacetExtraInfo($fieldName, $extraInfoKey) == $extraInfoValue || ($this->getFacetExtraInfo($fieldName, $extraInfoKey) == null && $default)) {
+                if(!$withSoftFacets && $this->getFacetExtraInfo($fieldName, 'isSoftFacet') == 'true'){
+                    continue;
+                }
                 $selectedFacets[] = $fieldName;
             }
         }
@@ -174,6 +175,10 @@ class BxFacets
 
     public function getRightFacets($returnHidden=false) {
         return $this->getFacetExtraInfoFacets('position', 'right', false, $returnHidden);
+    }
+
+    public function getCPOFinderFacets($returnHidden=false){
+      return $this->getFacetExtraInfoFacets('finderFacet', 'true', false, $returnHidden, true);
     }
 
     public function getFacetResponseExtraInfo($facetResponse, $extraInfoKey, $defaultExtraInfoValue = null) {
@@ -203,7 +208,7 @@ class BxFacets
         }
         try {
             $facetResponse =    $this->getFacetResponse($fieldName);
-            if(!is_null($facetResponse) && is_array($facetResponse->extraInfo) && sizeof($facetResponse->extraInfo) > 0){
+            if(is_array($facetResponse->extraInfo) && sizeof($facetResponse->extraInfo) > 0){
                 return $facetResponse->extraInfo;
             }
         } catch(\Exception $e) {
@@ -217,10 +222,14 @@ class BxFacets
             $fieldName = 'category_id';
         }
         try {
-            return $this->getFacetResponseExtraInfo($this->getFacetResponse($fieldName), $extraInfoKey, $defaultExtraInfoValue);
+            $extraInfo = $this->getFacetResponseExtraInfo($this->getFacetResponse($fieldName), $extraInfoKey, $defaultExtraInfoValue);
+            $this->addNotification('getFacetResponseExtraInfo', json_encode(array($fieldName, $extraInfoKey, $defaultExtraInfoValue, $extraInfo)));
+            return $extraInfo;
         } catch(\Exception $e) {
+            $this->addNotification('Exception - getFacetResponseExtraInfo', json_encode(array($fieldName, $extraInfoKey, $defaultExtraInfoValue)));
             return $defaultExtraInfoValue;
         }
+        return $defaultExtraInfoValue;
     }
 
     public function prettyPrintLabel($label, $prettyPrint=false) {
@@ -301,9 +310,6 @@ class BxFacets
     }
 
     public function getFacetDisplay($fieldName, $defaultDisplay = 'expanded') {
-        if($fieldName == $this->getCategoryFieldName()) {
-            $fieldName = 'category_id';
-        }
         try {
             if(sizeof($this->getFacetSelectedValues($fieldName)) > 0) {
                 return 'expanded';
@@ -322,8 +328,9 @@ class BxFacets
                     return $facetResponse;
                 }
             }
+            throw new \Exception("trying to get facet response on unexisting fieldname " . $fieldName);
         }
-        return null;
+        throw new \Exception("trying to get facet response but not facet response set");
     }
 
     protected function getFacetType($fieldName) {
@@ -464,21 +471,12 @@ class BxFacets
         return null;
     }
 
-    private $facetKeyValuesCache = array();
     protected function getFacetKeysValues($fieldName, $ranking='alphabetical', $minCategoryLevel=0) {
-
-        if(isset($this->facetKeyValuesCache[$fieldName.'_'.$minCategoryLevel])) {
-            return $this->facetKeyValuesCache[$fieldName.'_'.$minCategoryLevel];
-        }
         if($fieldName == "") {
             return array();
         }
-        if($fieldName == 'category_id') return array();
         $facetValues = array();
         $facetResponse = $this->getFacetResponse($fieldName);
-        if(is_null($facetResponse)) {
-            return array();
-        }
         $type = $this->getFacetType($fieldName);
         switch($type) {
             case 'hierarchical':
@@ -492,32 +490,21 @@ class BxFacets
                 }
                 break;
             case 'ranged':
-                $displayRange = json_decode($this->getFacetExtraInfo($fieldName, 'bx_displayPriceRange'), true);
                 foreach($facetResponse->values as $facetValue) {
-                    if($displayRange) {
-                        $facetValue->rangeFromInclusive = isset($displayRange[0]) ? $displayRange[0] : $facetValue->rangeFromInclusive;
-                        $facetValue->rangeToExclusive = isset($displayRange[1]) ?  $displayRange[1] : $facetValue->rangeToExclusive;
-                    }
                     $facetValues[$facetValue->rangeFromInclusive . '-' . $facetValue->rangeToExclusive] = $facetValue;
                 }
                 break;
             default:
-
                 foreach($facetResponse->values as $facetValue) {
                     $facetValues[$facetValue->stringValue] = $facetValue;
                 }
-
-                if(is_array($this->facets[$fieldName]['selectedValues'])) {
+                if(sizeof($facetValues) > 0) {
                     foreach ($this->facets[$fieldName]['selectedValues'] as $value) {
                         if(!isset($facetValues[$value])) {
-                            $newValue = new \com\boxalino\p13n\api\thrift\FacetValue();
-                            $newValue->rangeFromInclusive = null;
-                            $newValue->rangeToExclusive = null;
-                            $newValue->hierarchyId = null;
-                            $newValue->hierarchy = null;
+                            $newValue = clone reset($facetValues);
+                            $newValue->selected = true;
                             $newValue->stringValue = $value;
                             $newValue->hitCount = 0;
-                            $newValue->selected = true;
                             $facetValues[$value] = $newValue;
                         }
                     }
@@ -582,7 +569,7 @@ class BxFacets
             }
             $facetValues = $finalFacetValues;
         }
-        $this->facetKeyValuesCache[$fieldName.'_'.$minCategoryLevel] = $facetValues;
+
         return $facetValues;
     }
 
@@ -603,16 +590,11 @@ class BxFacets
                         $temp = array();
                         foreach ($dependency['values'] as $key => $value) {
                             if(isset($values[$value])){
-                                $temp[$value] = $values[$value];
+                                $temp[$key] = $values[$value];
                                 unset($values[$value]);
                             }
                         }
                         array_splice($values, $effect['order'], 0, $temp);
-                        $temp = $values;
-                        $values = array();
-                        foreach ($temp as $value) {
-                            $values[$value->stringValue] = $value;
-                        }
                     }
                 }
             }
@@ -661,9 +643,6 @@ class BxFacets
         if($facet != null) {
             if($facet['type'] == 'hierarchical') {
                 $facetResponse = $this->getFacetResponse($fieldName);
-                if(is_null($facetResponse)) {
-                   return false;
-                }
                 $tree = $this->buildTree($facetResponse->values);
                 $tree = $this->getSelectedTreeNode($tree);
                 return $tree && sizeof($tree['node']->hierarchy)>1;
@@ -689,9 +668,6 @@ class BxFacets
     public function getParentCategories() {
         $fieldName = $this->getCategoryFieldName();
         $facetResponse = $this->getFacetResponse($fieldName);
-        if(is_null($facetResponse)) {
-           return array();
-        }
         $tree = $this->buildTree($facetResponse->values);
         $treeEnd = $this->getSelectedTreeNode($tree);
         if($treeEnd == null) {
@@ -719,9 +695,6 @@ class BxFacets
     public function getParentCategoriesHitCount($id){
         $fieldName = $this->getCategoryFieldName();
         $facetResponse = $this->getFacetResponse($fieldName);
-        if(is_null($facetResponse)) {
-            return 0;
-        }
         $tree = $this->buildTree($facetResponse->values);
         $treeEnd = $this->getSelectedTreeNode($tree);
         if($treeEnd == null) {
@@ -752,9 +725,6 @@ class BxFacets
         if($facet != null) {
             if($facet['type'] == 'hierarchical') {
                 $facetResponse = $this->getFacetResponse($fieldName);
-                if(is_null($facetResponse)) {
-                    return '';
-                }
                 $tree = $this->buildTree($facetResponse->values);
                 $tree = $this->getSelectedTreeNode($tree);
                 $parts = explode('/', $tree['node']->stringValue);
@@ -891,11 +861,7 @@ class BxFacets
         $valueLabel = null;
         if($this->selectedPriceValues !== null && ($this->selectedPriceValues != null)){
             $from = round($this->selectedPriceValues[0]->rangeFromInclusive, 2);
-            $to = $this->selectedPriceValues[0]->rangeToExclusive;
-            if($this->priceRangeMargin) {
-                $to -= 0.01;
-            }
-            $to = round($to, 2);
+            $to = round($this->selectedPriceValues[0]->rangeToExclusive, 2);
             $valueLabel = $from . '-' . $to;
         }
         return $valueLabel;
@@ -967,11 +933,12 @@ class BxFacets
     public function getThriftFacets() {
 
         $thriftFacets = array();
+
         foreach($this->facets as $fieldName => $facet) {
             $type = $facet['type'];
             $order = $facet['order'];
             $maxCount = $facet['maxCount'];
-            $andSelectedValues =  $facet['andSelectedValues'];
+
             if($fieldName == $this->priceFieldName){
                 $this->selectedPriceValues = $this->facetSelectedValue($fieldName, $type);
             }
@@ -982,11 +949,11 @@ class BxFacets
             $facetRequest->range = $type == 'ranged' ? true : false;
             $facetRequest->boundsOnly = $facet['boundsOnly'];
             $facetRequest->selectedValues = $this->facetSelectedValue($fieldName, $type);
-            $facetRequest->andSelectedValues = $andSelectedValues;
             $facetRequest->sortOrder = isset($order) && $order == 1 ? 1 : 2;
             $facetRequest->maxCount = isset($maxCount) && $maxCount > 0 ? $maxCount : -1;
             $thriftFacets[] = $facetRequest;
         }
+
         return $thriftFacets;
     }
 
@@ -1002,11 +969,7 @@ class BxFacets
                         $selectedFacet->rangeFromInclusive = (float)$rangedValue[0];
                     }
                     if ($rangedValue[1] != '*') {
-                        $selectedFacet->rangeToExclusive = (float)$rangedValue[1];
-                        if($rangedValue[0] == $rangedValue[1]) {
-                            $this->priceRangeMargin = true;
-                            $selectedFacet->rangeToExclusive += 0.01;
-                        }
+                        $selectedFacet->rangeToExclusive = $rangedValue[1] + 0.01;
                     }
                 } else {
                     $selectedFacet->stringValue = $value;

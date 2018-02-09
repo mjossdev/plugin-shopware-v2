@@ -81,21 +81,29 @@ class BxClient
 	public function setTestMode($isTest) {
 		$this->isTest = $isTest;
 	}
-	
+
 	public function setSocket($socketHost, $socketPort=4040, $socketSendTimeout=1000, $socketRecvTimeout=1000) {
 		$this->socketHost = $socketHost;
 		$this->socketPort = $socketPort;
 		$this->socketSendTimeout = $socketSendTimeout;
 		$this->socketRecvTimeout = $socketRecvTimeout;
 	}
-	
+
 	public function setRequestMap($requestMap) {
 		$this->requestMap = $requestMap;
 	}
-	
+
+	public function getRequestMap() {
+		return $this->requestMap;
+	}
+
+	public function addToRequestMap($key, $value) {
+		$this->requestMap[$key] = $value;
+	}
+
 	public static function LOAD_CLASSES($libPath) {
         require_once($libPath . '/Thrift/ClassLoader/ThriftClassLoader.php');
-		
+
 		$cl = new \Thrift\ClassLoader\ThriftClassLoader(false);
 		$cl->registerNamespace('Thrift', $libPath);
 		$cl->register(true);
@@ -626,17 +634,18 @@ class BxClient
 
     public function getNotifications() {
 	    $final = $this->notifications;
+	    $final['response'] = $this->getResponse()->getNotifications();
 	    return $final;
     }
 
     public function finalNotificationCheck($force=false, $requestMapKey = 'dev_bx_notifications')
     {
         if ($force || (isset($this->requestMap[$requestMapKey]) && $this->requestMap[$requestMapKey] == 'true')) {
-            echo "<pre><h1>Notifications</h1>";
+            echo "<pre><h1>Notifications</h1>" ;
             var_dump($this->getNotifications(), true);
             echo "</pre>";
             exit;
         }
     }
-	
+
 }

@@ -47,6 +47,100 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         $this->eventManager = Enlight()->Events();
     }
 
+    public function checkParams(){
+        $address = $_SERVER['HTTP_REFERER'];
+        $params = explode('&', substr ($address,strpos($address, '?')+1, strlen($address)));
+        foreach ($params as $index => $param){
+            $keyValue = explode("=", $param);
+            $params[$keyValue[0]] = $keyValue[1];
+            unset($params[$index]);
+        }
+        $count = 0;
+        foreach ($params as $key => $value) {
+            if(strpos($key, 'bxrpw_') === 0) {
+                $count++;
+            }
+        }
+        return ($count == 0 ? 'question' : ($count == 1 ? 'listing' : 'present'));
+    }
+
+    public function getFinderLevel(){
+        $ids = $this->Helper()->getEntitiesIds();
+        $level = 10;
+        $h = 0;
+        foreach ($ids as $id) {
+            if($this->Helper()->getHitVariable($id, 'highlighted')){
+                if($h++ >= 2){
+                    $level = 5;
+                    break;
+                }
+            }
+            if($h == 0) {
+                $level = 1;
+                break;
+            } else {
+                break;
+            }
+        }
+        return $level;
+    }
+
+    public function CPOFinder($data) {
+        if (!$this->Config()->get('boxalino_active')) {
+            return null;
+        }
+
+        $return = $data;
+        $filter['category_id'] = $data['category_id'];
+        $choice_id = $return['choice_id_productfinder'] == '' ? 'productfinder' : $return['choice_id_productfinder'];
+        $hitCount = $return['cpo_finder_page_size'];
+        $this->Helper()->addFinder($hitCount, $choice_id, $filter, 'product', $return['widget_type']);
+        $data['json_facets'] = $this->convertFacetsToJson();
+        if($return['widget_type'] == '2'){
+            $articles = $this->Helper()->getLocalArticles($this->Helper()->getHitFieldValues('products_ordernumber'));
+            $type = $this->checkParams();
+            $highlighted_articles =  null;
+            $top_match = null;
+            $highlight_count = 0;
+            foreach($articles as $index => $article) {
+                //TODO Add highlighted from hit to article
+                $id = $article['articleID'];
+                $score =  $this->Helper()->getHitVariable($id, 'score');
+                $highlighted =  false; // $this->Helper()->getHitVariable($id, 'highlighted');
+                if($type == 'listing' || $type== 'present'){
+                    if($index < 5){
+                        $highlighted = true;
+                    }
+                }
+                $article['bx_score'] = floatval((100 - $index) / 100);
+                $article['bx_score'] = $type == 'listing' ? $article['bx_score'] - 0.01 : $article['bx_score'];
+                $article['bx_score'] = $type == 'question' ? $article['bx_score'] - 0.31 : $article['bx_score'];
+                $article['bx_score'] = $index >= 5 ? $article['bx_score'] - 0.21 : $article['bx_score'];
+                $article['bx_highlighted'] = $highlighted;
+                if($highlighted){
+                    if($index == 0 && $type == 'present'){
+                        $top_match[] = $article;
+                    }else {
+                        $highlighted_articles[] = $article;
+                    }
+                    $highlight_count++;
+                    unset($articles[$index]);
+                } else {
+                    $articles[$index] = $article;
+                }
+            }
+            $data['sArticles'] = $articles;
+            $data['highlighted_articles'] = $highlighted_articles;
+            $data['top_match'] = $top_match;
+            $data['finderMode'] = $type;// $finderMode = ($highlight_count == 0 ? 'question' : ($highlight_count == 1 ? 'present' : 'listing'));
+            $data['slider_data'] = ['no_border' => true, 'article_slider_arrows' => 1, 'article_slider_type' => 'selected_article',
+                'article_slider_max_number' => count($highlighted_articles), 'values' => $highlighted_articles, 'article_slider_title' => 'Zu Ihnen passende Produkte'];
+
+          $data['shop'] = Shopware()->Shop(); //$this->get('shopware_storefront.context_service')->getShopContext();
+        }
+        return $data;
+    }
+
     /**
      * @param Enlight_Event_EventArgs $arguments
      * @return array|null
@@ -1851,4 +1945,65 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         return $articles;
     }
 
+    private function convertFacetsToJson(){
+        $json = [];
+        $bxFacets =  $this->Helper()->getFacets();
+        $fieldNames = $bxFacets->getCPOFinderFacets();
+        if(!empty($fieldNames)) {
+            foreach ($fieldNames as $fieldName) {
+                if($fieldName == ''){
+                    continue;
+                }
+                $facet_info = $bxFacets->getAllFacetExtraInfo($fieldName);
+                $extraInfo = [];
+                $facetValues = $bxFacets->getFacetValues($fieldName);
+                $json['facets'][$fieldName]['facetValues'] = $facetValues;
+                foreach ($facetValues as $value) {
+                    if($bxFacets->isFacetValueHidden($fieldName, $value)) {
+                        $json['facets'][$fieldName]['hidden_values'][] = $value;
+                    }
+                }
+                $json['facets'][$fieldName]['label'] = $bxFacets->getFacetLabel($fieldName);
+
+                foreach ($facet_info as $info_key => $info) {
+                    if($info_key == 'isSoftFacet' && $info == null){
+                        $facetMapping = [];
+                        $attributeName = substr($fieldName, 9);
+                        $json['facets'][$fieldNames]['parameterName'] = $attributeName;
+                        $attributeModel = Mage::getModel('eav/config')->getAttribute('catalog_product', $attributeName)->getSource();
+                        $options = $attributeModel->getAllOptions();
+                        $responseValues =  Mage::helper('boxalino_intelligence')->useValuesAsKeys($json['facets'][$fieldName]['facetValues']);
+                        foreach ($options as $option){
+                            $label = is_array($option) ? $option['label'] : $option;
+                            if(isset($responseValues[$label])){
+                                $facetMapping[$label] = $option['value'];
+                            }
+                        }
+                        $json['facets'][$fieldName]['facetMapping'] = $facetMapping;
+                    }
+                    if($info_key == 'jsonDependencies' || $info_key == 'label' || $info_key == 'iconMap' || $info_key == 'facetValueExtraInfo') {
+                        $info = json_decode($info);
+                        if($info_key == 'jsonDependencies') {
+                            if(!is_null($info)) {
+                                if(isset($info[0]) && isset($info[0]->values[0])) {
+                                    $check = $info[0]->values[0];
+                                    if(strpos($check, ',') !== false) {
+                                        $info[0]->values = explode(',', $check);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    $extraInfo[$info_key] = $info;
+                }
+                $json['facets'][$fieldName]['facetExtraInfo'] = $extraInfo;
+            }
+            $json['parametersPrefix'] = 'bx_';
+            $json['contextParameterPrefix'] = $this->Helper()->getPrefixContextParameter();
+            $json['level'] = $this->getFinderLevel();
+            $json['separator'] = '|';
+
+        }
+        return json_encode($json);
+    }
 }
