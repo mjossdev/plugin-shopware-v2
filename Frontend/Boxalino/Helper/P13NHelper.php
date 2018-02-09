@@ -122,12 +122,15 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         }
         return $bxFilters;
     }
+
     public function getPrefixContextParameter(){
         return $this->prefixContextParameter;
     }
+
     public function setPrefixContextParameter($prefix) {
         $this->prefixContextParameter = $prefix;
     }
+
     protected function checkPrefixContextParameter($prefix){
         $address = $_SERVER['HTTP_REFERER'];
         $params = explode('&', substr ($address,strpos($address, '?')+1, strlen($address)));
@@ -145,6 +148,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
             }
         }
     }
+
     protected function checkFilterParameter() {
         $address = $_SERVER['HTTP_REFERER'];
         $params = explode('&', substr ($address,strpos($address, '?')+1, strlen($address)));
@@ -162,6 +166,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         }
         return $filters;
     }
+
     public function addFinder($hitCount = 1, $choiceId = 'productfinder', $filter=[], $type = 'product', $finder_type = 1){
         $this->flushResponses();
         $this->resetRequests();
@@ -190,6 +195,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         self::$bxClient->addRequest($bxRequest);
         self::$choiceContexts[$bxRequest->getChoiceId()][] = $type;
     }
+
     /**
      * @param string $queryText
      * @param int $pageOffset
@@ -223,6 +229,36 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         self::$bxClient->addRequest($bxRequest);
         self::$choiceContexts[$choiceId][] = $type;
 
+    }
+
+    private function getVoucherData($voucher_id) {
+
+        $data = array();
+        $db = Shopware()->Db();
+        $sql = $db->select()->from('s_emarketing_vouchers')
+            ->where('id = ?', $voucher_id);
+        $stmt = $db->query($sql);
+        if($stmt->rowCount()) {
+            $data = $stmt->fetch();
+        }
+        return $data;
+    }
+
+    public function addVoucher($choiceId) {
+        $data = [];
+        $lang = $this->getShortLocale();
+        $bxRequest = new \com\boxalino\bxclient\v1\BxRequest($lang, $choiceId, 1);
+        self::$bxClient->addRequest($bxRequest);
+//        $customerID = $this->getCustomerID();
+//        self::$bxClient->addRequestContextParameter('_system_customerid', $customerID);
+        $bxResponse = $this->getResponse();
+        $data['title']= $bxResponse->getExtraInfo('voucher_title');
+        $data['code'] = $bxResponse->getExtraInfo('voucher_code');
+        $data['text'] = $bxResponse->getExtraInfo('voucher_text');
+        $data['data'] = json_decode($bxResponse->getExtraInfo('voucher_data'), true);
+        $data['id'] = $bxResponse->getExtraInfo('voucher_id');
+        $data = array_merge($data, $this->getVoucherData($data['id']));
+        return $data;
     }
 
     public function addBanner($choiceId = 'banner', $type = 'bxi_content', $queryText = "", $pageOffset = 0, $hitCount = 10, $sort = null, $options = array(), $filters = array()){
@@ -399,6 +435,10 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
             $t4 = microtime(true);
         }
         $groups = json_decode($response->getExtraInfo('portfolio_json', null, $data['choiceId_portfolio']), true);
+        foreach ($groups as $i => $group) {
+            $groups[$i]['account_id'] = $this->getCustomerID();
+        }
+        return $groups;
         $this->flushResponses();
         $this->resetRequests();
         $rebuyChoice = $data['choiceId_re-buy'];
@@ -453,9 +493,9 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
             }
             $groupTime['total_after'] = microtime(true);
             $groupData = $group;
-             $values = $this->convertToFieldArray(
-                 $response->getHitFieldValues(['products_ordernumber'], $reorientChoice, true, $index),
-                 'products_ordernumber');
+            $values = $this->convertToFieldArray(
+                $response->getHitFieldValues(['products_ordernumber'], $reorientChoice, true, $index),
+                'products_ordernumber');
             $groupData['reorient']['sArticles'] = $this->getLocalArticles($values);
 
 
@@ -464,7 +504,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
             $firstDate = reset(reset($purchaseDates)['purchase_date']);
 
             if($response->getTotalHitCount($rebuyChoice, true, $index) > 0 &&
-            getdate(strtotime($firstDate))['year'] != 1970){
+                getdate(strtotime($firstDate))['year'] != 1970){
 
                 $values = $this->convertToFieldArray(
                     $response->getHitFieldValues(['products_ordernumber'], $rebuyChoice, true, $index),
@@ -938,10 +978,14 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
      * @param array $context
      * @param string $type
      * @param bool $execute
-     * @return array
+     * @param array $excludes
+     * @param bool $isBlog
+     * @param array $requestContextParams
+     * @param bool $isPortfolio
+     * @return array|mixed
      */
     public function getRecommendation($choiceId, $max = 5, $min = 5, $offset = 0, $context = array(), $type = '',
-                                      $execute = true, $excludes = array(), $isBlog = false, $requestContextParams = array()) {
+                                      $execute = true, $excludes = array(), $isBlog = false, $requestContextParams = array(), $isPortfolio = false) {
 
         if(!$execute){
             if ($max >= 0) {
@@ -966,17 +1010,22 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
                     $filterValues = is_array($context) ? $context : array($context);
                     $filters[] = new \com\boxalino\bxclient\v1\BxFilter($filterField, $filterValues);
                 } elseif ($type === 'bxi_content') {
-                        $bxRequest->setGroupBy('id');
-                        $filters = array(new \com\boxalino\bxclient\v1\BxFilter('bx_type', array('bxi_content'), false));
-                        $bxRequest->setFilters($filters);
-                        $categoryValues = is_array($context) ? $context : array($context);
-                        self::$bxClient->addRequestContextParameter('current_category_id', $categoryValues);
+                    $bxRequest->setGroupBy('id');
+                    $filters = array(new \com\boxalino\bxclient\v1\BxFilter('bx_type', array('bxi_content'), false));
+                    $bxRequest->setFilters($filters);
+                    $categoryValues = is_array($context) ? $context : array($context);
+                    self::$bxClient->addRequestContextParameter('current_category_id', $categoryValues);
+                } elseif ($type === 'blog') {
+                    $bxRequest->setProductContext('id', $context);
                 }
+
                 foreach ($requestContextParams as $key => $requestContextParam) {
                     self::$bxClient->addRequestContextParameter($key, $requestContextParam);
                 }
                 $bxRequest->setFilters($filters);
-
+                if($isPortfolio) {
+                    $bxRequest->setHitsGroupsAsHits(true);
+                }
                 self::$bxClient->addRequest($bxRequest);
             }
             return array();
@@ -1047,6 +1096,16 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
 
         $count = array_search($type, self::$choiceContexts[$this->currentSearchChoice]);
         return $this->getResponse()->getHitIds($this->currentSearchChoice, true, $count, 10, $this->getEntityIdFieldName($type));
+    }
+
+    /**
+     * @param $choice
+     * @param string $field
+     * @param int $count
+     * @return mixed
+     */
+    public function getRecommendationHitFieldValues($choice, $field = 'id', $count = 0) {
+        return $this->getResponse()->getHitFieldValues([$field], $choice, true, $count);
     }
 
     /**

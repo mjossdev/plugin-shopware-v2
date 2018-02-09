@@ -47,6 +47,63 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         $this->eventManager = Enlight()->Events();
     }
 
+    /**
+     * @param $id
+     * @param $code
+     * @param $modus
+     * @return bool
+     */
+    private function checkVoucher($id, $code, $modus){
+
+        $show = false;
+        $db = Shopware()->Db();
+        $fields = ['*'];
+        if($modus != 1) {
+            $fields["used_vouchers"] = new Zend_Db_Expr("(SELECT count(*) FROM s_order_details as d WHERE articleordernumber = v.ordercode AND d.ordernumber!='0')");
+        }
+        $sql = $db->select()->from(array('v' => 's_emarketing_vouchers'), $fields)
+            ->where('v.id = ?', $id)
+            ->where('v.modus = ?', $modus);
+
+        if($modus == 1) {
+            $sql->joinLeft(array('v_c' => 's_emarketing_voucher_codes'),
+                'v_c.voucherID = v.id AND v_c.code = ' . $db->quote($code));
+        }
+
+        $stmt = $db->query($sql);
+        if($stmt->rowCount()) {
+            $row = $stmt->fetch();
+            if($modus != 1) {
+                if($row['numberofunits'] > $row['used_vouchers']){
+                    $show = true;
+                }
+            } else {
+                if($row['cashed'] == 0){
+                    $show = true;
+                }
+            }
+        }
+        return $show;
+    }
+
+    /**
+     * @param Enlight_Event_EventArgs $arguments
+     * @return array
+     */
+    public function voucher(Enlight_Event_EventArgs $arguments) {
+
+        $data = $arguments->getReturn();
+        $choiceId = $data['choiceId'];
+        $data = array_merge($data, $this->Helper()->addVoucher($choiceId));
+        $data['show'] = true;//$this->checkVoucher($data['id'], $data['code'], $data['modus']);
+//        $data = array_merge($data, $this->getVoucherData($data['id']));
+        if($_REQUEST['bx_test'] == 'test_1'){
+            echo "<pre>";
+            var_dump($data);exit;
+        }
+        return $data;
+    }
+
     public function checkParams(){
         $address = $_SERVER['HTTP_REFERER'];
         $params = explode('&', substr ($address,strpos($address, '?')+1, strlen($address)));

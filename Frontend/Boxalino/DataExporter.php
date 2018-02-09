@@ -116,6 +116,11 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
                         $this->log->info("BxIndexLog: Preparing transactions.");
                         $this->exportTransactions($account, $files);
                     }
+
+                    if ($this->_config->isVoucherExportEnabled($account)) {
+                        $this->log->info("BxIndexLog: Preparing vouchers.");
+                        $this->exportVouchers($account, $files);
+                    }
                 }
 
                 if (!$exportProducts) {
@@ -1523,4 +1528,58 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
         $this->db->query('INSERT INTO `exports` values(NOW())');
     }
 
+    /**
+     * @param $account
+     * @param $files
+     */
+    private function exportVouchers($account, $files){
+
+        $db = Shopware()->Db();
+        $languages = $this->_config->getAccountLanguages($account);
+        $header = true;
+        $data = array();
+        $doneCases = array();
+        foreach ($languages as $shop_id => $language) {
+            $sql = $db->select()->from(array('v' => 's_emarketing_vouchers'),
+                array('v.*',
+                    'used_codes' => new Zend_Db_Expr("IF( modus = '0',
+                (SELECT count(*) FROM s_order_details as d WHERE articleordernumber =v.ordercode AND d.ordernumber!='0'),
+                (SELECT count(*) FROM s_emarketing_voucher_codes WHERE voucherID =v.id AND cashed=1))")))
+                ->where('v.subshopID IS NULL OR v.subshopID = ?', $shop_id);
+            $stmt = $db->query($sql);
+            if($stmt->rowCount()) {
+                while($row = $stmt->fetch()){
+                    if($header) {
+                        $data[] = array_keys($row);
+                        $header = false;
+                    }
+                    if(isset($doneCases[$row['id']])) continue;
+                    $doneCases[$row['id']] = true;
+                    $data[] = $row;
+                }
+            }
+            if(sizeof($data)) {
+                $files->savePartToCsv('voucher.csv', $data);
+            }
+        }
+        $this->bxData->addCSVItemFile($files->getPath('voucher.csv'), 'id');
+        $data = array();
+        $header = true;
+        $sql = $db->select()->from(array('v_c' => 's_emarketing_voucher_codes'));
+        $stmt = $db->query($sql);
+        if($stmt->rowCount()) {
+            while($row = $stmt->fetch()){
+                if(isset($doneCases[$row['voucherID']])){
+                    if($header){
+                        $data[] = array_keys($row);
+                        $header = false;
+                    }
+                    $data[] = $row;
+                }
+            }
+        }
+        $doneCases = array();
+        $files->savePartToCsv('voucher_codes.csv', $data);
+        $this->bxData->addCSVItemFile($files->getPath('voucher_codes.csv'), 'id');
+    }
 }
