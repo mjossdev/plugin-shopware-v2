@@ -47,6 +47,272 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         $this->eventManager = Enlight()->Events();
     }
 
+    public function landingPage() {
+        if (!$this->Config()->get('boxalino_active')) {
+            return null;
+        }
+
+        $p13nHelper = Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper::instance();
+        $request = Shopware()->Front()->Request();
+        $categoryId = (int) $request->getParam('sCategory');
+        $context  = $this->get('shopware_storefront.context_service')->getProductContext();
+        /* @var Shopware\Bundle\SearchBundle\Criteria $criteria */
+        if(is_null($request->getParam('sSort'))) {
+            $default = $this->get('config')->get('defaultListingSorting');
+            $request->setParam('sSort', $default);
+            $request->setParam('sPage', $default);
+        }
+
+        // criteria
+
+        $criteria = $this->get('shopware_search.store_front_criteria_factory')->createSearchCriteria($request, $context);
+        $criteria->removeCondition("term");
+        $criteria->removeBaseCondition("search");
+        // facets
+
+        $facets = $this->createFacets($criteria, $context);
+
+        // options
+
+        $options = $this->getFacetConfig($facets);
+        $sort =  $this->getSortOrder($criteria, null, true);
+        $hitCount = $criteria->getLimit();
+        $pageOffset = $criteria->getOffset();
+        $p13nHelper->setRequest($request);
+        $p13nHelper->addSearch('', $pageOffset, $hitCount, 'product', $sort, $options);
+        $facets = $this->updateFacetsWithResult($facets);
+        $articles = $this->Helper()->getLocalArticles($p13nHelper->getHitFieldValues('products_ordernumber'));
+
+        // sPage
+
+        $sPage = $request->getParam('sPage');
+
+        // pageIndex
+
+        $pageIndex = $request->getParam('sPage');
+
+        // totalHitCount
+
+        $totalHitCount = $this->Helper()->getTotalHitCount();
+
+        // $sBanner
+
+        $sBanner = Shopware()->Modules()->Marketing()->sBanner($categoryId);
+
+        // sBreadcrumb
+
+        $breadcrumb = Shopware()->Modules()->Categories()->sGetCategoriesByParent($categoryId);
+
+        $sBreadcrumb = array_reverse($breadcrumb);
+
+        //sCategoryContent
+
+        $withStreams = false;
+
+        if ($request->getParam('sPage')) {
+            $sCategories = [
+                'hasEmotion' => false,
+                'showListing' => true,
+                'showListingDevices' => [],
+            ];
+        }
+
+        $service = $this->container->get('shopware_emotion.store_front_emotion_device_configuration');
+
+        $emotions = $service->getCategoryConfiguration($categoryId, $context, $withStreams);
+
+        $isHomePage = $context->getShop()->getCategory()->getId() === $categoryId;
+
+        $sCategoryContent = Shopware()->Modules()->Categories()->sGetCategoryContent($categoryId);
+
+        // activeFilterGroup
+
+        $activeFilterGroup = $request->getQuery('sFilterGroup');
+
+        // ajaxCountUrlParams
+
+        $ajaxCountUrlParams = ['sCategory' => $sCategoryContent['id']];
+
+        // params
+
+        $params = $request->getParams();
+
+
+        // emotions
+
+        if ($request->getParam('sPage')) {
+            $emotions = [
+                'hasEmotion' => false,
+                'showListing' => true,
+                'showListingDevices' => [],
+            ];
+        }
+
+        // pageSizes
+
+        $pageSizes = explode('|', $this->config()->get('numberArticlesToShow'));
+
+        // sPerPage
+
+        $sPerPage = 12;
+        // $sPerPage = $request->getParam('sPerPage');
+
+        $shortParameters = array(
+
+            'sSearch' => 'q',
+            'sPage' => 'p',
+            'sPerPage' => 'n',
+            'sSupplier' => 's',
+            'sFilterProperties' => 'f',
+            'sCategory' => 'c',
+            'sCoreId' => 'u',
+            'sTarget' => 't',
+            'sValidation' => 'v',
+            'sTemplate' => 'l',
+            'priceMin' => 'min',
+            'priceMax' => 'max',
+            'shippingFree' => 'free',
+            'immediateDelivery' => 'delivery',
+            'sSort' => 'o',
+            'categoryFilter' => 'cf'
+
+        );
+
+        $context = $this->container->get('shopware_storefront.context_service')->getShopContext();
+
+        $service = $this->container->get('shopware_emotion.store_front_emotion_device_configuration');
+
+        $emotions = $service->getCategoryConfiguration($categoryId, $context, $withStreams);
+
+        $isHomePage = $context->getShop()->getCategory()->getId() === $categoryId;
+
+
+
+        $visibleDevices = [0, 1, 2, 3, 4];
+        $permanentVisibleDevices = [];
+
+        foreach ($emotions as $emotion) {
+            // always show the listing in the emotion viewports when the option "show listing" is active
+            if ($emotion['showListing']) {
+                $permanentVisibleDevices = array_merge($permanentVisibleDevices, $emotion['devicesArray']);
+            }
+
+            $visibleDevices = array_diff($visibleDevices, $emotion['devicesArray']);
+        }
+
+        $visibleDevices = array_merge($permanentVisibleDevices, $visibleDevices);
+
+        $devicesWithListing = array_values($visibleDevices);
+
+        if ($isHomePage) {
+            $devicesWithListing = [];
+        }
+
+        if (empty($emotions)) {
+            $hasListing = true;
+        }
+
+        $showListing = (bool) max(array_column($emotions, 'showListing'));
+
+        if ($showListing) {
+            $hasListing = true;
+        }
+
+        $devices = $devicesWithListing;
+
+        $hasListing = !empty($devices);
+
+        $hasEmotion = !empty($emotions);
+
+        if ($devicesWithListing && !$isHomePage) {
+            $showListing = true;
+        }
+
+        $showListingDevices = $devicesWithListing;
+
+        // sArticles
+
+        $articles = $p13nHelper->getLocalArticles($p13nHelper->getHitFieldValues('products_ordernumber'));
+
+        // sSort
+
+        $sSort = $request->getParam('sSort');
+
+        // theme
+
+        $inheritance = $this->container->get('theme_inheritance');
+        $shop = $this->container->get('Shop');
+        $config = $inheritance->buildConfig($shop->getTemplate(), $shop, false);
+        $this->get('template')->addPluginsDir(
+            $inheritance->getSmartyDirectories(
+                $shop->getTemplate()
+            )
+        );
+
+        $theme = $config;
+
+        // lessFiles
+
+//        $lessFiles;
+
+        // Controller
+
+//        $Controller;
+
+        $templateProperties = array(
+
+            'bxFacets' => $p13nHelper->getFacets(),
+            'criteria' => $criteria,
+            'facets' => $facets,
+            'sNumberArticles' => $totalHitCount,
+            'sArticles' => $articles,
+            'facetOptions' => $this->facetOptions
+
+        );
+        $sortingIds = $this->container->get('config')->get('searchSortings');
+        $sortingIds = array_filter(explode('|', $sortingIds));
+        $sortings = $service->getList($sortingIds, $context);
+        $viewData = array(
+            'sBanner' => $sBanner,
+            'sBreadcrumb' => $sBreadcrumb,
+            'sCategoryContent' => $sCategoryContent,
+            'activeFilterGroup' => $activeFilterGroup,
+            'ajaxCountUrlParams' => $ajaxCountUrlParams,
+            'params' => $params,
+            'emotions' => $emotions,
+            'hasEmotion' => $hasEmotion,
+            'showListing' => $showListing,
+            'showListingDevices' => $showListingDevices,
+            'isHomePage' => $isHomePage,
+            'sArticles' => $articles,
+            'criteria' => $criteria,
+            'facets' => $facets,
+            'sPage' => $sPage,
+            'pageIndex' => $pageIndex,
+            'pageSizes' => $pageSizes,
+            'sPerPage' => $sPerPage,
+            'sNumberArticles' => $totalHitCount,
+            'shortParameters' => $shortParameters,
+//            'sTemplate' => $sTemplate,
+            'sSort' => $sSort,
+            'sortings' => $sortings
+
+        );
+
+        $extraData = array(
+
+            'Shop' => Shopware()->Shop(),
+            'theme' => $theme,
+//            'Controller' => $Controller,
+//            'lessFiles' => $lessFiles
+
+        );
+
+        $templateProperties = array_merge($viewData, $templateProperties, $extraData);
+        return $templateProperties;
+
+    }
+
     /**
      * @param $id
      * @param $code

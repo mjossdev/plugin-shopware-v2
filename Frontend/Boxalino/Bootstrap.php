@@ -307,6 +307,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
         $this->registerSliderEmotion();
         $this->registerPortfolioEmotion();
         $this->registerBannerEmotion();
+        $this->registerLandingPageEmotion();
         $this->registerVoucherEmotion();
         $this->registerCPOFinderEmotion();
 
@@ -470,6 +471,15 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
         }
     }
 
+    public function registerLandingPageEmotion() {
+        $component = $this->createEmotionComponent(array(
+            'name' => 'Boxalino LandingPage',
+            'template' => 'boxalino_landingpage',
+            'description' => 'Display Boxalino LandingPage.',
+            'convertFunction' => null
+        ));
+    }
+
     public function registerCPOFinderEmotion() {
         $component = $this->createEmotionComponent(array(
             'name' => 'Boxalino CPO Finder',
@@ -519,6 +529,10 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
 
     public function convertEmotion($args) {
         $data = $args->getReturn();
+
+        if ($args['element']['component']['template'] == "boxalino_landingpage") {
+            $data = $this->onLandingPage();
+        }
 
         if ($args['element']['component']['template'] == "boxalino_product_finder") {
             $data['category_id'] = $this->getEmotionCategoryId($args['element']['emotionId']);
@@ -638,6 +652,14 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
         $view = $arguments->getSubject()->View();
         $view->addTemplateDir($this->Path() . 'Views/emotion/');
         $view->extendsTemplate('frontend/plugins/boxalino/listing/product-box/box-emotion.tpl');
+    }
+
+    public function onLandingPage(Enlight_Event_EventArgs $arguments) {
+        try {
+            return $this->searchInterceptor->landingPage($arguments);
+        } catch (\Exception $e) {
+            $this->logException($e, __FUNCTION__);
+        }
     }
 
     public function onVoucher(Enlight_Event_EventArgs $arguments) {
