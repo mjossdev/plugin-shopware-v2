@@ -531,13 +531,14 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
         $data = $args->getReturn();
 
         if ($args['element']['component']['template'] == "boxalino_landingpage") {
-            $data = $this->onLandingPage();
             $this->disableHttpCache();
+            $data = $this->onLandingPage();
             $data['view'] = $this->onLandingPage();
             return $data;
         }
 
         if ($args['element']['component']['template'] == "boxalino_product_finder") {
+            $this->disableHttpCache();
             $data['category_id'] = $this->getEmotionCategoryId($args['element']['emotionId']);
             $locale = substr(Shopware()->Shop()->getLocale()->toString(), 0, 2);
             $data['locale'] = $locale;
