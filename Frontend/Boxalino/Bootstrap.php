@@ -532,6 +532,9 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
 
         if ($args['element']['component']['template'] == "boxalino_landingpage") {
             $data = $this->onLandingPage();
+            $this->disableHttpCache();
+            $data['view'] = $this->onLandingPage();
+            return $data;
         }
 
         if ($args['element']['component']['template'] == "boxalino_product_finder") {

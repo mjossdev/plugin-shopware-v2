@@ -32,7 +32,6 @@
                                 <div class="bx-re-buy emotion--product-slider panel" >
                                     {include file="frontend/_includes/product_slider.tpl"
                                     sliderAjaxCtrlUrl={url controller=RecommendationSlider action=portfoliorecommendation bxChoiceId=rebuy bxCount=10 category_id=$portfolio.context_parameter['category_id'] account_id=$portfolio.account_id}
-                                    articles=$articles
                                     sliderAjaxCategoryID={'rebuy-'|cat:$portfolio.name[$Data.lang]}
                                     productSliderCls="product-slider--content"
                                     sliderMode={'ajax'}
@@ -52,7 +51,6 @@
                                 <div class="bx-re-buy emotion--product-slider panel" >
                                     {include file="frontend/_includes/product_slider.tpl"
                                     sliderAjaxCtrlUrl={url controller=RecommendationSlider action=portfoliorecommendation bxChoiceId=newbuy bxCount=10 category_id=$portfolio.context_parameter['category_id']}
-                                    articles=$articles
                                     sliderAjaxCategoryID={'newbuy-'|cat:$portfolio.name[$Data.lang]}
                                     productSliderCls="product-slider--content"
                                     sliderMode={'ajax'}
@@ -89,6 +87,24 @@
                             </div>
                         </div>
                         <div style="clear: both;"></div>
+                        <div class="bx-blog-rec">
+                            <div class="bx-reorient-title">
+                                <span>Passende Blog-Beiträge</span>
+                            </div>
+                            <div class="bx-blog emotion--product-slider panel" >
+                                {include file="frontend/_includes/product_slider.tpl"
+                                sliderAjaxCtrlUrl={url controller=RecommendationSlider action=blogrecommendation category_id=$portfolio.context_parameter['category_id']}
+                                productSliderCls="product-slider--content"
+                                sliderAjaxCategoryID={'blog-'|cat:$portfolio.name[$Data.lang]}
+                                sliderMode={'ajax'}
+                                sliderArrowControls={''}
+                                sliderAnimationSpeed=500
+                                sliderAutoSlideSpeed={''}
+                                sliderAutoSlide={''}
+                                productBoxLayout="emotion"
+                                fixedImageSize="true"}
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <br>

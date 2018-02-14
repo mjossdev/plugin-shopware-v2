@@ -205,9 +205,9 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
      * @param array $options
      * @param array $filters
      */
-    public function addSearch($queryText = "", $pageOffset = 0, $hitCount = 10, $type = "product", $sort = null, $options = array(), $filters = array(), $stream = false) {
+    public function addSearch($queryText = "", $pageOffset = 0, $hitCount = 10, $type = "product", $sort = null, $options = array(), $filters = array(), $stream = false, $overrideChoice = null) {
 
-        $choiceId = $this->getSearchChoice($queryText);
+        $choiceId = is_null($overrideChoice) ? $this->getSearchChoice($queryText) : $overrideChoice;
         $returnFields = $this->getReturnFields($type);
         $lang = $this->getShortLocale();
         $bxRequest = new \com\boxalino\bxclient\v1\BxSearchRequest($lang, $queryText, $hitCount, $choiceId);

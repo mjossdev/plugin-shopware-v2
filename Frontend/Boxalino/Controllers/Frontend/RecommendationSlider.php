@@ -177,17 +177,16 @@ class Shopware_Controllers_Frontend_RecommendationSlider extends Enlight_Control
         if($hitsIds) {
             $articles = $helper->getLocalArticles($hitsIds);
             if($choiceId == 'rebuy') {
-                $articles = array();
-//
-//                $purchaseDates = $helper->getRecommendationHitFieldValues($choiceId, 'purchase_date');
-//                foreach ($articles as $i => $article) {
-//                    $add = array_shift($purchaseDates);
-//                    $date = reset($add['purchase_date']);
-//                    if(getdate(strtotime($date))['year'] != 1970) {
-//                        $article['bxTransactionDate'] = $date;
-//                        $articles[$i] = $article;
-//                    }
-//                }
+
+                $purchaseDates = $helper->getRecommendationHitFieldValues($choiceId, 'purchase_date');
+                foreach ($articles as $i => $article) {
+                    $add = array_shift($purchaseDates);
+                    $date = reset($add['purchase_date']);
+                    if(getdate(strtotime($date))['year'] != 1970) {
+                        $article['bxTransactionDate'] = $date;
+                        $articles[$i] = $article;
+                    }
+                }
             }
             $this->View()->loadTemplate('frontend/_includes/product_slider_items.tpl');
             $path = Shopware()->Plugins()->Frontend()->Boxalino()->Path();
@@ -203,28 +202,26 @@ class Shopware_Controllers_Frontend_RecommendationSlider extends Enlight_Control
     public function blogRecommendationAction() {
 
         $helper = Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper::instance();
-        $choiceId = Shopware()->Config()->get('boxalino_detail_blog_recommendation_name');
-        $min = Shopware()->Config()->get('boxalino_detail_blog_recommendation_min');
-        $max = Shopware()->Config()->get('boxalino_detail_blog_recommendation_max');
-
+        $choiceId = 'read_portfolio'; //Shopware()->Config()->get('boxalino_detail_blog_recommendation_name');
+        $min = 10; //Shopware()->Config()->get('boxalino_detail_blog_recommendation_min');
+        $max = 10; //Shopware()->Config()->get('boxalino_detail_blog_recommendation_max');
         $context = $this->Request()->getQuery('category_id');
         $helper->getRecommendation($choiceId, $max, $min, 0, array(), 'product', false, array(), true);
         $blogIds = $helper->getRecommendation($choiceId, $max, $min, 0, $context, 'category', true, array(), true);
-        foreach ($blogIds as $index => $id) {
-            $blogIds[$index] = str_replace('blog_', '', $id);
-        }
+        if($blogIds) {
+            foreach ($blogIds as $index => $id) {
+                $blogIds[$index] = str_replace('blog_', '', $id);
+            }
 
-        $this->View()->loadTemplate('frontend/_includes/product_slider.tpl');
-        $path = Shopware()->Plugins()->Frontend()->Boxalino()->Path();
-        $this->View()->addTemplateDir($path . 'Views/emotion/');
-        $this->View()->extendsTemplate('frontend/plugins/boxalino/detail/content.tpl');
-        $this->View()->extendsTemplate('frontend/plugins/boxalino/_includes/product_slider_item.tpl');
-        $blogArticles = $helper->getBlogs($blogIds);
-        $blogArticles = $this->enhanceBlogArticles($blogArticles);
-        $this->View()->assign('sBlogArticles', $blogArticles);
-        $this->View()->assign('bxBlogRecommendation', true);
-        $this->View()->assign('productBoxLayout', "emotion");
-        $this->View()->assign('fixedImage', true);
+            $this->View()->loadTemplate('frontend/_includes/product_slider_items.tpl');
+            $path = Shopware()->Plugins()->Frontend()->Boxalino()->Path();
+            $this->View()->addTemplateDir($path . 'Views/emotion/');
+            $this->View()->extendsTemplate('frontend/plugins/boxalino/_includes/product_slider_item.tpl');
+            $blogArticles = $helper->getBlogs($blogIds);
+            $blogArticles = $this->enhanceBlogArticles($blogArticles);
+            $this->View()->assign('articles', $blogArticles);
+            $this->View()->assign('bxBlogRecommendation', true);
+        }
     }
 
     private function enhanceBlogArticles($blogArticles) {
