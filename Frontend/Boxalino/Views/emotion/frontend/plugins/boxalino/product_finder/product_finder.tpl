@@ -138,15 +138,18 @@
 
     var currentFacet = null;
     var questions = facets.getAdditionalFacets();
-    for(var i = 0; i < questions.length; i++) {
-        var fieldName = questions[i];
-        if(facets.getCurrentSelects(fieldName) === null) {
-            currentFacet = fieldName;
-            break;
-        }
+    if({$Data.highlighted} == false) {
+      for(var i = 0; i < questions.length; i++) {
+          var fieldName = questions[i];
+          if(facets.getCurrentSelects(fieldName) === null) {
+              currentFacet = fieldName;
+              break;
+          }
+      }
     }
 
-    console.log(currentFacet);
+        console.log({$Data.highlighted});
+            console.log(currentFacet);
 
     // Get the field name of the expert facet
     var expertFieldName =  facets.getDataOwnerFacet();
@@ -244,12 +247,14 @@
 
       var currentFacet = null;
       var questions = facets.getAdditionalFacets();
-      for(var i = 0; i < questions.length; i++) {
-          var fieldName = questions[i];
-          if(facets.getCurrentSelects(fieldName) === null) {
-              currentFacet = fieldName;
-              break;
-          }
+      if({$Data.highlighted} == false) {
+          for(var i = 0; i < questions.length; i++) {
+            var fieldName = questions[i];
+            if(facets.getCurrentSelects(fieldName) === null) {
+                currentFacet = fieldName;
+                break;
+            }
+         }
       }
 
       // Get question of the current facet for the expert
@@ -584,7 +589,7 @@
 
           jQuery('.buttonContainer').append('<button id="cpo-finder-skip" type="button" name="backButton" style="background-color: #707070; border:none; color:white; text-align:center;float: right;height:40px;width:130px;margin-top:1%;margin-right:1%;">&Uuml;BERSPRINGEN</button>');
 
-          jQuery('.buttonContainerBelow').append('<button id="cpo-finder-show-products" style="background-color: #fff; border:none; color:black; text-align:center;float: right;margin-top: 1%;margin-right: 1%;">Ergebnisse bis ' + (Math.floor(Math.random() * 46) + 54) + '% anzeigen</button>');
+          jQuery('.buttonContainerBelow').append('<button id="cpo-finder-show-products" style="background-color: #fff; border:none; color:black; text-align:center;float: right;margin-top: 1%;margin-right: 1%;">Ergebnisse bis ' + {$Data.max_score} + '% anzeigen</button>');
 
         // otherwise only show back button and show the products
 

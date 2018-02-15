@@ -131,33 +131,38 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         $this->prefixContextParameter = $prefix;
     }
 
+    public function getHttpRefererParameters() {
+      $address = $_SERVER['HTTP_REFERER'];
+      $params = array();
+      foreach($_REQUEST as $k => $v) {
+          $params[$k] = $v;
+      }
+      $rowParams = explode('&', substr ($address,strpos($address, '?')+1, strlen($address)));
+      foreach ($rowParams as $index => $param){
+          $keyValue = explode("=", $param);
+          $keyValue = str_replace('[]', '', $keyValue);
+          if(!isset($params[$keyValue[0]])) {
+            $params[$keyValue[0]] = array();
+          }
+          $params[$keyValue[0]][] = $keyValue[1];
+      }
+      return $params;
+    }
+
     protected function checkPrefixContextParameter($prefix){
-        $address = $_SERVER['HTTP_REFERER'];
-        $params = explode('&', substr ($address,strpos($address, '?')+1, strlen($address)));
-        foreach ($params as $index => $param){
-            $keyValue = explode("=", $param);
-            $params[$keyValue[0]] = $keyValue[1];
-            unset($params[$index]);
-        }
+        $params = $this->getHttpRefererParameters();
         foreach ($params as $key => $value) {
             if(strpos($key, $prefix) === 0) {
                 self::$bxClient->addRequestContextParameter($key, $value);
             }
-            if($keyValue[0] == 'dev_bx_disp') {
+            //if($keyValue[0] == 'dev_bx_disp') {
               self::$bxClient->addToRequestMap($key, $value);
-            }
+            //}
         }
     }
 
     protected function checkFilterParameter() {
-        $address = $_SERVER['HTTP_REFERER'];
-        $params = explode('&', substr ($address,strpos($address, '?')+1, strlen($address)));
-
-        foreach ($params as $index => $param){
-            $keyValue = explode("=", $param);
-            $params[$keyValue[0]] = $keyValue[1];
-            unset($params[$index]);
-        }
+        $params = $this->getHttpRefererParameters();
         $filters = [];
         foreach ($params as $key => $value) {
             if(strpos($key, 'bx_') === 0) {

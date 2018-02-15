@@ -123,9 +123,11 @@ class BxParametrizedRequest extends BxRequest
 			}
 			$params[$name] = $values;
 		}
+
+		unset($params['bxi_data_owner_expert']);
 		return $params;
 	}
-	
+
 	public function getWeightedParameters() {
 		$params = array();
 		foreach($this->getPrefixedParameters($this->requestWeightedParametersPrefix) as $name => $values) {

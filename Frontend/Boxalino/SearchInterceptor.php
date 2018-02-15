@@ -295,20 +295,29 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         $data['json_facets'] = $this->convertFacetsToJson();
         if($return['widget_type'] == '2'){
             $articles = $this->Helper()->getLocalArticles($this->Helper()->getHitFieldValues('products_ordernumber'));
+            $scores = $this->Helper()->getHitFieldValues('finalScore');
+            $highlightedValues = $this->Helper()->getHitFieldValues('highlighted');
+            $maxScore = 0;
+            foreach($scores as $score) {
+              if($score > $maxScore) {
+                $maxScore = $score;
+              }
+            }
             $type = $this->checkParams();
             $highlighted_articles =  null;
             $top_match = null;
             $highlight_count = 0;
+            $c=0;
             foreach($articles as $index => $article) {
                 //TODO Add highlighted from hit to article
                 $id = $article['articleID'];
-                $score =  $this->Helper()->getHitVariable($id, 'score');
-                $highlighted =  false; // $this->Helper()->getHitVariable($id, 'highlighted');
-                if($type == 'listing' || $type== 'present'){
+                $score =  $this->Helper()->getHitVariable($id, 'finalScore');
+                $highlighted =  $highlightedValues[$c++] == 'true'; // $this->Helper()->getHitVariable($id, 'highlighted');
+                /*if($type == 'listing' || $type== 'present'){
                     if($index < 5){
                         $highlighted = true;
                     }
-                }
+                }*/
                 $article['bx_score'] = floatval((100 - $index) / 100);
                 $article['bx_score'] = $type == 'listing' ? $article['bx_score'] - 0.01 : $article['bx_score'];
                 $article['bx_score'] = $type == 'question' ? $article['bx_score'] - 0.31 : $article['bx_score'];
@@ -328,12 +337,17 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             }
             $data['sArticles'] = $articles;
             $data['highlighted_articles'] = $highlighted_articles;
+            $data['highlighted'] = 'false';
+            if(sizeof($highlighted_articles)>0) {
+              $data['highlighted'] = 'true';
+            }
             $data['top_match'] = $top_match;
+            $data['max_score'] = $maxScore;
             $data['finderMode'] = $type;// $finderMode = ($highlight_count == 0 ? 'question' : ($highlight_count == 1 ? 'present' : 'listing'));
             $data['slider_data'] = ['no_border' => true, 'article_slider_arrows' => 1, 'article_slider_type' => 'selected_article',
                 'article_slider_max_number' => count($highlighted_articles), 'values' => $highlighted_articles, 'article_slider_title' => 'Zu Ihnen passende Produkte'];
-
           $data['shop'] = Shopware()->Shop(); //$this->get('shopware_storefront.context_service')->getShopContext();
+
         }
         return $data;
     }

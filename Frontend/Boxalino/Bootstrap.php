@@ -542,7 +542,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
         }
 
         if ($args['element']['component']['template'] == "boxalino_product_finder") {
-
+            $this->disableHttpCache();
             Shopware()->PluginLogger()->info("bootstrap HTTP_REFERER: " . json_encode($_SERVER['HTTP_REFERER']));
             $data['category_id'] = $this->getEmotionCategoryId($args['element']['emotionId']);
             $locale = substr(Shopware()->Shop()->getLocale()->toString(), 0, 2);
