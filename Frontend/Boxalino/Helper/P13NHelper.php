@@ -164,9 +164,15 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
     protected function checkFilterParameter() {
         $params = $this->getHttpRefererParameters();
         $filters = [];
-        foreach ($params as $key => $value) {
+        foreach ($params as $key => $values) {
+            if(!is_array($values)) {
+              $values = [$values];
+            }
+            foreach($values as $k => $v) {
+              $values[$k] = rawurldecode($v);
+            }
             if(strpos($key, 'bx_') === 0) {
-                $filters[$key] = new \com\boxalino\bxclient\v1\BxFilter(substr($key, 3), [rawurldecode($value)]);
+                $filters[$key] = new \com\boxalino\bxclient\v1\BxFilter(substr($key, 3), $values);
             }
         }
         return $filters;
