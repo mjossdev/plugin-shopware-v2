@@ -116,11 +116,6 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
                         $this->log->info("BxIndexLog: Preparing transactions.");
                         $this->exportTransactions($account, $files);
                     }
-
-                    if ($this->_config->isVoucherExportEnabled($account)) {
-                        $this->log->info("BxIndexLog: Preparing vouchers.");
-                        $this->exportVouchers($account, $files);
-                    }
                 }
 
                 if (!$exportProducts) {
@@ -231,6 +226,13 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
             $this->exportProductStreams($files);
             $this->log->info("exportProductStreams after memory: " . memory_get_usage(true));
             $this->log->info("BxIndexLog: Finished products - product streams.");
+            if ($this->_config->isVoucherExportEnabled($account)) {
+                $this->log->info("BxIndexLog: Preparing products - voucher.");
+                $this->log->info("BxIndexLog: Preparing vouchers.");
+                $this->exportVouchers($account, $files);
+                $this->log->info("exportVouchers after memory: " . memory_get_usage(true));
+                $this->log->info("BxIndexLog: Finished products - voucher.");
+            }
         }
         return $export_products;
     }
@@ -1203,7 +1205,10 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
         $mainSourceKey = $this->bxData->addMainCSVItemFile($files->getPath('products.csv'), 'id');
         $this->bxData->addSourceStringField($mainSourceKey, 'bx_purchasable', 'purchasable');
         $this->bxData->addSourceStringField($mainSourceKey, 'bx_type', 'id');
-        $this->bxData->addFieldParameter($mainSourceKey, 'bx_type', 'pc_fields', 'CASE WHEN group_id IS NULL THEN "blog" ELSE "product" END AS final_value');
+        $pc_field = $this->_config->isVoucherExportEnabled($account) ?
+            'CASE WHEN group_id IS NULL THEN CASE WHEN %%LEFTJOINfield_products_voucher_id%% IS NULL THEN "blog" ELSE "voucher" END ELSE "product" END AS final_value' :
+            'CASE WHEN group_id IS NULL THEN "blog" ELSE "product" END AS final_value';
+        $this->bxData->addFieldParameter($mainSourceKey, 'bx_type', 'pc_fields', $pc_field);
         $this->bxData->addFieldParameter($mainSourceKey, 'bx_type', 'multiValued', 'false');
 
         foreach ($main_properties as $property) {
@@ -1539,6 +1544,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
         $header = true;
         $data = array();
         $doneCases = array();
+        $headers = array();
         foreach ($languages as $shop_id => $language) {
             $sql = $db->select()->from(array('v' => 's_emarketing_vouchers'),
                 array('v.*',
@@ -1550,11 +1556,13 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
             if($stmt->rowCount()) {
                 while($row = $stmt->fetch()){
                     if($header) {
-                        $data[] = array_keys($row);
+                        $headers = array_keys($row);
+                        $data[] = $headers;
                         $header = false;
                     }
                     if(isset($doneCases[$row['id']])) continue;
                     $doneCases[$row['id']] = true;
+                    $row['id'] = 'voucher_' . $row['id'];
                     $data[] = $row;
                 }
             }
@@ -1562,7 +1570,18 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
                 $files->savePartToCsv('voucher.csv', $data);
             }
         }
-        $this->bxData->addCSVItemFile($files->getPath('voucher.csv'), 'id');
+
+        if($header) {
+            $data = ['id','description','vouchercode','numberofunits','value','minimumcharge','shippingfree',
+                'bindtosupplier','valid_from','valid_to','ordercode','modus','percental','numorder','customergroup',
+                'restrictarticles','strict','subshopID','taxconfig','customer_stream_ids','used_codes'];
+            $files->savePartToCsv('voucher.csv', $data);
+        }
+        $attributeSourceKey = $this->bxData->addCSVItemFile($files->getPath('voucher.csv'), 'id');
+        $this->bxData->addSourceParameter($attributeSourceKey, 'additional_item_source', 'true');
+        foreach ($headers as $header){
+            $this->bxData->addSourceStringField($attributeSourceKey, 'voucher_'.$header, $header);
+        }
         $data = array();
         $header = true;
         $sql = $db->select()->from(array('v_c' => 's_emarketing_voucher_codes'));
@@ -1574,6 +1593,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
                         $data[] = array_keys($row);
                         $header = false;
                     }
+                    $row['voucherID'] = 'voucher_' . $row['voucherID'];
                     $data[] = $row;
                 }
             }

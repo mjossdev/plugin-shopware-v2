@@ -31,7 +31,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
     }
 
     public function getVersion() {
-        return '1.6.4';
+        return '1.6.5';
     }
 
     public function getInfo() {
@@ -358,6 +358,11 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
                 'fieldLabel' => 'Choice id',
                 'allowBlank' => false
             ));
+            $component->createHtmlEditorField(array(
+                'name' => 'template',
+                'fieldLabel' => 'Template',
+                'allowBlank' => true
+            ));
         }
     }
 
@@ -532,17 +537,19 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
 
         if ($args['element']['component']['template'] == "boxalino_landingpage") {
             $this->disableHttpCache();
-            $data = $this->onLandingPage();
             $data['view'] = $this->onLandingPage();
             return $data;
         }
 
         if ($args['element']['component']['template'] == "boxalino_product_finder") {
-            $this->disableHttpCache();
+
+            Shopware()->PluginLogger()->info("bootstrap HTTP_REFERER: " . json_encode($_SERVER['HTTP_REFERER']));
             $data['category_id'] = $this->getEmotionCategoryId($args['element']['emotionId']);
             $locale = substr(Shopware()->Shop()->getLocale()->toString(), 0, 2);
             $data['locale'] = $locale;
             $data = array_merge($data, $this->onCPOFinder($data));
+
+            Shopware()->PluginLogger()->info("=============================================================");
             return $data;
         }
 
@@ -694,7 +701,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
         try {
             return $this->searchInterceptor->CPOFinder($data);
         } catch (\Exception $e) {
-                  $this->logException($e, __FUNCTION__);
+            $this->logException($e, __FUNCTION__);
         }
     }
 

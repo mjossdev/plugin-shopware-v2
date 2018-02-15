@@ -223,15 +223,23 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
      * @return array
      */
     public function voucher(Enlight_Event_EventArgs $arguments) {
-
         $data = $arguments->getReturn();
         $choiceId = $data['choiceId'];
         $data = array_merge($data, $this->Helper()->addVoucher($choiceId));
-        $data['show'] = true;//$this->checkVoucher($data['id'], $data['code'], $data['modus']);
-//        $data = array_merge($data, $this->getVoucherData($data['id']));
-        if($_REQUEST['bx_test'] == 'test_1'){
-            echo "<pre>";
-            var_dump($data);exit;
+        $data = $this->prepareVoucherTemplate($data);
+        return $data;
+    }
+
+    private function prepareVoucherTemplate($data){
+        $template = $data['template'];
+        if(!is_null($template) && $template != '') {
+            $template = html_entity_decode($template);
+            $properties = array_keys($data);
+
+            foreach ($properties as $property) {
+                $template = str_replace("%%{$property}%%", $data[$property], $template);
+            }
+            $data['template'] = $template;
         }
         return $data;
     }
