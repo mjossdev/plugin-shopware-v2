@@ -396,7 +396,7 @@
                         var ignoreFacet = isFacetIgnored(fieldName);
                         var urlParameter = '',
                             paramName = '';
-                        if(ignoreFacet || getFacetExtraInfo(fieldName, 'isSoftFacet')) {
+                        if(ignoreFacet || getFacetExtraInfo(fieldName, 'isSoftFacet') == "true") {
                             currentSelects[fieldName].forEach(function(facet_value) {
                                 paramName =  contextParameterPrefix + fieldName;
                                 if(boostParameter) {
