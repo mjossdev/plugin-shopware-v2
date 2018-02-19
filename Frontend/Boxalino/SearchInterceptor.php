@@ -311,19 +311,13 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             $highlight_count = 0;
             $c=0;
             foreach($articles as $index => $article) {
-                //TODO Add highlighted from hit to article
                 $id = $article['articleID'];
-                $score =  $this->Helper()->getHitVariable($id, 'finalScore');
-                $highlighted =  $highlightedValues[$c++] == 'true'; // $this->Helper()->getHitVariable($id, 'highlighted');
-                /*if($type == 'listing' || $type== 'present'){
-                    if($index < 5){
-                        $highlighted = true;
-                    }
-                }*/
-                $article['bx_score'] = floatval((100 - $index) / 100);
-                $article['bx_score'] = $type == 'listing' ? $article['bx_score'] - 0.01 : $article['bx_score'];
-                $article['bx_score'] = $type == 'question' ? $article['bx_score'] - 0.31 : $article['bx_score'];
-                $article['bx_score'] = $index >= 5 ? $article['bx_score'] - 0.21 : $article['bx_score'];
+                $article['score'] = $scores[$c];
+                $highlighted =  $highlightedValues[$c++] == 'true';
+                // $article['bx_score'] = floatval((100 - $index) / 100);
+                // $article['bx_score'] = $type == 'listing' ? $article['bx_score'] - 0.01 : $article['bx_score'];
+                // $article['bx_score'] = $type == 'question' ? $article['bx_score'] - 0.31 : $article['bx_score'];
+                // $article['bx_score'] = $index >= 5 ? $article['bx_score'] - 0.21 : $article['bx_score'];
                 $article['bx_highlighted'] = $highlighted;
                 if($highlighted){
                     if($index == 0 && $type == 'present'){

@@ -9,6 +9,7 @@
     {$smarty.block.parent}
 {/block}
 {block name='frontend_listing_box_article_price_info'}
+<h2>score: {$sArticle.score}</h2>
     {$smarty.block.parent}
     {if $withAddToBasket == 'true'}
 
