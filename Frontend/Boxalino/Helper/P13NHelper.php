@@ -259,15 +259,23 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         $data = [];
         $lang = $this->getShortLocale();
         $bxRequest = new \com\boxalino\bxclient\v1\BxRequest($lang, $choiceId, 1);
+        $bxRequest->setReturnFields(['products_voucher_id']);
         self::$bxClient->addRequest($bxRequest);
         $customerID = $this->getCustomerID();
         self::$bxClient->addRequestContextParameter('_system_customerid', $customerID);
         $bxResponse = $this->getResponse();
-        $voucher_id = $bxResponse->getExtraInfo('voucher_id');
-        if(strpos($data['voucher_id'], 'voucher_') === 0) {
-            $voucher_id = str_replace('voucher_', '', $voucher_id);
+
+        $voucherIdFromHits = $bxResponse->getHitFieldValues(['products_voucher_id'], 'voucher');
+
+        foreach ($voucherIdFromHits as $voucherIdFromHit) {
+
+          $voucherId = $voucherIdFromHit['products_voucher_id'][0];
+
+          if(strpos($voucherId, 'voucher_') === 0) {
+              $voucherId = str_replace('voucher_', '', $voucherId);
+          }
         }
-        $data = array_merge($data, $this->getVoucherData($voucher_id));
+        $data = array_merge($data, $this->getVoucherData($voucherId));
         return $data;
     }
 

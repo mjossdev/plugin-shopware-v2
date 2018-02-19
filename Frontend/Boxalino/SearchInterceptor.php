@@ -227,15 +227,17 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         $choiceId = $data['choiceId'];
         $data = array_merge($data, $this->Helper()->addVoucher($choiceId));
         $data = $this->prepareVoucherTemplate($data);
+        $data['show'] = false;
+        if (!is_null($data)) {
+          $data['show'] = true;
+        }
         return $data;
     }
 
     private function prepareVoucherTemplate($data){
-        $template = $data['template'];
-        if(!is_null($template) && $template != '') {
-            $template = html_entity_decode($template);
+        if(!is_null($data['template']) && $data['template'] != '') {
+            $template = html_entity_decode($data['template']);
             $properties = array_keys($data);
-
             foreach ($properties as $property) {
                 $template = str_replace("%%{$property}%%", $data[$property], $template);
             }
