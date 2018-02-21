@@ -313,12 +313,8 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             foreach($articles as $index => $article) {
                 $id = $article['articleID'];
                 $article['score'] = $scores[$c];
+                $article['comment'] = "Sample comment nr {$id}" ; //$comment[$c];
                 $highlighted =  $highlightedValues[$c++] == 'true';
-                // $article['bx_score'] = floatval((100 - $index) / 100);
-                // $article['bx_score'] = $type == 'listing' ? $article['bx_score'] - 0.01 : $article['bx_score'];
-                // $article['bx_score'] = $type == 'question' ? $article['bx_score'] - 0.31 : $article['bx_score'];
-                // $article['bx_score'] = $index >= 5 ? $article['bx_score'] - 0.21 : $article['bx_score'];
-                $article['bx_highlighted'] = $highlighted;
                 if($highlighted){
                     if($index == 0 && $type == 'present'){
                         $top_match[] = $article;
@@ -343,6 +339,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             $data['slider_data'] = ['no_border' => true, 'article_slider_arrows' => 1, 'article_slider_type' => 'selected_article',
                 'article_slider_max_number' => count($highlighted_articles), 'values' => $highlighted_articles, 'article_slider_title' => 'Zu Ihnen passende Produkte'];
           $data['shop'] = Shopware()->Shop(); //$this->get('shopware_storefront.context_service')->getShopContext();
+          $data['maxScore'] = $maxScore;
 
         }
         return $data;
