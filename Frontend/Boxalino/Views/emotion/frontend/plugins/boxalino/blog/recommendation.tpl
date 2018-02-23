@@ -52,7 +52,7 @@
                     {/if}
                 </span>
             </span>
-                    <div class="blog-box title"  align="center">
+                    <div class="blog--box-title">
                         <h3>{$sArticle.title}</h3>
                     </div>
                     <div class="blog-box content">

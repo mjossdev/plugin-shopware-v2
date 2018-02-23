@@ -96,7 +96,7 @@
          {* {if $Data.highlighted_articles} *}
                 <div class="cpo-finder-listing bx-listing-emotion" style="display:none;">
                     {foreach $Data.sArticles as $sArticle}
-                         {include file="frontend/listing/box_article.tpl" productBoxLayout='image'}
+                         {include file="frontend/listing/box_article.tpl" productBoxLayout='image' isFinder='true'}
                     {/foreach}
                 </div>
         {* {/if} *}
@@ -538,6 +538,7 @@
                 if(pair.includes(classname)){
 
                   newUrl = url.replace(pair, '');
+                  newUrl = url.replace('&&', '&');
 
                   window.location = newUrl;
 
