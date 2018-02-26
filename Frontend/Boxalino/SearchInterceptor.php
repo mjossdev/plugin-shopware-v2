@@ -274,7 +274,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         $names = array();
         $db = Shopware()->Db();
         $select = $db->select()->from(array('s' => 's_articles_supplier'), array('name'))
-            ->where('s.id IN(?)', implode(',', $ids));
+            ->where('s.id IN(' . implode(',', $ids) . ')');
         $stmt = $db->query($select);
         if($stmt->rowCount()) {
             while($row = $stmt->fetch()){
