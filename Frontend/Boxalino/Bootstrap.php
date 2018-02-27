@@ -31,7 +31,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
     }
 
     public function getVersion() {
-        return '1.6.4';
+        return '1.6.5';
     }
 
     public function getInfo() {
@@ -199,8 +199,6 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
     private function registerEvents() {
 
         // search results and autocompletion results
-        $this->subscribeEvent('Enlight_Controller_Action_PostDispatchSecure_Frontend_Listing', 'onListing');
-        $this->subscribeEvent('Enlight_Controller_Action_PostDispatchSecure_Widgets_Listing', 'onAjaxListing');
         $this->subscribeEvent('Enlight_Controller_Action_Frontend_Search_DefaultSearch', 'onSearch', 10);
         $this->subscribeEvent('Enlight_Controller_Action_Frontend_AjaxSearch_Index', 'onAjaxSearch');
         $this->subscribeEvent('Enlight_Controller_Action_PostDispatchSecure_Widgets_Recommendation', 'onRecommendation');
@@ -230,6 +228,9 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
         //sMarketing recommendation overwrite
         $this->subscribeEvent('sMarketing::sGetAlsoBoughtArticles::replace', 'alsoBoughtRec');
         $this->subscribeEvent('sMarketing::sGetSimilaryShownArticles::replace', 'similarRec');
+        $this->subscribeEvent('Shopware_Controllers_Frontend_Listing::indexAction::replace', 'onListing');
+        $this->subscribeEvent('Shopware_Controllers_Widgets_Listing::listingCountAction::replace', 'onAjaxListing');
+        $this->subscribeEvent('Shopware_Controllers_Frontend_Listing::getEmotionConfiguration::replace', 'onEmotionConfiguration');
     }
 
     public function alsoBoughtRec(Enlight_Hook_HookArgs $arguments){
@@ -536,19 +537,74 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
         }
     }
 
-    public function onListing(Enlight_Event_EventArgs $arguments){
+    protected $listingHook = true;
+    public function onListing(Enlight_Hook_HookArgs $arguments){
+        if(!Shopware()->Config()->get('boxalino_active') || !Shopware()->Config()->get('boxalino_navigation_enabled')) {
+            $this->listingHook = false;
+        }
+        $arguments->getSubject()->executeParent(
+            $arguments->getMethod(),
+            $arguments->getArgs()
+        );
         try {
-            return $this->searchInterceptor->listing($arguments);
+            $listingReturn = null;
+            if($this->showListing && $this->listingHook) {
+                $listingReturn = $this->searchInterceptor->listing($arguments);
+            }
+            if(is_null($listingReturn) && $this->listingHook) {
+                $this->listingHook = false;
+                $arguments->setReturn(
+                    $arguments->getSubject()->executeParent(
+                        $arguments->getMethod(),
+                        $arguments->getArgs()
+                    ));
+            } else {
+                $arguments->setReturn($listingReturn);
+            }
         } catch (\Exception $e) {
             $this->logException($e, __FUNCTION__, $arguments->getSubject()->Request()->getRequestUri());
+            $this->listingHook = false;
+            $arguments->setReturn(
+                $arguments->getSubject()->executeParent(
+                    $arguments->getMethod(),
+                    $arguments->getArgs()
+                ));
+        }
+    }
+    protected $showListing = true;
+    public function onEmotionConfiguration(Enlight_Hook_HookArgs $arguments) {
+        if($arguments->getArgs()[1] === false) {
+            $return = $arguments->getSubject()->executeParent(
+                $arguments->getMethod(),
+                $arguments->getArgs()
+            );
+            if($this->listingHook) {
+                $this->showListing = $return['showListing'];
+                $return['showListing'] = false;
+            }
+            $arguments->setReturn($return);
         }
     }
 
-    public function onAjaxListing(Enlight_Event_EventArgs $arguments){
+    public function onAjaxListing(Enlight_Hook_HookArgs $arguments){
         try {
-            return $this->searchInterceptor->listingAjax($arguments);
+            $ajaxListingReturn = $this->searchInterceptor->listingAjax($arguments);
+            if(is_null($ajaxListingReturn)) {
+                $arguments->setReturn(
+                    $arguments->getSubject()->executeParent(
+                        $arguments->getMethod(),
+                        $arguments->getArgs()
+                    ));
+            } else {
+                $arguments->setReturn($ajaxListingReturn);
+            }
         } catch (\Exception $e) {
             $this->logException($e, __FUNCTION__, $arguments->getSubject()->Request()->getRequestUri());
+            $arguments->setReturn(
+                $arguments->getSubject()->executeParent(
+                    $arguments->getMethod(),
+                    $arguments->getArgs()
+                ));
         }
     }
 

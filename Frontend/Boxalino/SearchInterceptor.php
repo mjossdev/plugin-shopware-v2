@@ -133,7 +133,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                 return null;
             }
         } else {
-            if (($streamId != null && !$this->Config()->get('boxalino_navigation_product_stream'))) { //|| !isset($viewData['sArticles']) || count($viewData['sArticles']) == 0) {
+            if (($streamId != null && !$this->Config()->get('boxalino_navigation_product_stream'))) {
                 return null;
             }
         }
@@ -228,17 +228,16 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             $this->Controller()->Front()->Plugins()->ViewRenderer()->setNoRender();
             $this->Controller()->Response()->setBody(json_encode($body));
             $this->Controller()->Response()->setHeader('Content-type', 'application/json', true);
-            return;
         } else {
             if ($listingCount) {
                 $this->Controller()->Response()->setBody('{"totalCount":' . $this->Helper()->getTotalHitCount() . '}');
-                return false;
+                return true;
             }
             $articles = $this->Helper()->getLocalArticles($this->Helper()->getHitFieldValues('products_ordernumber'));
             $viewData['sArticles'] = $articles;
             $this->View()->assign($viewData);
-            return false;
         }
+        return true;
     }
 
     private function getStreamById($productStreamId) {
@@ -274,7 +273,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         $names = array();
         $db = Shopware()->Db();
         $select = $db->select()->from(array('s' => 's_articles_supplier'), array('name'))
-            ->where('s.id IN(?)', implode(',', $ids));
+            ->where('s.id IN(' . implode(',', $ids) . ')');
         $stmt = $db->query($select);
         if($stmt->rowCount()) {
             while($row = $stmt->fetch()){
@@ -358,14 +357,8 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         $viewData = $this->View()->getAssign();
         $catId = $this->Request()->getParam('sCategory');
         $streamId = $this->findStreamIdByCategoryId($catId);
-        if(version_compare(Shopware::VERSION, '5.3.0', '>=')) {
-            if(($streamId != null && !$this->Config()->get('boxalino_navigation_product_stream'))) {
-                return null;
-            }
-        } else {
-            if (($streamId != null && !$this->Config()->get('boxalino_navigation_product_stream')) || !isset($viewData['sArticles']) || count($viewData['sArticles']) == 0) {
-                return null;
-            }
+        if (($streamId != null && !$this->Config()->get('boxalino_navigation_product_stream'))) {
+            return null;
         }
 
         if($streamId) {
@@ -451,7 +444,8 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             'sNumberArticles' => $totalHitCount,
             'sArticles' => $articles,
             'facetOptions' => $this->facetOptions,
-            'sSort' => $this->Request()->getParam('sSort')
+            'sSort' => $this->Request()->getParam('sSort'),
+            'showListing' => true
         );
         $templateProperties = array_merge($viewData, $templateProperties);
         $this->View()->assign($templateProperties);
@@ -460,7 +454,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             $this->Helper()->addNotification("Search after response took in total: " . (microtime(true) - $afterStart) * 1000 . "ms.");
             $this->Helper()->addNotification("Navigation time took in total: " . (microtime(true) - $start) * 1000 . "ms.");
         }
-        return false;
+        return true;
     }
 
     /**
