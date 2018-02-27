@@ -183,6 +183,16 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxIndexConfig{
 
     /**
      * @param $account
+     * @return bool
+     * @throws Exception
+     */
+    public function isVoucherExportEnabled($account) {
+        $config = $this->getAccountConfig($account);
+        return $config['export_voucher_enable'] == 1;
+    }
+
+    /**
+     * @param $account
      * @return string
      * @throws Exception
      */

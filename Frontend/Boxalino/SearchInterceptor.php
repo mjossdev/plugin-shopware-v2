@@ -48,6 +48,304 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
     }
 
     /**
+     * @param Enlight_Controller_Request_Request $request
+     * @return Enlight_Controller_Request_Request
+     */
+    public function setRequestWithRefererParams($request) {
+        $address = $_SERVER['HTTP_REFERER'];
+        $params = explode('&', substr ($address,strpos($address, '?')+1, strlen($address)));
+        foreach ($params as $index => $param){
+            $keyValue = explode("=", $param);
+            $params[$keyValue[0]] = $keyValue[1];
+            unset($params[$index]);
+        }
+        foreach ($params as $key => $value) {
+            $request->setParam($key, $value);
+        }
+        return $request;
+    }
+
+    /**
+     * @param Enlight_View_Default $view
+     * @return Enlight_View_Default
+     */
+    private function prepareViewConfig($view) {
+        $inheritance = $this->container->get('theme_inheritance');
+
+        /** @var \Shopware\Models\Shop\Shop $shop */
+        $shop = $this->container->get('Shop');
+
+        $config = $inheritance->buildConfig($shop->getTemplate(), $shop, false);
+
+        $this->get('template')->addPluginsDir(
+            $inheritance->getSmartyDirectories(
+                $shop->getTemplate()
+            )
+        );
+        $view->assign('theme', $config);
+        return $view;
+    }
+
+    public function landingPage() {
+        if (!$this->Config()->get('boxalino_active')) {
+            return null;
+        }
+        $view = new Enlight_View_Default(Shopware()->Container()->get('Template'));
+
+        $view = $this->prepareViewConfig($view);
+        $context  = $this->get('shopware_storefront.context_service')->getProductContext();
+        $orderParam = $this->get('query_alias_mapper')->getShortAlias('sSort');
+
+        $request = Shopware()->Front()->Request();
+        $request = $this->setRequestWithRefererParams($request);
+
+        $defaultSort = null;
+        if(is_null($request->getParam($orderParam))) {
+            $request->setParam('sSort', 7);
+        }
+        if(is_null($request->getParam('sSort')) && is_null($request->getParam($orderParam))) {
+            if($this->Config()->get('boxalino_navigation_sorting')) {
+                $request->setParam('sSort', 7);
+            } else {
+                $default = $this->get('config')->get('defaultListingSorting');
+                $request->setParam('sSort', $default);
+            }
+        }
+
+        $criteria = $this->get('shopware_search.store_front_criteria_factory')->createSearchCriteria($request, $context);
+
+        $criteria->removeCondition("term");
+        $criteria->removeBaseCondition("search");
+
+
+        $facets = $criteria->getFacets();
+        $options = $this->getFacetConfig($facets, $request);
+
+        $sort =  $this->getSortOrder($criteria, null, true);
+        $hitCount = $criteria->getLimit();
+        $pageOffset = $criteria->getOffset();
+        $pageCounts = array_values(explode('|', $this->get('config')->get('fuzzySearchSelectPerPage')));
+
+        $this->Helper()->setRequest($request);
+        $this->Helper()->addSearch('', $pageOffset, $hitCount, 'product', $sort, $options, array(), false, 'landingpage');
+
+        $articles = array();
+        if (!$this->Helper()->areThereSubPhrases() && $totalHitCount = $this->Helper()->getTotalHitCount()) {
+            $ids = $this->Helper()->getHitFieldValues('products_ordernumber');
+            $articles = $this->Helper()->getLocalArticles($ids);
+            $facets = $this->updateFacetsWithResult($facets, $context);
+        }
+//        $view->addTemplateDir($this->Bootstrap()->Path() . 'Views/emotion/');
+        $view->loadTemplate('frontend/search/fuzzy.tpl');
+        $view->addTemplateDir($this->Bootstrap()->Path() . 'Views/emotion/');
+        $view->extendsTemplate('frontend/plugins/boxalino/listing/actions/action-pagination.tpl');
+        $view->extendsTemplate('frontend/plugins/boxalino/search/fuzzy.tpl');
+        if(version_compare(Shopware::VERSION, '5.3.0', '<')) {
+            $view->extendsTemplate('frontend/plugins/boxalino/listing/filter/facet-value-list.tpl');
+            $view->extendsTemplate('frontend/plugins/boxalino/listing/index.tpl');
+        } else {
+            $view->extendsTemplate('frontend/plugins/boxalino/listing/filter/_includes/filter-multi-selection.tpl');
+            $view->extendsTemplate('frontend/plugins/boxalino/listing/index_5_3.tpl');
+        }
+        $service = Shopware()->Container()->get('shopware_storefront.custom_sorting_service');
+        $sortingIds = $this->container->get('config')->get('searchSortings');
+        $sortingIds = array_filter(explode('|', $sortingIds));
+        $sortings = $service->getList($sortingIds, $context);
+
+        $templateProperties = array(
+            'bxFacets' => $this->Helper()->getFacets(),
+            'term' => '',
+            'criteria' => $criteria,
+            'sortings' => $sortings,
+            'facets' => $facets,
+            'sPage' => $request->getParam('sPage', 1),
+            'sSort' => $request->getParam('sSort', 7),
+            'sTemplate' => $request->getParam('sTemplate'),
+            'sPerPage' => $pageCounts,
+            'sRequests' => $request->getParams(),
+            'shortParameters' => $this->get('query_alias_mapper')->getQueryAliases(),
+            'pageSizes' => $pageCounts,
+            'ajaxCountUrlParams' => version_compare(Shopware::VERSION, '5.3.0', '<') ?
+                ['sCategory' => $context->getShop()->getCategory()->getId()] : [],
+            'sSearchResults' => array(
+                'sArticles' => $articles,
+                'sArticlesCount' => $totalHitCount
+            ),
+            'productBoxLayout' => $this->get('config')->get('searchProductBoxLayout'),
+            'bxActiveTab' => $request->getParam('bxActiveTab', 'article'),
+            'facetOptions' => $this->facetOptions
+        );
+        $view->assign($templateProperties);
+        return $view->render();
+    }
+
+    /**
+     * @param $id
+     * @param $code
+     * @param $modus
+     * @return bool
+     */
+    private function checkVoucher($id, $code, $modus){
+
+        $show = false;
+        $db = Shopware()->Db();
+        $fields = ['*'];
+        if($modus != 1) {
+            $fields["used_vouchers"] = new Zend_Db_Expr("(SELECT count(*) FROM s_order_details as d WHERE articleordernumber = v.ordercode AND d.ordernumber!='0')");
+        }
+        $sql = $db->select()->from(array('v' => 's_emarketing_vouchers'), $fields)
+            ->where('v.id = ?', $id)
+            ->where('v.modus = ?', $modus);
+
+        if($modus == 1) {
+            $sql->joinLeft(array('v_c' => 's_emarketing_voucher_codes'),
+                'v_c.voucherID = v.id AND v_c.code = ' . $db->quote($code));
+        }
+
+        $stmt = $db->query($sql);
+        if($stmt->rowCount()) {
+            $row = $stmt->fetch();
+            if($modus != 1) {
+                if($row['numberofunits'] > $row['used_vouchers']){
+                    $show = true;
+                }
+            } else {
+                if($row['cashed'] == 0){
+                    $show = true;
+                }
+            }
+        }
+        return $show;
+    }
+
+    /**
+     * @param Enlight_Event_EventArgs $arguments
+     * @return array
+     */
+    public function voucher(Enlight_Event_EventArgs $arguments) {
+        $data = $arguments->getReturn();
+        $choiceId = $data['choiceId'];
+        $data = array_merge($data, $this->Helper()->addVoucher($choiceId));
+        $data = $this->prepareVoucherTemplate($data);
+        $data['show'] = false;
+        if (!is_null($data)) {
+          $data['show'] = true;
+        }
+        return $data;
+    }
+
+    private function prepareVoucherTemplate($data){
+        if(!is_null($data['template']) && $data['template'] != '') {
+            $template = html_entity_decode($data['template']);
+            $properties = array_keys($data);
+            foreach ($properties as $property) {
+                $template = str_replace("%%{$property}%%", $data[$property], $template);
+            }
+            $data['template'] = $template;
+        }
+        return $data;
+    }
+
+    public function checkParams(){
+        $address = $_SERVER['HTTP_REFERER'];
+        $params = explode('&', substr ($address,strpos($address, '?')+1, strlen($address)));
+        foreach ($params as $index => $param){
+            $keyValue = explode("=", $param);
+            $params[$keyValue[0]] = $keyValue[1];
+            unset($params[$index]);
+        }
+        $count = 0;
+        foreach ($params as $key => $value) {
+            if(strpos($key, 'bxrpw_') === 0) {
+                $count++;
+            }
+        }
+        return ($count == 0 ? 'question' : ($count == 1 ? 'listing' : 'present'));
+    }
+
+    public function getFinderLevel(){
+        $ids = $this->Helper()->getEntitiesIds();
+        $level = 10;
+        $h = 0;
+        foreach ($ids as $id) {
+            if($this->Helper()->getHitVariable($id, 'highlighted')){
+                if($h++ >= 2){
+                    $level = 5;
+                    break;
+                }
+            }
+            if($h == 0) {
+                $level = 1;
+                break;
+            } else {
+                break;
+            }
+        }
+        return $level;
+    }
+
+    public function CPOFinder($data) {
+        if (!$this->Config()->get('boxalino_active')) {
+            return null;
+        }
+
+        $return = $data;
+        $filter['category_id'] = $data['category_id'];
+        $choice_id = $return['choice_id_productfinder'] == '' ? 'productfinder' : $return['choice_id_productfinder'];
+        $hitCount = $return['cpo_finder_page_size'];
+        $this->Helper()->addFinder($hitCount, $choice_id, $filter, 'product', $return['widget_type']);
+        $data['json_facets'] = $this->convertFacetsToJson();
+        if($return['widget_type'] == '2'){
+            $articles = $this->Helper()->getLocalArticles($this->Helper()->getHitFieldValues('products_ordernumber'));
+            $scores = $this->Helper()->getHitFieldValues('finalScore');
+            $highlightedValues = $this->Helper()->getHitFieldValues('highlighted');
+            $maxScore = 0;
+            foreach($scores as $score) {
+              if($score > $maxScore) {
+                $maxScore = $score;
+              }
+            }
+            $type = $this->checkParams();
+            $highlighted_articles =  null;
+            $top_match = null;
+            $highlight_count = 0;
+            $c=0;
+            foreach($articles as $index => $article) {
+                $id = $article['articleID'];
+                $article['score'] = $scores[$c];
+                $article['comment'] = "Sample comment nr {$id}" ; //$comment[$c];
+                $highlighted =  $highlightedValues[$c++] == 'true';
+                if($highlighted){
+                    if($index == 0 && $type == 'present'){
+                        $top_match[] = $article;
+                    }else {
+                        $highlighted_articles[] = $article;
+                    }
+                    $highlight_count++;
+                    unset($articles[$index]);
+                } else {
+                    $articles[$index] = $article;
+                }
+            }
+            $data['sArticles'] = $articles;
+            $data['highlighted_articles'] = $highlighted_articles;
+            $data['highlighted'] = 'false';
+            if(sizeof($highlighted_articles)>0) {
+              $data['highlighted'] = 'true';
+            }
+            $data['top_match'] = $top_match;
+            $data['max_score'] = $maxScore;
+            $data['finderMode'] = $type;// $finderMode = ($highlight_count == 0 ? 'question' : ($highlight_count == 1 ? 'present' : 'listing'));
+            $data['slider_data'] = ['no_border' => true, 'article_slider_arrows' => 1, 'article_slider_type' => 'selected_article',
+                'article_slider_max_number' => count($highlighted_articles), 'values' => $highlighted_articles, 'article_slider_title' => 'Zu Ihnen passende Produkte'];
+          $data['shop'] = Shopware()->Shop(); //$this->get('shopware_storefront.context_service')->getShopContext();
+          $data['maxScore'] = $maxScore;
+
+        }
+        return $data;
+    }
+
+    /**
      * @param Enlight_Event_EventArgs $arguments
      * @return array|null
      */
@@ -1001,11 +1299,12 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
      * @param $facets
      * @return array
      */
-    protected function getFacetConfig($facets) {
+    protected function getFacetConfig($facets, $landingpageRequest = null) {
         $snippetManager = Shopware()->Snippets()->getNamespace('frontend/listing/facet_labels');
         $options = [];
         $mapper = $this->get('query_alias_mapper');
-        $params = $this->Request()->getParams();
+        $request = is_null($landingpageRequest) ? $this->Request() : $landingpageRequest;
+        $params = $request->getParams();
         foreach ($facets as $fieldName => $facet) {
             switch ($fieldName) {
                 case 'price':
@@ -1021,7 +1320,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                     ];
                     break;
                 case 'category':
-                    if ($this->Request()->getControllerName() == 'search' || $this->Request()->getActionName() == 'listingCount') {
+                    if ($request->getControllerName() == 'search' || $request->getActionName() == 'listingCount' || !is_null($landingpageRequest)) {
                         $options['category'] = [
                             'label' => $snippetManager->get('category', 'Kategorie')
                         ];
@@ -1845,4 +2144,65 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         return $articles;
     }
 
+    private function convertFacetsToJson(){
+        $json = [];
+        $bxFacets =  $this->Helper()->getFacets();
+        $fieldNames = $bxFacets->getCPOFinderFacets();
+        if(!empty($fieldNames)) {
+            foreach ($fieldNames as $fieldName) {
+                if($fieldName == ''){
+                    continue;
+                }
+                $facet_info = $bxFacets->getAllFacetExtraInfo($fieldName);
+                $extraInfo = [];
+                $facetValues = $bxFacets->getFacetValues($fieldName);
+                $json['facets'][$fieldName]['facetValues'] = $facetValues;
+                foreach ($facetValues as $value) {
+                    if($bxFacets->isFacetValueHidden($fieldName, $value)) {
+                        $json['facets'][$fieldName]['hidden_values'][] = $value;
+                    }
+                }
+                $json['facets'][$fieldName]['label'] = $bxFacets->getFacetLabel($fieldName);
+
+                foreach ($facet_info as $info_key => $info) {
+                    if($info_key == 'isSoftFacet' && $info == null){
+                        $facetMapping = [];
+                        $attributeName = substr($fieldName, 9);
+                        $json['facets'][$fieldNames]['parameterName'] = $attributeName;
+                        $attributeModel = Mage::getModel('eav/config')->getAttribute('catalog_product', $attributeName)->getSource();
+                        $options = $attributeModel->getAllOptions();
+                        $responseValues =  Mage::helper('boxalino_intelligence')->useValuesAsKeys($json['facets'][$fieldName]['facetValues']);
+                        foreach ($options as $option){
+                            $label = is_array($option) ? $option['label'] : $option;
+                            if(isset($responseValues[$label])){
+                                $facetMapping[$label] = $option['value'];
+                            }
+                        }
+                        $json['facets'][$fieldName]['facetMapping'] = $facetMapping;
+                    }
+                    if($info_key == 'jsonDependencies' || $info_key == 'label' || $info_key == 'iconMap' || $info_key == 'facetValueExtraInfo') {
+                        $info = json_decode($info);
+                        if($info_key == 'jsonDependencies') {
+                            if(!is_null($info)) {
+                                if(isset($info[0]) && isset($info[0]->values[0])) {
+                                    $check = $info[0]->values[0];
+                                    if(strpos($check, ',') !== false) {
+                                        $info[0]->values = explode(',', $check);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    $extraInfo[$info_key] = $info;
+                }
+                $json['facets'][$fieldName]['facetExtraInfo'] = $extraInfo;
+            }
+            $json['parametersPrefix'] = 'bx_';
+            $json['contextParameterPrefix'] = $this->Helper()->getPrefixContextParameter();
+            $json['level'] = $this->getFinderLevel();
+            $json['separator'] = '|';
+
+        }
+        return json_encode($json);
+    }
 }

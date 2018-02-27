@@ -226,6 +226,13 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
             $this->exportProductStreams($files);
             $this->log->info("exportProductStreams after memory: " . memory_get_usage(true));
             $this->log->info("BxIndexLog: Finished products - product streams.");
+            if ($this->_config->isVoucherExportEnabled($account)) {
+                $this->log->info("BxIndexLog: Preparing products - voucher.");
+                $this->log->info("BxIndexLog: Preparing vouchers.");
+                $this->exportVouchers($account, $files);
+                $this->log->info("exportVouchers after memory: " . memory_get_usage(true));
+                $this->log->info("BxIndexLog: Finished products - voucher.");
+            }
         }
         return $export_products;
     }
@@ -1198,7 +1205,10 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
         $mainSourceKey = $this->bxData->addMainCSVItemFile($files->getPath('products.csv'), 'id');
         $this->bxData->addSourceStringField($mainSourceKey, 'bx_purchasable', 'purchasable');
         $this->bxData->addSourceStringField($mainSourceKey, 'bx_type', 'id');
-        $this->bxData->addFieldParameter($mainSourceKey, 'bx_type', 'pc_fields', 'CASE WHEN group_id IS NULL THEN "blog" ELSE "product" END AS final_value');
+        $pc_field = $this->_config->isVoucherExportEnabled($account) ?
+            'CASE WHEN group_id IS NULL THEN CASE WHEN %%LEFTJOINfield_products_voucher_id%% IS NULL THEN "blog" ELSE "voucher" END ELSE "product" END AS final_value' :
+            'CASE WHEN group_id IS NULL THEN "blog" ELSE "product" END AS final_value';
+        $this->bxData->addFieldParameter($mainSourceKey, 'bx_type', 'pc_fields', $pc_field);
         $this->bxData->addFieldParameter($mainSourceKey, 'bx_type', 'multiValued', 'false');
 
         foreach ($main_properties as $property) {
@@ -1523,4 +1533,73 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
         $this->db->query('INSERT INTO `exports` values(NOW())');
     }
 
+    /**
+     * @param $account
+     * @param $files
+     */
+    private function exportVouchers($account, $files){
+
+        $db = Shopware()->Db();
+        $languages = $this->_config->getAccountLanguages($account);
+        $header = true;
+        $data = array();
+        $doneCases = array();
+        $headers = array();
+        foreach ($languages as $shop_id => $language) {
+            $sql = $db->select()->from(array('v' => 's_emarketing_vouchers'),
+                array('v.*',
+                    'used_codes' => new Zend_Db_Expr("IF( modus = '0',
+                (SELECT count(*) FROM s_order_details as d WHERE articleordernumber =v.ordercode AND d.ordernumber!='0'),
+                (SELECT count(*) FROM s_emarketing_voucher_codes WHERE voucherID =v.id AND cashed=1))")))
+                ->where('v.subshopID IS NULL OR v.subshopID = ?', $shop_id);
+            $stmt = $db->query($sql);
+            if($stmt->rowCount()) {
+                while($row = $stmt->fetch()){
+                    if($header) {
+                        $headers = array_keys($row);
+                        $data[] = $headers;
+                        $header = false;
+                    }
+                    if(isset($doneCases[$row['id']])) continue;
+                    $doneCases[$row['id']] = true;
+                    $row['id'] = 'voucher_' . $row['id'];
+                    $data[] = $row;
+                }
+            }
+            if(sizeof($data)) {
+                $files->savePartToCsv('voucher.csv', $data);
+            }
+        }
+
+        if($header) {
+            $data = ['id','description','vouchercode','numberofunits','value','minimumcharge','shippingfree',
+                'bindtosupplier','valid_from','valid_to','ordercode','modus','percental','numorder','customergroup',
+                'restrictarticles','strict','subshopID','taxconfig','customer_stream_ids','used_codes'];
+            $files->savePartToCsv('voucher.csv', $data);
+        }
+        $attributeSourceKey = $this->bxData->addCSVItemFile($files->getPath('voucher.csv'), 'id');
+        $this->bxData->addSourceParameter($attributeSourceKey, 'additional_item_source', 'true');
+        foreach ($headers as $header){
+            $this->bxData->addSourceStringField($attributeSourceKey, 'voucher_'.$header, $header);
+        }
+        $data = array();
+        $header = true;
+        $sql = $db->select()->from(array('v_c' => 's_emarketing_voucher_codes'));
+        $stmt = $db->query($sql);
+        if($stmt->rowCount()) {
+            while($row = $stmt->fetch()){
+                if(isset($doneCases[$row['voucherID']])){
+                    if($header){
+                        $data[] = array_keys($row);
+                        $header = false;
+                    }
+                    $row['voucherID'] = 'voucher_' . $row['voucherID'];
+                    $data[] = $row;
+                }
+            }
+        }
+        $doneCases = array();
+        $files->savePartToCsv('voucher_codes.csv', $data);
+        $this->bxData->addCSVItemFile($files->getPath('voucher_codes.csv'), 'id');
+    }
 }
