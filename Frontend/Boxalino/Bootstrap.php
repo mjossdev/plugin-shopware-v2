@@ -31,7 +31,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
     }
 
     public function getVersion() {
-        return '1.6.5';
+        return '1.6.6';
     }
 
     public function getInfo() {
@@ -174,10 +174,40 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
         return $this->runBoxalinoExportCronJob(true);
     }
 
+    private function updateCronExport() {
+        Shopware()->Db()->query('TRUNCATE `cron_exports`');
+        Shopware()->Db()->query('INSERT INTO `cron_exports` values(NOW())');
+    }
+
     private function runBoxalinoExportCronJob($delta = false) {
+
+        if($delta && !$this->canRunDelta()) {
+            Shopware()->PluginLogger()->info("BxLog: Delta Export Cron is not allowed to run yet.");
+            return true;
+        }
         $tmpPath = Shopware()->DocPath('media_temp_boxalinoexport');
         $exporter = new Shopware_Plugins_Frontend_Boxalino_DataExporter($tmpPath, $delta);
         $exporter->run();
+        if(!$delta) {
+            $this->updateCronExport();
+        }
+        return true;
+    }
+
+    private function canRunDelta() {
+        $db = Shopware()->Db();
+        $sql = $db->select()
+            ->from('cron_exports', array('export_date'))
+            ->limit(1);
+        $stmt = $db->query($sql);
+        if ($stmt->rowCount()) {
+            $row = $stmt->fetch();
+            $dbdate = strtotime($row['export_date']);
+            $wait_time = Shopware()->Config()->get('boxalino_export_cron_schedule');
+            if(time() - $dbdate < ($wait_time * 60)){
+                return false;
+            }
+        }
         return true;
     }
 
@@ -187,12 +217,19 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
             'CREATE TABLE IF NOT EXISTS ' . $db->quoteIdentifier('exports') .
             ' ( ' . $db->quoteIdentifier('export_date') . ' DATETIME)'
         );
+        $db->query(
+            'CREATE TABLE IF NOT EXISTS ' . $db->quoteIdentifier('cron_exports') .
+            ' ( ' . $db->quoteIdentifier('export_date') . ' DATETIME)'
+        );
     }
 
     private function removeDatabase() {
         $db = Shopware()->Db();
         $db->query(
             'DROP TABLE IF EXISTS ' . $db->quoteIdentifier('exports')
+        );
+        $db->query(
+            'DROP TABLE IF EXISTS ' . $db->quoteIdentifier('cron_exports')
         );
     }
 
