@@ -690,7 +690,10 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         if(is_null($this->Request()->getParam($orderParam))) {
             $viewData['sSort'] = null;
             $this->Request()->setParam('sSort', 7);
+        } else {
+            $viewData['sSort'] = $this->Request()->getParam($orderParam);
         }
+
         if(is_null($this->Request()->getParam('sSort')) && is_null($this->Request()->getParam($orderParam))) {
             if($this->Config()->get('boxalino_navigation_sorting')) {
                 $viewData['sSort'] = null;
@@ -748,7 +751,8 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             'sArticles' => $articles,
             'facetOptions' => $this->facetOptions,
             'sSort' => $this->Request()->getParam('sSort'),
-            'showListing' => true
+            'showListing' => true,
+            'shortParameters' => $this->get('query_alias_mapper')->getQueryAliases(),
         );
         $templateProperties = array_merge($viewData, $templateProperties);
         $this->View()->assign($templateProperties);
