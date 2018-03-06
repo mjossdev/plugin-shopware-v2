@@ -117,7 +117,6 @@
             document.asyncReady(function() {
                 StateManager.updatePlugin('*[data-add-article="true"]','swAddArticle');
                 var groupSize = parseInt('{$Data.portfolio|count}');
-                console.log(groupSize);
                 var loadedRec = [];
                 $(document).ready(function() {
 
@@ -128,7 +127,6 @@
                         if(type === 'rebuy'){
                             var count = r.itemsCount;
                             if(count === 0) {
-                                console.log("destory rec", v[1]);
                                 r.destroy();
                                 $(el).parent().parent().next().show();
                                 $(el).parent().parent().remove();
@@ -152,8 +150,6 @@
                                 loadedRec.forEach(function(e) {
                                     temp[e.elementID] = e.count;
                                 });
-                                console.log(temp);
-                                console.log(loadedRec);
                                 window.iku = loadedRec;
                                 $('.bx-pf-wrapper').children().sort(function(a,b) {
                                     var a_id = "#" + a.id,
@@ -169,7 +165,6 @@
                         } else if(type === 'blog') {
                             var count = r.itemsCount;
                             if(count === 0) {
-                                console.log("destory rec", v[1]);
                                 r.destroy();
                                 $(el).parent().parent().remove();
                             }
