@@ -87,6 +87,7 @@ class Shopware_Plugins_Frontend_Boxalino_FrontendInterceptor
                     $blogArticles = $this->Helper()->getBlogs($blogIds);
                     $blogArticles = $this->enhanceBlogArticles($blogArticles);
                     $this->View()->assign('sBlogArticles', $blogArticles);
+                    $this->View()->assign('sBlogTitle', $this->Helper()->getSearchResultTitle($choiceId));
                 }
                 $script = Shopware_Plugins_Frontend_Boxalino_EventReporter::reportProductView($sArticle['articleDetailsID']);
                 break;
