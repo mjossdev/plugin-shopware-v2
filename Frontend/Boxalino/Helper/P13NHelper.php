@@ -794,6 +794,9 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
      */
     public function getBlogs($ids) {
 
+        if(empty($ids)) {
+            return $ids;
+        }
         $repository = Shopware()->Models()->getRepository('Shopware\Models\Blog\Blog');
         $builder = $repository->getListQueryBuilder(array(), array());
         $query = $builder
@@ -1015,26 +1018,47 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
                 $filters = array_merge($systemFilter, $excludeFilter);
                 $bxRequest->setReturnFields($this->getReturnFields($articleType));
                 $bxRequest->setOffset($offset);
-                if ($type === 'basket' && is_array($context)) {
-                    $basketProducts = array();
-                    foreach ($context as $product) {
-                        $basketProducts[] = $product;
-                    }
-                    $bxRequest->setBasketProductWithPrices($this->getEntityIdFieldName(), $basketProducts);
-                } elseif ($type === 'product' && !is_array($context)) {
-                    $bxRequest->setProductContext('products_group_id', $context);
-                } elseif ($type === 'category' && $context != null) {
-                    $filterField = "category_id";
-                    $filterValues = is_array($context) ? $context : array($context);
-                    $filters[] = new \com\boxalino\bxclient\v1\BxFilter($filterField, $filterValues);
-                } elseif ($type === 'bxi_content') {
-                    $bxRequest->setGroupBy('id');
-                    $filters = array(new \com\boxalino\bxclient\v1\BxFilter('bx_type', array('bxi_content'), false));
-                    $bxRequest->setFilters($filters);
-                    $categoryValues = is_array($context) ? $context : array($context);
-                    self::$bxClient->addRequestContextParameter('current_category_id', $categoryValues);
-                } elseif ($type === 'blog') {
-                    $bxRequest->setProductContext('id', $context);
+                switch($type) {
+                    case 'basket':
+                        if(is_array($context)) {
+                            $basketProducts = array();
+                            foreach ($context as $product) {
+                                $basketProducts[] = $product;
+                            }
+                        }
+                        break;
+                    case 'product':
+                        if(!is_array($context)) {
+                            $bxRequest->setProductContext('products_group_id', $context);
+                        }
+                        break;
+                    case 'category':
+                        if(!is_null($context)) {
+                            $filterField = "category_id";
+                            $filterValues = is_array($context) ? $context : array($context);
+                            $filters[] = new \com\boxalino\bxclient\v1\BxFilter($filterField, $filterValues);
+                        }
+                        break;
+                    case 'bxi_content':
+                        $bxRequest->setGroupBy('id');
+                        $filters = array(new \com\boxalino\bxclient\v1\BxFilter('bx_type', array('bxi_content'), false));
+                        $bxRequest->setFilters($filters);
+                        $categoryValues = is_array($context) ? $context : array($context);
+                        self::$bxClient->addRequestContextParameter('current_category_id', $categoryValues);
+                        break;
+                    case 'blog':
+                        $bxRequest->setProductContext('id', $context);
+                        break;
+                    case 'portfolio_blog':
+                        $filterField = "di_portfolio_group";
+                        $filterValues = is_array($context) ? $context : array($context);
+                        $filters[] = new \com\boxalino\bxclient\v1\BxFilter($filterField, $filterValues);
+                        break;
+                    case 'blog_product':
+                        $bxRequest->setProductContext('id', $context);
+                        break;
+                    default:
+                        break;
                 }
 
                 foreach ($requestContextParams as $key => $requestContextParam) {
@@ -1236,6 +1260,17 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
             return 0;
         }
         return $this->getResponse()->getTotalHitCount($this->currentSearchChoice, true, $count);
+    }
+
+    /**
+     * @param $choice_id
+     * @param string $default
+     * @param int $count
+     * @return mixed
+     */
+    public function getSearchResultTitle($choice_id, $default = '', $count = 0) {
+        return $this->getResponse()->getResultTitle($choice_id, $count, $default);
+
     }
 
     /**

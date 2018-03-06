@@ -158,23 +158,22 @@ class Shopware_Controllers_Frontend_RecommendationSlider extends Enlight_Control
 
     public function portfolioRecommendationAction() {
 
-        $helper = Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper::instance();
-        $helper->setRequest($this->request);
-        $choiceId = $this->Request()->getQuery('bxChoiceId');
-        $count = $this->Request()->getQuery('bxCount');
-        $context = $this->Request()->getQuery('category_id');
-        $account_id = $this->Request()->getQuery('account_id');
-        $context = Shopware()->Shop()->getCategory()->getId() == $context ? null : $context;
-        $refer = $this->Request()->getParam('category');
-        if($account_id) {
-            $contextParam = array('_system_customerid' => $account_id);
-        } else {
-            $contextParam = array('_system_customerid' => $helper->getCustomerID());
-        }
-        $helper->getRecommendation($choiceId, $count, $count, 0, $context, 'category', false, array(), false, $contextParam, true);
-        $hitsIds = $helper->getRecommendation($choiceId);
-
-        if($hitsIds) {
+        try{
+            $helper = Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper::instance();
+            $helper->setRequest($this->request);
+            $choiceId = $this->Request()->getQuery('bxChoiceId');
+            $count = $this->Request()->getQuery('bxCount');
+            $context = $this->Request()->getQuery('category_id');
+            $account_id = $this->Request()->getQuery('account_id');
+            $context = Shopware()->Shop()->getCategory()->getId() == $context ? null : $context;
+            $refer = $this->Request()->getParam('category');
+            if($account_id) {
+                $contextParam = array('_system_customerid' => $account_id);
+            } else {
+                $contextParam = array('_system_customerid' => $helper->getCustomerID());
+            }
+            $helper->getRecommendation($choiceId, $count, $count, 0, $context, 'category', false, array(), false, $contextParam, true);
+            $hitsIds = $helper->getRecommendation($choiceId);
             $articles = $helper->getLocalArticles($hitsIds);
             if($choiceId == 'rebuy') {
 
@@ -195,24 +194,26 @@ class Shopware_Controllers_Frontend_RecommendationSlider extends Enlight_Control
             $this->View()->assign('articles', $articles);
             $this->View()->assign('withAddToBasket', true);
             $this->View()->assign('productBoxLayout', "emotion");
+        } catch(\Exception $exception) {
+            Shopware()->Plugins()->Frontend()->Boxalino()->logException($exception, __FUNCTION__, $this->request->getRequestUri());
         }
+
     }
 
 
     public function blogRecommendationAction() {
 
-        $helper = Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper::instance();
-        $choiceId = 'read_portfolio'; //Shopware()->Config()->get('boxalino_detail_blog_recommendation_name');
-        $min = 10; //Shopware()->Config()->get('boxalino_detail_blog_recommendation_min');
-        $max = 10; //Shopware()->Config()->get('boxalino_detail_blog_recommendation_max');
-        $context = $this->Request()->getQuery('category_id');
-        $helper->getRecommendation($choiceId, $max, $min, 0, array(), 'product', false, array(), true);
-        $blogIds = $helper->getRecommendation($choiceId, $max, $min, 0, $context, 'category', true, array(), true);
-        if($blogIds) {
+        try{
+            $helper = Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper::instance();
+            $choiceId = 'read_portfolio';
+            $min = 10;
+            $max = 10;
+            $context = $this->Request()->getQuery('category_label');
+            $helper->getRecommendation($choiceId, $max, $min, 0, $context, 'portfolio_blog', false, array(), true);
+            $blogIds = $helper->getRecommendation($choiceId, $max, $min, 0, $context, 'portfolio_blog', true, array(), true);
             foreach ($blogIds as $index => $id) {
                 $blogIds[$index] = str_replace('blog_', '', $id);
             }
-
             $this->View()->loadTemplate('frontend/_includes/product_slider_items.tpl');
             $path = Shopware()->Plugins()->Frontend()->Boxalino()->Path();
             $this->View()->addTemplateDir($path . 'Views/emotion/');
@@ -221,10 +222,15 @@ class Shopware_Controllers_Frontend_RecommendationSlider extends Enlight_Control
             $blogArticles = $this->enhanceBlogArticles($blogArticles);
             $this->View()->assign('articles', $blogArticles);
             $this->View()->assign('bxBlogRecommendation', true);
+        } catch(\Exception $exception) {
+            Shopware()->Plugins()->Frontend()->Boxalino()->logException($exception, __FUNCTION__, $this->request->getRequestUri());
         }
     }
 
     private function enhanceBlogArticles($blogArticles) {
+        if(empty($blogArticles)) {
+            return $blogArticles;
+        }
         $mediaIds = array_map(function ($blogArticle) {
             if (isset($blogArticle['media']) && $blogArticle['media'][0]['mediaId']) {
                 return $blogArticle['media'][0]['mediaId'];

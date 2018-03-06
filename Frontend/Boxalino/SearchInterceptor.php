@@ -651,6 +651,11 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         }
 
         $this->init($arguments);
+
+        if($this->Request()->getActionName() == 'manufacturer') {
+            $this->prepareManufacturer();
+        }
+
         $filter = array();
         $viewData = $this->View()->getAssign();
         $catId = $this->Request()->getParam('sCategory');
@@ -755,6 +760,66 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         return true;
     }
 
+    protected function prepareManufacturer() {
+
+        $manufacturerId = $this->Request()->getParam('sSupplier', null);
+        $context = $this->get('shopware_storefront.context_service')->getShopContext();
+
+        if (!$this->Request()->getParam('sCategory')) {
+            $this->Request()->setParam('sCategory', $context->getShop()->getCategory()->getId());
+        }
+
+        /** @var $manufacturer Manufacturer */
+        $manufacturer = $this->get('shopware_storefront.manufacturer_service')->get(
+            $manufacturerId,
+            $this->get('shopware_storefront.context_service')->getShopContext()
+        );
+
+        if ($manufacturer === null) {
+            throw new Enlight_Controller_Exception(
+                'Manufacturer missing, non-existent or invalid',
+                404
+            );
+        }
+
+        $this->View()->assign('showListing', true);
+        $this->View()->assign('manufacturer', $manufacturer);
+        $this->View()->assign('ajaxCountUrlParams', [
+            'sSupplier' => $manufacturerId,
+            'sCategory' => $context->getShop()->getCategory()->getId(),
+        ]);
+        $this->View()->assign('sCategoryContent', $this->getSeoDataOfManufacturer($manufacturer));
+
+    }
+
+    private function getSeoDataOfManufacturer($manufacturer)
+    {
+        $content = [];
+
+        $content['metaDescription'] = $manufacturer->getMetaDescription();
+        $content['metaKeywords'] = $manufacturer->getMetaKeywords();
+
+        $canonicalParams = [
+            'sViewport' => 'listing',
+            'sAction' => 'manufacturer',
+            'sSupplier' => $manufacturer->getId(),
+        ];
+
+        $content['canonicalParams'] = $canonicalParams;
+
+        $path = Shopware()->Front()->Router()->assemble($canonicalParams);
+
+        if ($path) {
+            /* @deprecated */
+            $content['sSelfCanonical'] = $path;
+        }
+
+        $content['metaTitle'] = $manufacturer->getMetaTitle();
+        $content['title'] = $manufacturer->getName();
+
+        return $content;
+    }
+
     /**
      * @param Enlight_Event_EventArgs $arguments
      * @return null
@@ -772,15 +837,18 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
 
         foreach ($relatedArticles as $article) {
             $excludes[] = $article['articleID'];
-            $test[] = $article['ordernumber'];
         }
+        $context = 'blog_' . $blog['sArticle']['id'];
         $choiceId = $this->Config()->get('boxalino_blog_page_recommendation_name');
         $min = $this->Config()->get('boxalino_blog_page_recommendation_min');
         $max = $this->Config()->get('boxalino_blog_page_recommendation_max');
-        $this->Helper()->getRecommendation($choiceId, $max, $min, 0, array(), '', false, $excludes);
+        $this->Helper()->getRecommendation($choiceId, $max, $min, 0, $context, 'blog_product', false, $excludes);
         $ids = $this->Helper()->getRecommendation($choiceId);
         $articles = $this->Helper()->getLocalArticles($ids);
-        $blog['sArticle']['sRelatedArticles'] = array_merge($relatedArticles, $articles);
+        $blog['bxProductRecommendation'] = $articles;
+        $blog['bxRecTitle'] = $this->Helper()->getSearchResultTitle($choiceId);
+        $this->View()->addTemplateDir($this->Bootstrap()->Path() . 'Views/emotion/');
+        $this->View()->extendsTemplate('frontend/plugins/boxalino/blog/detail.tpl');
         $this->View()->assign($blog);
     }
 
@@ -1581,14 +1649,17 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
 
     private function generateTreeResult($facet, $selectedCategoryId, $categories, $label, $bxFacets, $categoryFieldName){
 
-        $items = $this->getCategoriesOfParent($categories, null);
+        $parent = null;
         $values = [];
         $showCount = $bxFacets->showFacetValueCounters('categories');
         if(version_compare(Shopware::VERSION, '5.3.0', '>=')){
             if(sizeof($selectedCategoryId) == 1 && (reset($selectedCategoryId) == Shopware()->Shop()->getCategory()->getId())) {
                 $selectedCategoryId = [];
             }
+            $parent = Shopware()->Shop()->getCategory()->getId();
         }
+
+        $items = $this->getCategoriesOfParent($categories, $parent);
         foreach ($items as $item) {
             $values[] = $this->createTreeItem($categories, $item, $selectedCategoryId, $showCount, $bxFacets);
         }
@@ -1769,25 +1840,37 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                         $ids = array();
 
                         $selectedCategoryId = $bxFacets->getSelectedCategoryIds();
+                        $shopCategory = Shopware()->Shop()->getCategory()->getName();
+                        $shopCategoryId = Shopware()->Shop()->getCategory()->getId();
                         if(version_compare(Shopware::VERSION, '5.3.0', '<')) {
                             foreach ($bxFacets->getCategories() as $c) {
-                                $ids [] = reset(explode('/', $c));
+                                $id = reset(explode('/', $c));
+                                $ids[$id] = $id;
                             }
                             if (!$categoryFieldName = $mapper->getShortAlias('sCategory')) {
                                 $categoryFieldName = 'sCategory';
                             }
                         } else {
                             foreach (range(0, $facet->getDepth()) as $i) {
-                                $ids = array_merge($ids, $bxFacets->getCategoryIdsFromLevel($i));
+                                $levelCategories = $bxFacets->getCategoryFromLevel($i);
+                                foreach ($levelCategories as $lc) {
+                                    if(strpos($lc, $shopCategory) !== false) {
+                                        $id = reset(explode("/", $lc));
+                                        if($id != $shopCategoryId) {
+                                            $ids[$id] = $id;
+                                        }
+                                    }
+                                }
                             }
                             if (!$categoryFieldName = $mapper->getShortAlias('categoryFilter')) {
                                 $categoryFieldName = 'categoryFilter';
                             }
                         }
-
-                        foreach ($bxFacets->getParentCategories() as $category_id => $parent){
-                            if($category_id > 1) {
-                                $ids[] = $category_id;
+                        if(reset($selectedCategoryId) != $shopCategoryId) {
+                            foreach ($bxFacets->getParentCategories() as $category_id => $parent){
+                                if(($category_id != $shopCategoryId) && !isset($ids[$category_id])) {
+                                    $ids[] = $category_id;
+                                }
                             }
                         }
                         $label = $bxFacets->getFacetLabel($fieldName,$lang);
@@ -1834,7 +1917,12 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                 case 'products_brand':
                     if($_REQUEST['dev_bx_debug'] == 'true'){
                         $t1 = microtime(true);
-
+                    }
+                    $params = $this->Request()->getParams();
+                    $id = isset($params[$mapper->getShortAlias('sSupplier')]) ? $params[$mapper->getShortAlias('sSupplier')] : null;
+                    $values = $bxFacets->getFacetSelectedValues($fieldName);
+                    if(sizeof($values) > 0 && is_null($id)) {
+                        break;
                     }
                     $facet = $facets['manufacturer'];
                     $returnFacet = $this->generateManufacturerListItem($bxFacets, $facet, $lang);
@@ -2090,7 +2178,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
      * @param int $categoryId
      * @return int|null
      */
-    private function findStreamIdByCategoryId($categoryId)
+    public function findStreamIdByCategoryId($categoryId)
     {
         $streamId = $this->get('dbal_connection')->fetchColumn(
             'SELECT stream_id FROM s_categories WHERE id = :id',

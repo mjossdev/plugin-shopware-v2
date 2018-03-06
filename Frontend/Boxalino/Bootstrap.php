@@ -31,7 +31,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
     }
 
     public function getVersion() {
-        return '1.6.5';
+        return '1.6.6';
     }
 
     public function getInfo() {
@@ -274,9 +274,10 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
         //sMarketing recommendation overwrite
         $this->subscribeEvent('sMarketing::sGetAlsoBoughtArticles::replace', 'alsoBoughtRec');
         $this->subscribeEvent('sMarketing::sGetSimilaryShownArticles::replace', 'similarRec');
-        $this->subscribeEvent('Shopware_Controllers_Frontend_Listing::indexAction::replace', 'onListing');
-        $this->subscribeEvent('Shopware_Controllers_Widgets_Listing::listingCountAction::replace', 'onAjaxListing');
+        $this->subscribeEvent('Shopware_Controllers_Frontend_Listing::indexAction::replace', 'onListingHook');
+        $this->subscribeEvent('Shopware_Controllers_Widgets_Listing::listingCountAction::replace', 'onAjaxListingHook');
         $this->subscribeEvent('Shopware_Controllers_Frontend_Listing::getEmotionConfiguration::replace', 'onEmotionConfiguration');
+        $this->subscribeEvent('Shopware_Controllers_Frontend_Listing::manufacturerAction::replace', 'onManufacturer');
     }
 
     public function alsoBoughtRec(Enlight_Hook_HookArgs $arguments){
@@ -727,7 +728,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
     }
 
     protected $listingHook = true;
-    public function onListing(Enlight_Hook_HookArgs $arguments){
+    public function onListingHook(Enlight_Hook_HookArgs $arguments){
         if(!Shopware()->Config()->get('boxalino_active') || !Shopware()->Config()->get('boxalino_navigation_enabled')) {
             $this->listingHook = false;
         }
@@ -768,14 +769,39 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
                 $arguments->getArgs()
             );
             if($this->listingHook) {
+                $request = $arguments->getSubject()->Request();
+                $id = $request->getParam('sCategory', null);
                 $this->showListing = $return['showListing'];
+                if($this->searchInterceptor->findStreamIdByCategoryId($id)) {
+                    $this->showListing = true;
+                }
                 $return['showListing'] = false;
             }
             $arguments->setReturn($return);
         }
     }
 
-    public function onAjaxListing(Enlight_Hook_HookArgs $arguments){
+    public function onManufacturer(Enlight_Hook_HookArgs $arguments) {
+        if(!Shopware()->Config()->get('boxalino_active') || !Shopware()->Config()->get('boxalino_navigation_enabled')) {
+            $arguments->getSubject()->executeParent(
+                $arguments->getMethod(),
+                $arguments->getArgs()
+            );
+        } else {
+            try{
+                $this->searchInterceptor->listing($arguments);
+            }catch (\Exception $e) {
+                $this->logException($e, __FUNCTION__, $arguments->getSubject()->Request()->getRequestUri());
+                $arguments->getSubject()->executeParent(
+                    $arguments->getMethod(),
+                    $arguments->getArgs()
+                );
+            }
+        }
+
+    }
+
+    public function onAjaxListingHook(Enlight_Hook_HookArgs $arguments){
         try {
             $ajaxListingReturn = $this->searchInterceptor->listingAjax($arguments);
             if(is_null($ajaxListingReturn)) {

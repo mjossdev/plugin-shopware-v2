@@ -1,22 +1,22 @@
 <div class="bx-portfolio-wrapper">
     {block name="anchor_links"}
-        <div class="bx-portfolio-anchor">
-            <ol>
+        <div class="bx-pf-anchor">
+            <ol class="bx-pf-anchor-list">
                 {foreach $Data.portfolio as $portfolio}
-                    <li class="bx_anchorlink-{$portfolio.name[$Data.lang]}">
-                        <a title="{$portfolio.name[$Data.lang]}" href="#{$portfolio.name[$Data.lang]}_title" >{$portfolio.name[$Data.lang]}</a>
+                    <li class="bx-pf-anchorlink-{$portfolio.context_parameter['category_id']}" id="bx-pf-anchor-{$portfolio.context_parameter['category_id']}">
+                        <a title="{$portfolio.title[$Data.lang]}" href="#bx-pf-title-a-{$portfolio.context_parameter['category_id']}" >{$portfolio.title[$Data.lang]}</a>
                     </li>
                 {/foreach}
             </ol>
         </div>
     {/block}
     {block name="content"}
-        <div class="bx-portfolio-content">
+        <div class="bx-pf-wrapper">
             {foreach $Data.portfolio as $portfolio}
-                <div id="bx-portfolio-{$portfolio.name[$Data.lang]}">
-                    <span id="{$portfolio.name[$Data.lang]}_title" style="display:block; height:85px; margin-top: -85px; visibility: hidden"></span>
-                    <div id="{$portfolio.name[$Data.lang]}" class="ph-listing-content-top">
-                        <h1 class="bx-portfolio-title panel--title is--underline">
+                <div id="bx-pf-{$portfolio.context_parameter['category_id']}" class="bx-pf-content-wrapper">
+                    <span id="bx-pf-title-a-{$portfolio.context_parameter['category_id']}" style="display:block; height:85px; margin-top: -85px; visibility: hidden"></span>
+                    <div id="bx-pf-{$portfolio.context_parameter['category_id']}-title" class="ph-listing-content-top">
+                        <h1 class="bx-pf-title panel--title is--underline">
                             <div>{$portfolio.title.{$Data.lang}}</div>
                         </h1>
                     </div>
@@ -32,7 +32,7 @@
                                 <div class="bx-re-buy emotion--product-slider panel" >
                                     {include file="frontend/_includes/product_slider.tpl"
                                     sliderAjaxCtrlUrl={url controller=RecommendationSlider action=portfoliorecommendation bxChoiceId=rebuy bxCount=10 category_id=$portfolio.context_parameter['category_id'] account_id=$portfolio.account_id}
-                                    sliderAjaxCategoryID={'rebuy-'|cat:$portfolio.name[$Data.lang]}
+                                    sliderAjaxCategoryID={'rebuy-'|cat:$portfolio.context_parameter['category_id']}
                                     productSliderCls="product-slider--content"
                                     sliderMode={'ajax'}
                                     sliderArrowControls={''}
@@ -44,14 +44,14 @@
                                     withAddToBasket="true"}
                                 </div>
                             </div>
-                            <div class="bx-slider-content">
+                            <div class="bx-slider-content bx-pf-new-buy-rec" style="display:none;">
                                 <div class="bx-newbuy-title">
-                                    <span>{$portfolio.rebuy["alternative_title"].{$Data.lang}}</span>
+                                    <span>{$portfolio.rebuy["alternative title"].{$Data.lang}}</span>
                                 </div>
-                                <div class="bx-re-buy emotion--product-slider panel" >
+                                <div class="bx-new-buy emotion--product-slider panel" >
                                     {include file="frontend/_includes/product_slider.tpl"
                                     sliderAjaxCtrlUrl={url controller=RecommendationSlider action=portfoliorecommendation bxChoiceId=newbuy bxCount=10 category_id=$portfolio.context_parameter['category_id']}
-                                    sliderAjaxCategoryID={'newbuy-'|cat:$portfolio.name[$Data.lang]}
+                                    sliderAjaxCategoryID={'newbuy-'|cat:$portfolio.context_parameter['category_id']}
                                     productSliderCls="product-slider--content"
                                     sliderMode={'ajax'}
                                     sliderArrowControls={''}
@@ -75,7 +75,7 @@
                                 sliderAjaxCtrlUrl={url controller=RecommendationSlider action=portfoliorecommendation bxChoiceId=reorient bxCount=10 category_id=$portfolio.context_parameter['category_id']}
                                 productSliderCls="product-slider--content"
                                 articles=$articles
-                                sliderAjaxCategoryID={'reorient-'|cat:$portfolio.name[$Data.lang]}
+                                sliderAjaxCategoryID={'reorient-'|cat:$portfolio.context_parameter['category_id']}
                                 sliderMode={'ajax'}
                                 sliderArrowControls={''}
                                 sliderAnimationSpeed=500
@@ -93,9 +93,9 @@
                             </div>
                             <div class="bx-blog emotion--product-slider panel" >
                                 {include file="frontend/_includes/product_slider.tpl"
-                                sliderAjaxCtrlUrl={url controller=RecommendationSlider action=blogrecommendation category_id=$portfolio.context_parameter['category_id']}
+                                sliderAjaxCtrlUrl={url controller=RecommendationSlider action=blogrecommendation category_id=$portfolio.context_parameter['category_id'] category_label=$portfolio.name}
                                 productSliderCls="product-slider--content"
-                                sliderAjaxCategoryID={'blog-'|cat:$portfolio.name[$Data.lang]}
+                                sliderAjaxCategoryID={'blog-'|cat:$portfolio.title[$Data.lang]}
                                 sliderMode={'ajax'}
                                 sliderArrowControls={''}
                                 sliderAnimationSpeed=500
@@ -106,9 +106,9 @@
                             </div>
                         </div>
                     </div>
+                    <br>
+                    <br>
                 </div>
-                <br>
-                <br>
             {/foreach}
         </div>
 
@@ -130,38 +130,48 @@
                             if(count === 0) {
                                 console.log("destory rec", v[1]);
                                 r.destroy();
-                                var parent = $(el).parent();
-                                parent.prev().remove(); //remove rebuy title
-                                parent.remove(); //remove rebuy content
+                                $(el).parent().parent().next().show();
+                                $(el).parent().parent().remove();
+
                             }
                             //remove newbuy rec
                             $(el).parent().parent().next().remove();
 
                             var identifier = v[1];
                             {literal}
-                            loadedRec.push({id:identifier, count:count, elementID: '#bx-portfolio-' + identifier});
+                            loadedRec.push({id:identifier, count:count, elementID: '#bx-pf-' + identifier});
                             {/literal}
                             loadedRec.sort(function(a,b) {
                                 return parseInt(b.count) - parseInt(a.count);
                             });
 
                             if(loadedRec.length === groupSize) {
+                                {literal}
+                                var temp = {};
+                                {/literal}
+                                loadedRec.forEach(function(e) {
+                                    temp[e.elementID] = e.count;
+                                });
+                                console.log(temp);
                                 console.log(loadedRec);
-                                var l = loadedRec.length;
-                                for(var x = 0; x < l; x++) {
-                                    if(x + 1 < l) {
-                                        var before = loadedRec[x].elementID;
-                                        var after = loadedRec[x + 1].elementID;
-                                        console.log("before", before, "after", after);
-                                        $(before).insertBefore(after);
-
-                                        var anchorBefore = '.bx_anchorlink-' + loadedRec[x].id;
-                                        var anchorAfter = '.bx_anchorlink-' + loadedRec[x + 1].id;
-                                        $(anchorBefore).insertBefore(anchorAfter);
-                                    }
-
-                                }
-                                $('.bx-portfolio-wrapper').show();
+                                window.iku = loadedRec;
+                                $('.bx-pf-wrapper').children().sort(function(a,b) {
+                                    var a_id = "#" + a.id,
+                                        b_id = "#" + b.id;
+                                    return parseInt(temp[b_id]) - parseInt(temp[a_id]);
+                                }).detach().appendTo('.bx-pf-wrapper');
+                                $('.bx-pf-anchor-list').children().sort(function(a,b) {
+                                    var a_id = "#bx-pf-" + a.id.substring(a.id.lastIndexOf('-')+1, a.id.length),
+                                        b_id = "#bx-pf-" + b.id.substring(b.id.lastIndexOf('-')+1, b.id.length);
+                                    return parseInt(temp[b_id]) - parseInt(temp[a_id]);
+                                }).detach().appendTo('.bx-pf-anchor-list');
+                            }
+                        } else if(type === 'blog') {
+                            var count = r.itemsCount;
+                            if(count === 0) {
+                                console.log("destory rec", v[1]);
+                                r.destroy();
+                                $(el).parent().parent().remove();
                             }
                         }
 
