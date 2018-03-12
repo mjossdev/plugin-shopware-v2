@@ -1025,6 +1025,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
                             foreach ($context as $product) {
                                 $basketProducts[] = $product;
                             }
+                            $bxRequest->setBasketProductWithPrices($this->getEntityIdFieldName(), $basketProducts);
                         }
                         break;
                     case 'product':

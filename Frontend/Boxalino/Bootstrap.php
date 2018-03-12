@@ -543,19 +543,16 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
 
         if ($args['element']['component']['template'] == "boxalino_landingpage") {
             $this->disableHttpCache();
-            $data['view'] = $this->onLandingPage();
+            $data['bx_view'] = $this->onLandingPage($args);
             return $data;
         }
 
         if ($args['element']['component']['template'] == "boxalino_product_finder") {
             $this->disableHttpCache();
-            Shopware()->PluginLogger()->info("bootstrap HTTP_REFERER: " . json_encode($_SERVER['HTTP_REFERER']));
             $data['category_id'] = $this->getEmotionCategoryId($args['element']['emotionId']);
             $locale = substr(Shopware()->Shop()->getLocale()->toString(), 0, 2);
             $data['locale'] = $locale;
             $data = array_merge($data, $this->onCPOFinder($data));
-
-            Shopware()->PluginLogger()->info("=============================================================");
             return $data;
         }
 
@@ -668,6 +665,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
     public function onEmotion(Enlight_Event_EventArgs $arguments) {
         $view = $arguments->getSubject()->View();
         $view->addTemplateDir($this->Path() . 'Views/emotion/');
+        $view->extendsTemplate('frontend/plugins/boxalino/listing/product-box/box-basic.tpl');
         $view->extendsTemplate('frontend/plugins/boxalino/listing/product-box/box-emotion.tpl');
     }
 
@@ -761,9 +759,26 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
                 ));
         }
     }
+    protected function hasBxLandingPage($category_id) {
+        $db = Shopware()->Db();
+        $sql = $db->select()->from(array('e_e' => 's_emotion_element'))
+            ->join(array('e_c' => 's_emotion_categories'),
+                'e_c.category_id = '.$category_id.' AND e_e.emotionID = e_c.emotion_id')
+            ->join(array('l_c' => 's_library_component'),
+                'l_c.template = '. $db->quote('boxalino_landingpage') . ' AND l_c.id = e_e.componentID')
+        ;
+        $stmt = $db->query($sql);
+        return $stmt->rowCount() > 0;
+    }
+
     protected $showListing = true;
     public function onEmotionConfiguration(Enlight_Hook_HookArgs $arguments) {
         if($arguments->getArgs()[1] === false) {
+            $landingPage = $this->hasBxLandingPage($arguments->getArgs()[0]);
+            if($landingPage) {
+                $page = $arguments->getSubject()->Request()->getParam('sPage');
+                $arguments->getSubject()->Request()->setParam("sPage", false);
+            }
             $return = $arguments->getSubject()->executeParent(
                 $arguments->getMethod(),
                 $arguments->getArgs()
@@ -775,8 +790,17 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
                 if($this->searchInterceptor->findStreamIdByCategoryId($id)) {
                     $this->showListing = true;
                 }
+                if(isset($page)) {
+                    $arguments->getSubject()->Request()->setParam('sPage', $page);
+                }
                 $return['showListing'] = false;
             }
+            $arguments->setReturn($return);
+        } else {
+            $return = $arguments->getSubject()->executeParent(
+                $arguments->getMethod(),
+                $arguments->getArgs()
+            );
             $arguments->setReturn($return);
         }
     }
