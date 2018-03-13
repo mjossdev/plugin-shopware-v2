@@ -279,25 +279,21 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         return $data;
     }
 
-    public function addBanner($choiceId = 'banner', $type = 'bxi_content', $queryText = "", $pageOffset = 0, $hitCount = 10, $sort = null, $options = array(), $filters = array()){
+    public function addBanner($config){
       $this->flushResponses();
       $this->resetRequests();
+      $type = 'bxi_content';
       $returnFields = $this->getReturnFields($type);
       $lang = $this->getShortLocale();
-      $bxRequest = new \com\boxalino\bxclient\v1\BxRequest($lang, $choiceId);
-      $requestFilters = $this->getSystemFilters($type, $queryText);
-      $requestFilters = array_merge($requestFilters, $this->extractFilter($filters));
-      // $bxRequest->setFilters($requestFilters);
+      $choiceId = $config['choiceId_banner'];
+      $max = $config['max_banner'];
+      $min = $config['min_banner'];
+      $bxRequest = new \com\boxalino\bxclient\v1\BxParametrizedRequest($lang, $choiceId, $max, $min);
+      $this->setPrefixContextParameter($bxRequest->getRequestWeightedParametersPrefix());
+      $this->checkPrefixContextParameter($this->getPrefixContextParameter());
       $bxRequest->setGroupBy($this->getEntityIdFieldName($type));
       $bxRequest->setReturnFields($returnFields);
-      $bxRequest->setOffset($pageOffset);
-      $facets = $this->prepareFacets($options);
-      $bxRequest->setFacets($facets);
-
-      if ($sort != null && isset($sort['field'])) {
-          $sortFields = new \com\boxalino\bxclient\v1\BxSortFields($sort['field'], $sort['reverse']);
-          $bxRequest->setSortFields($sortFields);
-      }
+      $bxRequest->setOffset(0);
 
       self::$bxClient->addRequest($bxRequest);
       self::$choiceContexts[$choiceId][] = $type;
