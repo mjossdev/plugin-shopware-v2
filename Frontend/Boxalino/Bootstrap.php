@@ -434,6 +434,29 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
             'description' => 'Display Boxalino banner.',
             'convertFunction' => null
         ));
+        if ($component->getFields()->count() == 0) {
+            $component->createTextField(array(
+                'name' => 'choiceId_banner',
+                'fieldLabel' => 'Choice id for banner',
+                'allowBlank' => false,
+                'defaultValue' => 'banner',
+                'position' => 0
+            ));
+            $component->createTextField(array(
+                'name' => 'min_banner',
+                'fieldLabel' => 'Minimum Number of Slides',
+                'allowBlank' => false,
+                'defaultValue' => 1,
+                'position' => 1
+            ));
+            $component->createNumberField(array(
+                'name' => 'max_banner',
+                'fieldLabel' => 'Maximum number of slides',
+                'allowBlank' => false,
+                'defaultValue' => 10,
+                'position' => 2
+            ));
+        }
     }
 
     /**
@@ -558,7 +581,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
 
         if ($args['element']['component']['name'] == "Boxalino Banner") {
             $this->disableHttpCache();
-            $data = $this->onBanner();
+            $data = $this->onBanner($args);
             return $data;
         }
 
@@ -693,9 +716,9 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
         }
     }
 
-    public function onBanner() {
+    public function onBanner(Enlight_Event_EventArgs $arguments) {
         try {
-            return $this->frontendInterceptor->getBannerInfo();
+            return $this->frontendInterceptor->getBannerInfo($arguments);
         } catch (\Exception $e) {
             $this->logException($e, __FUNCTION__);
         }

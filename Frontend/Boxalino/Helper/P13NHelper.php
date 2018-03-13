@@ -279,12 +279,17 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         return $data;
     }
 
-    public function addBanner($choiceId = 'banner', $type = 'bxi_content', $queryText = "", $pageOffset = 0, $hitCount = 10, $sort = null, $options = array(), $filters = array()){
+    public function addBanner($config, $choiceId = 'banner', $type = 'bxi_content', $queryText = "", $pageOffset = 0, $max = 10, $min = 1, $sort = null, $options = array(), $filters = array()){
       $this->flushResponses();
       $this->resetRequests();
       $returnFields = $this->getReturnFields($type);
       $lang = $this->getShortLocale();
-      $bxRequest = new \com\boxalino\bxclient\v1\BxRequest($lang, $choiceId);
+      $choiceId = $config['choiceId_banner'];
+      $max = $config['max_banner'];
+      $min = $config['min_banner'];
+      $bxRequest = new \com\boxalino\bxclient\v1\BxParametrizedRequest($lang, $choiceId, $max, $min);
+      $this->setPrefixContextParameter($bxRequest->getRequestWeightedParametersPrefix());
+      $this->checkPrefixContextParameter($this->getPrefixContextParameter());
       $requestFilters = $this->getSystemFilters($type, $queryText);
       $requestFilters = array_merge($requestFilters, $this->extractFilter($filters));
       // $bxRequest->setFilters($requestFilters);

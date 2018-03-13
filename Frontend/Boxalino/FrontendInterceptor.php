@@ -362,13 +362,12 @@ class Shopware_Plugins_Frontend_Boxalino_FrontendInterceptor
         return $arguments->getReturn();
     }
 
-    public function getBannerInfo() {
+    public function getBannerInfo($arguments) {
         if (!$this->Config()->get('boxalino_active')) {
             return null;
         }
-
-        $data = $this->Helper()->addBanner();
-
+        $config = $arguments->getReturn();
+        $data = $this->Helper()->addBanner($config);
         return $data;
     }
 
