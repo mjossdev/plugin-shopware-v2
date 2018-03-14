@@ -81,51 +81,49 @@ class BxChooseResponse
         if(!isset($variant->searchRelaxation->suggestionsResults)) {
             return null;
         }
+        foreach($variant->searchRelaxation->suggestionsResults as $searchResult) {
+            if($searchResult->totalHitCount > 0) {
+                if($searchResult->queryText == "" || $variant->searchResult->queryText == "") {
+                    continue;
+                }
+                $distance = levenshtein($searchResult->queryText, $variant->searchResult->queryText);
+                if($distance <= $maxDistance && $distance != -1) {
+                    return $searchResult;
+                }
+            }
+        }
+        return null;
+    }
 
-		foreach($variant->searchRelaxation->suggestionsResults as $searchResult) {
-			if($searchResult->totalHitCount > 0) {
-				if($searchResult->queryText == "" || $variant->searchResult->queryText == "") {
-					continue;
+    public function getVariantSearchResult($variant, $considerRelaxation=true, $maxDistance=10, $discardIfSubPhrases = true) {
+
+        $searchResult = $variant->searchResult;
+        if($considerRelaxation && $variant->searchResult->totalHitCount == 0 && !($discardIfSubPhrases && $this->areThereSubPhrases())) {
+           $correctedResult = $this->getFirstPositiveSuggestionSearchResult($variant, $maxDistance);
+        }
+        return isset($correctedResult) ? $correctedResult : $searchResult;
+    }
+	
+	public function getSearchResultHitVariable($searchResult, $hitId, $field) {
+		if($searchResult) {
+			if($searchResult->hits) {
+				foreach ($searchResult->hits as $item) {
+					if($item->values['id'] == $hitId) {
+						return $item->$$field;
+					}
 				}
-				$distance = levenshtein($searchResult->queryText, $variant->searchResult->queryText);
-				if($distance <= $maxDistance && $distance != -1) {
-					return $searchResult;
+			} else if(isset($searchResult->hitsGroups)) {
+				foreach($searchResult->hitsGroups as $hitGroup) {
+					if($hitGroup->groupValue == $hitId) {
+						return $hitGroup->hits[0]->$field;
+					}
 				}
 			}
 		}
 		return null;
 	}
-
-	public function getVariantSearchResult($variant, $considerRelaxation=true, $maxDistance=10, $discardIfSubPhrases = true) {
-
-		$searchResult = $variant->searchResult;
-		if($considerRelaxation && $variant->searchResult->totalHitCount == 0 && !($discardIfSubPhrases && $this->areThereSubPhrases())) {
-			return $this->getFirstPositiveSuggestionSearchResult($variant, $maxDistance);
-		}
-		return $searchResult;
-	}
-
-  public function getSearchResultHitVariable($searchResult, $hitId, $field) {
-
-      if($searchResult) {
-          if($searchResult->hits) {
-              foreach ($searchResult->hits as $item) {
-                  if($item->values['id'] == $hitId) {
-                      return $item->$$field;
-                  }
-              }
-          } else if(isset($searchResult->hitsGroups)) {
-              foreach($searchResult->hitsGroups as $hitGroup) {
-                  if($hitGroup->groupValue == $hitId) {
-                      return $hitGroup->hits[0]->$field;
-                  }
-              }
-          }
-      }
-      return null;
-  }
-
-  public function getSearchResultHitFieldValue($searchResult, $hitId, $fieldName=''){
+	
+	public function getSearchResultHitFieldValue($searchResult, $hitId, $fieldName=''){
 
         if($searchResult && $fieldName != '') {
             if($searchResult->hits) {
@@ -144,35 +142,38 @@ class BxChooseResponse
         }
         return null;
     }
-
-	public function getSearchResultHitIds($searchResult, $fieldId='id') {
-		$ids = array();
-		if($searchResult) {
-			if($searchResult->hits){
-				foreach ($searchResult->hits as $item) {
-					$ids[] = $item->values[$fieldId][0];
-				}
-			}elseif(isset($searchResult->hitsGroups)){
-				foreach ($searchResult->hitsGroups as $hitGroup){
-					$ids[] = $hitGroup->groupValue;
-				}
-			}
-		}
+	
+    public function getSearchResultHitIds($searchResult, $fieldId='id') {
+        $ids = array();
+        if($searchResult) {
+            if($searchResult->hits){
+                foreach ($searchResult->hits as $item) {
+                    if(!isset($item->values[$fieldId][0])) {
+                        $fieldId = 'id';
+                    }
+                    $ids[] = $item->values[$fieldId][0];
+                }
+            }elseif(isset($searchResult->hitsGroups)){
+                foreach ($searchResult->hitsGroups as $hitGroup){
+                    $ids[] = $hitGroup->groupValue;
+                }
+            }
+        }
         return $ids;
-	}
+    }
 
-    public function getHitExtraInfo($choice=null, $hitId = 0, $info_key='', $default_value = '', $count=0, $considerRelaxation=true, $maxDistance=10, $discardIfSubPhrases = true) {
+	public function getHitExtraInfo($choice=null, $hitId = 0, $info_key='', $default_value = '', $count=0, $considerRelaxation=true, $maxDistance=10, $discardIfSubPhrases = true) {
         $variant = $this->getChoiceResponseVariant($choice, $count);
         $extraInfo = $this->getSearchResultHitVariable($this->getVariantSearchResult($variant, $considerRelaxation, $maxDistance, $discardIfSubPhrases), $hitId, 'extraInfo');
         return (isset($extraInfo[$info_key]) ? $extraInfo[$info_key] : ($default_value != '' ? $default_value :  null));
     }
-
-    public function getHitVariable($choice=null, $hitId = 0, $field='',  $count=0, $considerRelaxation=true, $maxDistance=10, $discardIfSubPhrases = true){
+	
+	public function getHitVariable($choice=null, $hitId = 0, $field='',  $count=0, $considerRelaxation=true, $maxDistance=10, $discardIfSubPhrases = true){
         $variant = $this->getChoiceResponseVariant($choice, $count);
         return $this->getSearchResultHitVariable($this->getVariantSearchResult($variant, $considerRelaxation, $maxDistance, $discardIfSubPhrases), $hitId, $field);
     }
-
-    public function getHitFieldValue($choice=null, $hitId = 0,  $fieldName='',  $count=0, $considerRelaxation=true, $maxDistance=10, $discardIfSubPhrases = true){
+	
+	public function getHitFieldValue($choice=null, $hitId = 0,  $fieldName='',  $count=0, $considerRelaxation=true, $maxDistance=10, $discardIfSubPhrases = true){
         $variant = $this->getChoiceResponseVariant($choice, $count);
         return $this->getSearchResultHitFieldValue($this->getVariantSearchResult($variant, $considerRelaxation, $maxDistance, $discardIfSubPhrases), $hitId, $fieldName);
     }
@@ -197,8 +198,10 @@ class BxChooseResponse
             $hits = $searchResult->hits;
             if($searchResult->hits == null){
                 $hits = array();
-                foreach ($searchResult->hitsGroups as $hitGroup){
-                    $hits[] = $hitGroup->hits[0];
+                if(!is_null($searchResult->hitsGroups)) {
+                    foreach ($searchResult->hitsGroups as $hitGroup){
+                        $hits[] = $hitGroup->hits[0];
+                    }
                 }
             }
             foreach ($hits as $item) {
@@ -461,6 +464,22 @@ class BxChooseResponse
         return $this->getExtraInfo('search_message_description_style', $defaultExtraInfoValue, $choice, $considerRelaxation, $count, $maxDistance, $discardIfSubPhrases);
     }
 
+    public function getSearchMessageContainerStyle($defaultExtraInfoValue = null, $prettyPrint=false, $choice=null, $considerRelaxation=true, $count=0, $maxDistance=10, $discardIfSubPhrases = true) {
+        return $this->getExtraInfo('search_message_container_style', $defaultExtraInfoValue, $choice, $considerRelaxation, $count, $maxDistance, $discardIfSubPhrases);
+    }
+
+    public function getSearchMessageLinkStyle($defaultExtraInfoValue = null, $prettyPrint=false, $choice=null, $considerRelaxation=true, $count=0, $maxDistance=10, $discardIfSubPhrases = true) {
+        return $this->getExtraInfo('search_message_link_style', $defaultExtraInfoValue, $choice, $considerRelaxation, $count, $maxDistance, $discardIfSubPhrases);
+    }
+
+    public function getSearchMessageSideImageStyle($defaultExtraInfoValue = null, $prettyPrint=false, $choice=null, $considerRelaxation=true, $count=0, $maxDistance=10, $discardIfSubPhrases = true) {
+        return $this->getExtraInfo('search_message_side_image_style', $defaultExtraInfoValue, $choice, $considerRelaxation, $count, $maxDistance, $discardIfSubPhrases);
+    }
+
+    public function getSearchMessageMainImageStyle($defaultExtraInfoValue = null, $prettyPrint=false, $choice=null, $considerRelaxation=true, $count=0, $maxDistance=10, $discardIfSubPhrases = true) {
+        return $this->getExtraInfo('search_message_main_image_style', $defaultExtraInfoValue, $choice, $considerRelaxation, $count, $maxDistance, $discardIfSubPhrases);
+    }
+
     public function getSearchMessageMainImage($defaultExtraInfoValue = null, $prettyPrint=false, $choice=null, $considerRelaxation=true, $count=0, $maxDistance=10, $discardIfSubPhrases = true) {
         return $this->getExtraInfo('search_message_main_image', $defaultExtraInfoValue, $choice, $considerRelaxation, $count, $maxDistance, $discardIfSubPhrases);
     }
@@ -475,6 +494,14 @@ class BxChooseResponse
 
     public function getRedirectLink($language=null, $defaultExtraInfoValue = null, $prettyPrint=false, $choice=null, $considerRelaxation=true, $count=0, $maxDistance=10, $discardIfSubPhrases = true) {
         return $this->getExtraInfoLocalizedValue('redirect_url', $language, $defaultExtraInfoValue, $prettyPrint, $choice, $considerRelaxation, $count, $maxDistance, $discardIfSubPhrases);
+    }
+
+    public function getSearchMessageGeneralCss($defaultExtraInfoValue = null, $prettyPrint=false, $choice=null, $considerRelaxation=true, $count=0, $maxDistance=10, $discardIfSubPhrases = true) {
+        return $this->getExtraInfo('search_message_general_css', $defaultExtraInfoValue, $choice, $considerRelaxation, $count, $maxDistance, $discardIfSubPhrases);
+    }
+
+    public function getSearchMessageDisplayType($defaultExtraInfoValue = null, $prettyPrint=false, $choice=null, $considerRelaxation=true, $count=0, $maxDistance=10, $discardIfSubPhrases = true) {
+        return $this->getExtraInfo('search_message_display_type', $defaultExtraInfoValue, $choice, $considerRelaxation, $count, $maxDistance, $discardIfSubPhrases);
     }
 
 }

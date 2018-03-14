@@ -14,6 +14,10 @@ class BxParametrizedRequest extends BxRequest
 	private $requestSortFieldPrefix = "bxsf_";
 	
 	private $requestReturnFieldsName = "bxrf";
+	private $requestContextItemFieldName = "bxcif";
+	private $requestContextItemFieldValues = "bxciv";
+
+	protected $requestParameterExclusionPatterns = array();
 	
 	public function __construct($language, $choiceId, $max=10, $min=0, $bxReturnFields=null, $getItemFieldsCB=null) {
 		parent::__construct($language, $choiceId, $max, $min);
@@ -72,6 +76,22 @@ class BxParametrizedRequest extends BxRequest
 		return $this->requestReturnFieldsName;
 	}
 	
+	public function setRequestContextItemFieldName($requestContextItemFieldName) {
+		$this->requestContextItemFieldName = $requestContextItemFieldName;
+	}
+	
+	public function getRequestContextItemFieldName() {
+		return $this->requestContextItemFieldName;
+	}
+	
+	public function setRequestContextItemFieldValues($requestContextItemFieldValues) {
+		$this->requestContextItemFieldValues = $requestContextItemFieldValues;
+	}
+	
+	public function getRequestContextItemFieldValues() {
+		return $this->requestContextItemFieldValues;
+	}
+	
 	public function getPrefixes() {
 		return array($this->requestParametersPrefix, $this->requestWeightedParametersPrefix, $this->requestFiltersPrefix, $this->requestFacetsPrefix, $this->requestSortFieldPrefix);
 	}
@@ -89,9 +109,12 @@ class BxParametrizedRequest extends BxRequest
 		}
 		return $prefix == null || strpos($string, $prefix) === 0;
 	}
-	
+
 	public function getPrefixedParameters($prefix, $checkOtherPrefixes=true) {
 		$params = array();
+		if(!is_array($this->requestMap)) {
+			return array();
+		}
 		foreach($this->requestMap as $k => $v) {
 			if($this->matchesPrefix($k, $prefix, $checkOtherPrefixes)) {
 				$params[substr($k, strlen($prefix))] = $v;
@@ -99,8 +122,46 @@ class BxParametrizedRequest extends BxRequest
 		}
 		return $params;
 	}
-	
-	public function getRequestContextParameters() {
+
+	public function getContextItems() {
+		$contextItemFieldName = null;
+		$contextItemFieldValues = array();
+		$params = $this->getPrefixedParameters($this->requestParametersPrefix, false);
+		foreach($params as $name => $values) {
+			if($name == $this->requestContextItemFieldName) {
+				$value = $values;
+				if(is_array($value) && sizeof($value) > 0) {
+					$value = $values[0];
+				}
+				$contextItemFieldName = $value;
+				continue;
+			}if($name == $this->requestContextItemFieldValues) {
+				$value = $values;
+				if(!is_array($value)) {
+					$value = explode(',', $values);
+				}
+				$contextItemFieldValues = $value;
+				continue;
+			}
+			$params[$name] = $values;
+		}
+		if($contextItemFieldName) {
+			foreach($contextItemFieldValues as $contextItemFieldValue) {
+				$this->setProductContext($contextItemFieldName, $contextItemFieldValue);
+			}
+		}
+		return parent::getContextItems();
+	}
+
+    public function getRequestParameterExclusionPatterns() {
+        return $this->requestParameterExclusionPatterns;
+    }
+
+    public function addRequestParameterExclusionPatterns($pattern) {
+        $this->requestParameterExclusionPatterns[] = $pattern;
+    }
+
+    public function getRequestContextParameters() {
 		$params = array();
 		foreach($this->getPrefixedParameters($this->requestWeightedParametersPrefix) as $name => $values) {
 			$params[$name] = $values;
@@ -123,11 +184,10 @@ class BxParametrizedRequest extends BxRequest
 			}
 			$params[$name] = $values;
 		}
-
 		unset($params['bxi_data_owner_expert']);
 		return $params;
 	}
-
+	
 	public function getWeightedParameters() {
 		$params = array();
 		foreach($this->getPrefixedParameters($this->requestWeightedParametersPrefix) as $name => $values) {
