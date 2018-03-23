@@ -31,7 +31,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
     }
 
     public function getVersion() {
-        return '1.6.7';
+        return '1.6.8';
     }
 
     public function getInfo() {
@@ -73,6 +73,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
         try {
             $this->registerEvents();
             $this->createConfiguration();
+            $this->applyBackendViewModifications();
             $this->createDatabase();
             $this->registerEmotions();
             $this->registerSnippets();
@@ -260,6 +261,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
 
         // backend indexing menu and running indexer
         $this->subscribeEvent('Enlight_Controller_Dispatcher_ControllerPath_Backend_BoxalinoExport', 'boxalinoBackendControllerExport');
+        $this->subscribeEvent('Enlight_Controller_Dispatcher_ControllerPath_Backend_BoxalinoConfig', 'boxalinoBackendControllerConfig');
         $this->subscribeEvent('Enlight_Controller_Action_PostDispatch_Backend_Customer', 'onBackendCustomerPostDispatch');
         $this->subscribeEvent('Theme_Compiler_Collect_Plugin_Javascript', 'addJsFiles');
         $this->subscribeEvent('Theme_Compiler_Collect_Plugin_Less', 'addLessFiles');
@@ -658,6 +660,11 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
         return Shopware()->Plugins()->Frontend()->Boxalino()->Path() . "/Controllers/backend/BoxalinoExport.php";
     }
 
+    public function boxalinoBackendControllerConfig() {
+        Shopware()->Template()->addTemplateDir(Shopware()->Plugins()->Frontend()->Boxalino()->Path() . 'Views/');
+        return Shopware()->Plugins()->Frontend()->Boxalino()->Path() . "/Controllers/backend/BoxalinoConfig.php";
+    }
+
     public function boxalinoBackendControllerPerformance() {
         Shopware()->Template()->addTemplateDir(Shopware()->Plugins()->Frontend()->Boxalino()->Path() . 'Views/');
         return Shopware()->Plugins()->Frontend()->Boxalino()->Path() . "/Controllers/backend/BoxalinoPerformance.php";
@@ -801,6 +808,11 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
                 $return['showListing'] = false;
             }
             $arguments->setReturn($return);
+        } else {
+            $arguments->setReturn($arguments->getSubject()->executeParent(
+                $arguments->getMethod(),
+                $arguments->getArgs()
+            ));
         }
     }
 
@@ -952,11 +964,13 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
             $view->extendsTemplate('backend/customer/view/list/customer_preferences/list.js');
             $view->extendsTemplate('backend/customer/view/detail/customer_preferences/window.js');
             $view->extendsTemplate('backend/boxalino_export/view/main/window.js');
+            $view->extendsTemplate('backend/boxalino_config/view/main/window.js');
 
             //if the controller action name equals "index" we have to extend the backend customer application
             if ($args->getRequest()->getActionName() === 'index') {
                 $view->extendsTemplate('backend/customer/customer_preferences_app.js');
                 $view->extendsTemplate('backend/boxalino_export/boxalino_export_app.js');
+                $view->extendsTemplate('backend/boxalino_config/boxalino_config_app.js');
             }
         }
     }
@@ -973,9 +987,16 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
      */
     private function applyBackendViewModifications() {
         try {
-            $parent = $this->Menu()->findOneBy(array('label' => 'import/export'));
-            $this->createMenuItem(array('label' => 'Boxalino Export', 'class' => 'sprite-cards-stack', 'active' => 1,
-                'controller' => 'BoxalinoExport', 'action' => 'index', 'parent' => $parent));
+            if(is_null($this->Menu()->findOneBy(array('label' => 'Boxalino Export')))) {
+                $parent = $this->Menu()->findOneBy(array('label' => 'import/export'));
+                $this->createMenuItem(array('label' => 'Boxalino Export', 'class' => 'sprite-cards-stack', 'active' => 1,
+                    'controller' => 'BoxalinoExport', 'action' => 'index', 'parent' => $parent));
+            }
+            if(is_null($this->Menu()->findOneBy(array('label' => 'Boxalino Configuration')))) {
+                $parent = $this->Menu()->findOneBy(array('label' => 'Grundeinstellungen'));
+                $this->createMenuItem(array('label' => 'Boxalino Configuration Helper', 'class' => 'sprite-wrench-screwdriver', 'active' => 1,
+                    'controller' => 'BoxalinoConfig', 'action' => 'index', 'parent' => $parent));
+            }
         } catch (Exception $e) {
             Shopware()->PluginLogger()->error('can\'t create menu entry: ' . $e->getMessage());
             throw new Exception('can\'t create menu entry: ' . $e->getMessage());
