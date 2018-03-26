@@ -308,7 +308,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
       self::$choiceContexts[$choiceId][] = $type;
 
       $bxResponse = $this->getResponse();
-      $hitCount = $bxResponse->getTotalHitCount();
+      $hitCount = count($bxResponse->getHitIds($choiceId));
 
       $bannerData = [
 
