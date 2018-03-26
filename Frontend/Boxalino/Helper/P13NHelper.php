@@ -312,20 +312,20 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
 
       $bannerData = [
 
-        'id' => $bxResponse->getExtraInfo('banner_jssor_id'),
-        'style' => $bxResponse->getExtraInfo('banner_jssor_style'),
-        'slides_style' => $bxResponse->getExtraInfo('banner_jssor_slides_style'),
-        'max_width' => $bxResponse->getExtraInfo('banner_jssor_max_width'),
-        'css' => $bxResponse->getExtraInfo('banner_jssor_css'),
-        'loading_screen' => $bxResponse->getExtraInfo('banner_jssor_loading_screen'),
-        'bullet_navigator' => $bxResponse->getExtraInfo('banner_jssor_bullet_navigator'),
-        'arrow_navigator' => $bxResponse->getExtraInfo('banner_jssor_arrow_navigator'),
-        'function' => $bxResponse->getExtraInfo('banner_jssor_function'),
-        'options' => $bxResponse->getExtraInfo('banner_jssor_options'),
-        'break' => $this->getBannerJssorSlideGenericJS('products_bxi_bxi_jssor_break'),
-        'transition' => $this->getBannerJssorSlideGenericJS('products_bxi_bxi_jssor_transition'),
-        'control' => $this->getBannerJssorSlideGenericJS('products_bxi_bxi_jssor_control'),
-        'slides' => $this->getBannerSlides(),
+        'id' => $bxResponse->getExtraInfo('banner_jssor_id', '', $choiceId),
+        'style' => $bxResponse->getExtraInfo('banner_jssor_style', '', $choiceId),
+        'slides_style' => $bxResponse->getExtraInfo('banner_jssor_slides_style', '', $choiceId),
+        'max_width' => $bxResponse->getExtraInfo('banner_jssor_max_width', '', $choiceId),
+        'css' => $bxResponse->getExtraInfo('banner_jssor_css', '', $choiceId),
+        'loading_screen' => $bxResponse->getExtraInfo('banner_jssor_loading_screen', '', $choiceId),
+        'bullet_navigator' => $bxResponse->getExtraInfo('banner_jssor_bullet_navigator', '', $choiceId),
+        'arrow_navigator' => $bxResponse->getExtraInfo('banner_jssor_arrow_navigator', '', $choiceId),
+        'function' => $bxResponse->getExtraInfo('banner_jssor_function', '', $choiceId),
+        'options' => $bxResponse->getExtraInfo('banner_jssor_options', '', $choiceId),
+        'break' => $this->getBannerJssorSlideGenericJS('products_bxi_bxi_jssor_break', '', $choiceId),
+        'transition' => $this->getBannerJssorSlideGenericJS('products_bxi_bxi_jssor_transition', '', $choiceId),
+        'control' => $this->getBannerJssorSlideGenericJS('products_bxi_bxi_jssor_control', '', $choiceId),
+        'slides' => $this->getBannerSlides($choiceId),
         'hitCount' => $hitCount
 
       ];
@@ -333,9 +333,9 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
       return $bannerData;
     }
 
-    public function getBannerSlides() {
+    public function getBannerSlides($choiceId) {
 
-        $slides = $this->getResponse()->getHitFieldValues(array('products_bxi_bxi_jssor_slide', 'products_bxi_bxi_name'), 'banner');
+        $slides = $this->getResponse()->getHitFieldValues(array('products_bxi_bxi_jssor_slide', 'products_bxi_bxi_name'), $choiceId);
         $counters = array();
         foreach($slides as $id => $vals) {
             $slides[$id]['div'] = $this->getBannerSlide($id, $vals, $counters);
