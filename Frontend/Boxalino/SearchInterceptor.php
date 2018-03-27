@@ -719,6 +719,11 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             $this->Helper()->addNotification("Navigation before response took in total: " . (microtime(true)- $start) * 1000 . "ms.");
         }
         $this->Helper()->addSearch('', $pageOffset, $hitCount, 'product', $sort, $options, $filter, !is_null($streamId));
+
+        if($this->Helper()->getResponse()->getRedirectLink() != '') {
+            $this->Controller()->redirect($this->Helper()->getResponse()->getRedirectLink());
+        }
+
         if($_REQUEST['dev_bx_debug'] == 'true'){
             $afterStart = microtime(true);
             $this->Helper()->addNotification("Navigation after response: " . $afterStart);
@@ -908,6 +913,10 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         $pageOffset = $criteria->getOffset();
         $bxHasOtherItems = false;
         $this->Helper()->addSearch($term, $pageOffset, $hitCount, 'product', $sort, $options);
+
+        if($this->Helper()->getResponse()->getRedirectLink() != '') {
+            $this->Controller()->redirect($this->Helper()->getResponse()->getRedirectLink());
+        }
 
         if($_REQUEST['dev_bx_debug'] == 'true'){
             $this->Helper()->addNotification("Search before response took in total: " . (microtime(true)- $start) * 1000 . "ms.");

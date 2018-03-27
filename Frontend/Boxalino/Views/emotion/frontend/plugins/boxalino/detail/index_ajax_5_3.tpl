@@ -29,7 +29,7 @@
                     }, ['xs', 's']);
                     StateManager.updatePlugin('*[data-product-slider="true"]', 'swProductSlider');
                     StateManager.destroyPlugin('.tab-menu--cross-selling', 'swTabMenu');
-                    StateManager.addPlugin('.tab-menu--cross-selling', 'swTabMenu', {}, ['xs', 's', 'm', 'l', 'xl']);
+                    StateManager.addPlugin('.tab-menu--cross-selling', 'swTabMenu', {literal}{}{/literal}, ['xs', 's', 'm', 'l', 'xl']);
                 }, function (err) {
                 });
             });

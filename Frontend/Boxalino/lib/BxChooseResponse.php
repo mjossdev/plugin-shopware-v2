@@ -197,8 +197,10 @@ class BxChooseResponse
             $hits = $searchResult->hits;
             if($searchResult->hits == null){
                 $hits = array();
-                foreach ($searchResult->hitsGroups as $hitGroup){
-                    $hits[] = $hitGroup->hits[0];
+                if(!is_null($searchResult->hitsGroups)) {
+                    foreach ($searchResult->hitsGroups as $hitGroup){
+                        $hits[] = $hitGroup->hits[0];
+                    }
                 }
             }
             foreach ($hits as $item) {
@@ -461,6 +463,22 @@ class BxChooseResponse
         return $this->getExtraInfo('search_message_description_style', $defaultExtraInfoValue, $choice, $considerRelaxation, $count, $maxDistance, $discardIfSubPhrases);
     }
 
+    public function getSearchMessageContainerStyle($defaultExtraInfoValue = null, $prettyPrint=false, $choice=null, $considerRelaxation=true, $count=0, $maxDistance=10, $discardIfSubPhrases = true) {
+        return $this->getExtraInfo('search_message_container_style', $defaultExtraInfoValue, $choice, $considerRelaxation, $count, $maxDistance, $discardIfSubPhrases);
+    }
+
+    public function getSearchMessageLinkStyle($defaultExtraInfoValue = null, $prettyPrint=false, $choice=null, $considerRelaxation=true, $count=0, $maxDistance=10, $discardIfSubPhrases = true) {
+        return $this->getExtraInfo('search_message_link_style', $defaultExtraInfoValue, $choice, $considerRelaxation, $count, $maxDistance, $discardIfSubPhrases);
+    }
+
+    public function getSearchMessageSideImageStyle($defaultExtraInfoValue = null, $prettyPrint=false, $choice=null, $considerRelaxation=true, $count=0, $maxDistance=10, $discardIfSubPhrases = true) {
+        return $this->getExtraInfo('search_message_side_image_style', $defaultExtraInfoValue, $choice, $considerRelaxation, $count, $maxDistance, $discardIfSubPhrases);
+    }
+
+    public function getSearchMessageMainImageStyle($defaultExtraInfoValue = null, $prettyPrint=false, $choice=null, $considerRelaxation=true, $count=0, $maxDistance=10, $discardIfSubPhrases = true) {
+        return $this->getExtraInfo('search_message_main_image_style', $defaultExtraInfoValue, $choice, $considerRelaxation, $count, $maxDistance, $discardIfSubPhrases);
+    }
+
     public function getSearchMessageMainImage($defaultExtraInfoValue = null, $prettyPrint=false, $choice=null, $considerRelaxation=true, $count=0, $maxDistance=10, $discardIfSubPhrases = true) {
         return $this->getExtraInfo('search_message_main_image', $defaultExtraInfoValue, $choice, $considerRelaxation, $count, $maxDistance, $discardIfSubPhrases);
     }
@@ -475,6 +493,14 @@ class BxChooseResponse
 
     public function getRedirectLink($language=null, $defaultExtraInfoValue = null, $prettyPrint=false, $choice=null, $considerRelaxation=true, $count=0, $maxDistance=10, $discardIfSubPhrases = true) {
         return $this->getExtraInfoLocalizedValue('redirect_url', $language, $defaultExtraInfoValue, $prettyPrint, $choice, $considerRelaxation, $count, $maxDistance, $discardIfSubPhrases);
+    }
+
+    public function getSearchMessageGeneralCss($defaultExtraInfoValue = null, $prettyPrint=false, $choice=null, $considerRelaxation=true, $count=0, $maxDistance=10, $discardIfSubPhrases = true) {
+        return $this->getExtraInfo('search_message_general_css', $defaultExtraInfoValue, $choice, $considerRelaxation, $count, $maxDistance, $discardIfSubPhrases);
+    }
+
+    public function getSearchMessageDisplayType($defaultExtraInfoValue = null, $prettyPrint=false, $choice=null, $considerRelaxation=true, $count=0, $maxDistance=10, $discardIfSubPhrases = true) {
+        return $this->getExtraInfo('search_message_display_type', $defaultExtraInfoValue, $choice, $considerRelaxation, $count, $maxDistance, $discardIfSubPhrases);
     }
 
 }

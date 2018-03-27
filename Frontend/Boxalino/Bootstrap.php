@@ -31,7 +31,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
     }
 
     public function getVersion() {
-        return '1.6.6';
+        return '1.6.8';
     }
 
     public function getInfo() {
@@ -73,6 +73,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
         try {
             $this->registerEvents();
             $this->createConfiguration();
+            $this->applyBackendViewModifications();
             $this->createDatabase();
             $this->registerEmotions();
             $this->registerSnippets();
@@ -260,6 +261,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
 
         // backend indexing menu and running indexer
         $this->subscribeEvent('Enlight_Controller_Dispatcher_ControllerPath_Backend_BoxalinoExport', 'boxalinoBackendControllerExport');
+        $this->subscribeEvent('Enlight_Controller_Dispatcher_ControllerPath_Backend_BoxalinoConfig', 'boxalinoBackendControllerConfig');
         $this->subscribeEvent('Enlight_Controller_Action_PostDispatch_Backend_Customer', 'onBackendCustomerPostDispatch');
         $this->subscribeEvent('Theme_Compiler_Collect_Plugin_Javascript', 'addJsFiles');
         $this->subscribeEvent('Theme_Compiler_Collect_Plugin_Less', 'addLessFiles');
@@ -655,6 +657,11 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
         return Shopware()->Plugins()->Frontend()->Boxalino()->Path() . "/Controllers/backend/BoxalinoExport.php";
     }
 
+    public function boxalinoBackendControllerConfig() {
+        Shopware()->Template()->addTemplateDir(Shopware()->Plugins()->Frontend()->Boxalino()->Path() . 'Views/');
+        return Shopware()->Plugins()->Frontend()->Boxalino()->Path() . "/Controllers/backend/BoxalinoConfig.php";
+    }
+
     public function boxalinoBackendControllerPerformance() {
         Shopware()->Template()->addTemplateDir(Shopware()->Plugins()->Frontend()->Boxalino()->Path() . 'Views/');
         return Shopware()->Plugins()->Frontend()->Boxalino()->Path() . "/Controllers/backend/BoxalinoPerformance.php";
@@ -688,7 +695,6 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
     public function onEmotion(Enlight_Event_EventArgs $arguments) {
         $view = $arguments->getSubject()->View();
         $view->addTemplateDir($this->Path() . 'Views/emotion/');
-        $view->extendsTemplate('frontend/plugins/boxalino/listing/product-box/box-basic.tpl');
         $view->extendsTemplate('frontend/plugins/boxalino/listing/product-box/box-emotion.tpl');
     }
 
@@ -976,11 +982,13 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
             $view->extendsTemplate('backend/customer/view/list/customer_preferences/list.js');
             $view->extendsTemplate('backend/customer/view/detail/customer_preferences/window.js');
             $view->extendsTemplate('backend/boxalino_export/view/main/window.js');
+            $view->extendsTemplate('backend/boxalino_config/view/main/window.js');
 
             //if the controller action name equals "index" we have to extend the backend customer application
             if ($args->getRequest()->getActionName() === 'index') {
                 $view->extendsTemplate('backend/customer/customer_preferences_app.js');
                 $view->extendsTemplate('backend/boxalino_export/boxalino_export_app.js');
+                $view->extendsTemplate('backend/boxalino_config/boxalino_config_app.js');
             }
         }
     }

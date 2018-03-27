@@ -93,6 +93,15 @@ class BxClient
 		$this->requestMap = $requestMap;
 	}
 
+	private $choiceIdOverwrite = "owbx_choice_id";
+	public function getChoiceIdOverwrite()
+    {
+        if (isset($this->requestMap[$this->choiceIdOverwrite])) {
+            return $this->requestMap[$this->choiceIdOverwrite];
+        }
+        return null;
+    }
+
 	public function getRequestMap() {
 		return $this->requestMap;
 	}
@@ -260,6 +269,17 @@ class BxClient
 		return $protocol . '://' . $hostname . $requesturi;
 	}
 	
+	public function forwardRequestMapAsContextParameters($filterPrefix = '', $setPrefix = ''){
+		foreach ($this->requestMap as $key => $value) {
+			if($filterPrefix != ''){
+				if(strpos($key, $filterPrefix) !== 0) {
+					continue;
+				}
+			}
+			$this->requestContextParameters[$setPrefix . $key] = is_array($value) ? $value : array($value);
+		}
+	}
+
 	public function addRequestContextParameter($name, $values) {
 		if(!is_array($values)) {
 			$values = array($values);
@@ -445,6 +465,9 @@ class BxClient
 			
 			$choiceInquiry = new \com\boxalino\p13n\api\thrift\ChoiceInquiry();
 			$choiceInquiry->choiceId = $request->getChoiceId();
+			if(sizeof($choiceInquiries) == 0 && $this->getChoiceIdOverwrite()) {
+				$choiceInquiry->choiceId = $this->getChoiceIdOverwrite();
+			}
 			if($this->isTest === true || ($this->isDev && $this->isTest === null)) {
 				$choiceInquiry->choiceId .= "_debugtest";
 			}
@@ -619,6 +642,7 @@ class BxClient
 
 	public function setTimeout($timeout) {
 		$this->_timeout = $timeout;
+		return $this;
 	}
 
     public function notifyWarning($warning) {
