@@ -214,10 +214,12 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
                 $this->log->info("exportItemUrls after memory: " . memory_get_usage(true));
                 $this->log->info("BxIndexLog: Finished products - url.");
             }
-            $this->log->info("BxIndexLog: Preparing products - blogs.");
-            $this->exportItemBlogs($account, $files);
-            $this->log->info("exportItemBlogs after memory: " . memory_get_usage(true));
-            $this->log->info("BxIndexLog: Finished products - blogs.");
+            if(!$this->delta) {
+                $this->log->info("BxIndexLog: Preparing products - blogs.");
+                $this->exportItemBlogs($account, $files);
+                $this->log->info("exportItemBlogs after memory: " . memory_get_usage(true));
+                $this->log->info("BxIndexLog: Finished products - blogs.");
+            }
             $this->log->info("BxIndexLog: Preparing products - votes.");
             $this->exportItemVotes($files);
             $this->log->info("exportItemVotes after memory: " . memory_get_usage(true));
@@ -1501,7 +1503,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
      */
     protected function getLastDelta() {
         if (empty($this->deltaLast)) {
-            $this->deltaLast = '1950-01-01 12:00:00';
+            $this->deltaLast = date("Y-m-d H:i:s", strtotime("-30 minutes"));
             $db = $this->db;
             $sql = $db->select()
                 ->from('exports', array('export_date'))

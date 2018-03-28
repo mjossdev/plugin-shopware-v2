@@ -992,7 +992,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
                 $this->createMenuItem(array('label' => 'Boxalino Export', 'class' => 'sprite-cards-stack', 'active' => 1,
                     'controller' => 'BoxalinoExport', 'action' => 'index', 'parent' => $parent));
             }
-            if(is_null($this->Menu()->findOneBy(array('label' => 'Boxalino Configuration')))) {
+            if(is_null($this->Menu()->findOneBy(array('label' => 'Boxalino Configuration Helper')))) {
                 $parent = $this->Menu()->findOneBy(array('label' => 'Grundeinstellungen'));
                 $this->createMenuItem(array('label' => 'Boxalino Configuration Helper', 'class' => 'sprite-wrench-screwdriver', 'active' => 1,
                     'controller' => 'BoxalinoConfig', 'action' => 'index', 'parent' => $parent));
