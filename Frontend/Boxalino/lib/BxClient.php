@@ -42,7 +42,7 @@ class BxClient
 
     private $notifications = array();
 
-	public function __construct($account, $password, $domain, $isDev=false, $host=null, $port=null, $uri=null, $schema=null, $p13n_username=null, $p13n_password=null) {
+	public function __construct($account, $password, $domain, $isDev=false, $host=null, $port=null, $uri=null, $schema=null, $p13n_username=null, $p13n_password=null, $apiKey=null, $apiSecret=null) {
 		$this->account = $account;
 		$this->password = $password;
 		$this->requestMap = $_REQUEST;
@@ -72,11 +72,27 @@ class BxClient
 			$this->p13n_password = "tkZ8EXfzeZc6SdXZntCU";
 		}
 		$this->domain = $domain;
+		$this->apiKey = $apiKey;
+		if (empty($apiKey)) {
+			$this->apiKey = null;
+		}
+		$this->apiSecret = $apiSecret;
+		if (empty($apiSecret)) {
+			$this->apiSecret = null;
+		}
 	}
 
 	public function setHost($host) {
 	    $this->host = $host;
-    }
+  }
+
+	public function setApiKey($apiKey) {
+			$this->apiKey = $apiKey;
+  }
+
+	public function setApiSecret($apiSecret) {
+	    $this->apiSecret = $apiSecret;
+  }
 
 	public function setTestMode($isTest) {
 		$this->isTest = $isTest;
@@ -147,6 +163,13 @@ class BxClient
 		return $this->password;
 	}
 	
+	public function getApiKey() {
+		return $this->apiKey;
+	}
+	public function getApiSecret() {
+		return $this->apiSecret;
+	}
+
 	public function setSessionAndProfile($sessionId, $profileId) {
 		$this->sessionId = $sessionId;
 		$this->profileId = $profileId;
@@ -196,6 +219,8 @@ class BxClient
 	private function getUserRecord() {
 		$userRecord = new \com\boxalino\p13n\api\thrift\UserRecord();
 		$userRecord->username = $this->getAccount();
+		$userRecord->apiKey = $this->getApiKey();
+		$userRecord->apiSecret = $this->getApiSecret();
 		return $userRecord;
 	}
 	

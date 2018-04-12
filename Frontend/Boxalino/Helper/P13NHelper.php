@@ -70,8 +70,10 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         $host = $this->config->get('boxalino_host');
         $p13n_username = $this->config->get('boxalino_p13_user_name');
         $p13n_password = $this->config->get('boxalino_p13_user_password');
+        $apiKey = $this->config->get('apiKey');
+        $apiSecret = $this->config->get('apiSecret');
         $domain = $this->config->get('boxalino_domain');
-        self::$bxClient = new \com\boxalino\bxclient\v1\BxClient($account, $password, $domain, $isDev, $host, null, null, null, $p13n_username, $p13n_password);
+        self::$bxClient = new \com\boxalino\bxclient\v1\BxClient($account, $password, $domain, $isDev, $host, null, null, null, $p13n_username, $p13n_password, $apiKey, $apiSecret);
         self::$bxClient->setTimeout(5000);
         if(isset($_REQUEST['dev_bx_test_mode']) && $_REQUEST['dev_bx_test_mode'] == 'true') {
             self::$bxClient->setTestMode(true);
