@@ -688,8 +688,16 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         $orderParam = $this->get('query_alias_mapper')->getShortAlias('sSort');
 
         if(is_null($this->Request()->getParam($orderParam))) {
-            $viewData['sSort'] = null;
-            $this->Request()->setParam('sSort', 7);
+            $specialCase = $this->Config()->get('boxalino_navigation_special_enabled');
+            $ids = explode(',', $this->Config()->get('boxalino_navigation_exclude_ids'));
+            if($specialCase && in_array($this->Request()->getParam('sCategory'), $ids)) {
+                $default = $this->get('config')->get('defaultListingSorting');
+                $this->Request()->setParam('sSort', $default);
+                $viewData['sSort'] = $default;
+            } else {
+                $viewData['sSort'] = null;
+                $this->Request()->setParam('sSort', 7);
+            }
         } else {
             $viewData['sSort'] = $this->Request()->getParam($orderParam);
         }
