@@ -227,6 +227,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         $bxRequest->setFilters($requestFilters);
         $bxRequest->setGroupBy($this->getEntityIdFieldName($type));
         $bxRequest->setReturnFields($returnFields);
+        $bxRequest->setGroupFacets(true);
         $bxRequest->setOffset($pageOffset);
         $facets = $this->prepareFacets($options);
         $bxRequest->setFacets($facets);
