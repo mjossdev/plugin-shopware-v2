@@ -653,7 +653,7 @@ class BxData
         return $files;
     }
 
-    public function createZip($temporaryFilePath=null, $name='bxdata.zip')
+    public function createZip($temporaryFilePath=null, $name='bxdata.zip', $clearFiles = true)
     {
         if($temporaryFilePath === null) {
             $temporaryFilePath = sys_get_temp_dir() . '/bxclient';
@@ -704,13 +704,18 @@ class BxData
                 $name . '" for writing. Please check the permissions and try again.'
             );
         }
+        if($clearFiles) {
+            foreach ($files as $file) {
+                unlink($file);
+            }
+        }
 
         return $zipFilePath;
     }
 
-    public function pushData($temporaryFilePath=null, $timeout=60) {
+    public function pushData($temporaryFilePath=null, $timeout=60, $clearFiles=true) {
 
-        $zipFile = $this->createZip($temporaryFilePath);
+        $zipFile = $this->createZip($temporaryFilePath, 'bxdata.zip', $clearFiles);
 
         $fields = array(
             'username' => $this->bxClient->getUsername(),

@@ -26,13 +26,21 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxFiles{
     }
 
     private function init(){
-
+        $this->cleanDir($this->_mainDir);
         $this->_dir = $this->_mainDir . $this->account . '_' . $this->type . '_' . microtime(true);
         if (!file_exists($this->_dir)) {
             mkdir($this->_dir, 0777, true);
         }else{
             $this->delTree($this->_dir);
             mkdir($this->_dir, 0777, true);
+        }
+    }
+
+    private function cleanDir($dir) {
+        foreach (scandir($dir) as $el) {
+            if(!is_dir($el)) {
+                rmdir($dir . $el);
+            }
         }
     }
 
