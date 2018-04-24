@@ -766,6 +766,9 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
             $arguments->getMethod(),
             $arguments->getArgs()
         );
+        if($arguments->getSubject()->Response()->isRedirect()) {
+            return;
+        }
         try {
             $listingReturn = null;
             if($this->showListing && $this->listingHook) {
