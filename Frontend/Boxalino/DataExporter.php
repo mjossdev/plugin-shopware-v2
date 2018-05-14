@@ -631,7 +631,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
         $db = $this->db;
         $headers = array('id', 'title', 'author_id', 'active', 'short_description', 'description', 'views',
             'display_date', 'category_id', 'template', 'meta_keywords', 'meta_description', 'meta_title',
-            'assigned_articles', 'tags', 'shop_id');
+            'assigned_articles', 'tags', 'media_id', 'shop_id');
         $id = $this->_config->getAccountStoreId($account);
         $shopCategories = $this->getShopCategoryIds($id);
         $data = array();
@@ -643,11 +643,13 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
                     'b.display_date','b.category_id','b.template',
                     'b.meta_keywords','b.meta_keywords','b.meta_description','b.meta_title',
                     'assigned_articles' => new Zend_Db_Expr("GROUP_CONCAT(bas.article_id)"),
-                    'tags' => new Zend_Db_Expr("GROUP_CONCAT(bt.name)")
+                    'tags' => new Zend_Db_Expr("GROUP_CONCAT(bt.name)"),
+                    'media_id' => 'bm.media_id'
                 )
             )
             ->joinLeft(array('bas' => 's_blog_assigned_articles'), 'bas.blog_id = b.id',array())
             ->joinLeft(array('bt' => 's_blog_tags'), 'bt.blog_id = b.id',array())
+            ->joinLeft(array('bm' => 's_blog_media'), 'bm.blog_id = b.id AND bm.preview = 1',array())
             ->join(
                 array('c' => 's_categories'),
                 $this->qi('c.id') . ' = ' . $this->qi('b.category_id') .

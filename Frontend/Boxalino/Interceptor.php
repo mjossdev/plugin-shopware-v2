@@ -45,6 +45,7 @@ abstract class Shopware_Plugins_Frontend_Boxalino_Interceptor
     {
         $this->benchmark = Shopware_Plugins_Frontend_Boxalino_Benchmark::instance();
         $this->helper = Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper::instance();
+        $this->bxData = Shopware_Plugins_Frontend_Boxalino_Helper_BxData::instance();
         $this->bootstrap = $bootstrap;
         $this->config = Shopware()->Config();
     }
@@ -127,6 +128,10 @@ abstract class Shopware_Plugins_Frontend_Boxalino_Interceptor
     protected function Benchmark() 
     {
         return $this->benchmark;
+    }
+
+    protected function BxData() {
+        return $this->bxData;
     }
     
 }

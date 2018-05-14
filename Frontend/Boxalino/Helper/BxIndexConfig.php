@@ -58,8 +58,8 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxIndexConfig{
             'customer_group_key' => $customer->getKey(),
             'customer_group_id' => $customer->getId()
         );
-
-        $scopeConfig = new \Shopware_Components_Config($config);
+        $scopeConfig = Shopware()->Config();
+        $scopeConfig->setShop($shop);
         $children = $shop->getChildren();
         $languages[$shop->getId()] = substr($shop->getLocale()->toString(), 0, 2);
         $category_id[$shop->getId()] = $shop->getCategory()->getId();

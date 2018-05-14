@@ -5,3 +5,7 @@
         {$bxHelper->callNotification($bxForce)}
     {/if}
 {/block}
+
+{block name="frontend_index_header_meta_tags" append}
+    <meta name="bx_debug" content="{$smarty.now|date_format:"%Y-%m-%d %H:%M:%S"}" />
+{/block}

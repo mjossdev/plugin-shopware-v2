@@ -155,9 +155,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
             if(strpos($key, $prefix) === 0) {
                 self::$bxClient->addRequestContextParameter($key, $value);
             }
-            //if($keyValue[0] == 'dev_bx_disp') {
-              self::$bxClient->addToRequestMap($key, $value);
-            //}
+            self::$bxClient->addToRequestMap($key, $value);
         }
     }
 
@@ -420,6 +418,19 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         return false;
     }
 
+    public function getNarrative($choice_id = null) {
+
+        $lang = $this->getShortLocale();
+        $choice_id = is_null($choice_id) ? 'narrative' : $choice_id;
+        $bxRequest = new \com\boxalino\bxclient\v1\BxSearchRequest($lang, "", 20, $choice_id);
+        $bxRequest->setReturnFields(['products_ordernumber']);
+        $bxRequest->setGroupBy('products_group_id');
+        self::$bxClient->addRequest($bxRequest);
+        $response = $this->getResponse();
+        $narrative = $response->getNarratives();
+        return $narrative;
+    }
+
     public function addPortfolio($data){
         if($_REQUEST['dev_bx_debug'] == 'true'){
             $t1 = microtime(true);
@@ -454,119 +465,6 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
             $groups[$i]['account_id'] = $this->getCustomerID();
         }
         return $groups;
-        $this->flushResponses();
-        $this->resetRequests();
-        $rebuyChoice = $data['choiceId_re-buy'];
-        $rebuyMax = (int)$data['article_slider_max_number_rebuy'];
-        $reorientChoice = $data['choiceId_re-orient'];
-        $reorientMax = (int)$data['article_slider_max_number_reorient'];
-        $newbuyChoice = 'newbuy';
-        $requestFilters = $this->getSystemFilters("product", "", true);
-        $returnFields = $this->getReturnFields();
-        $choices = [$rebuyChoice, $newbuyChoice, $reorientChoice];
-        $newbuyRecommendations = [];
-        $rebuyRecommendations = [];
-        foreach ($groups as $index => $group) {
-            if($_REQUEST['dev_bx_debug'] == 'true'){
-                $t6 = microtime(true);
-            }
-            $groupRequest = array();
-            foreach ($choices as $choice) {
-                $max = $choice == 'reorient' ? $reorientMax : $rebuyMax;
-                $choiceFilter = array_merge($requestFilters, [new \com\boxalino\bxclient\v1\BxFilter("category_id", $group['context_parameter'])]);
-                $groupRequest[] = $this->createParametrizedPortfolioRequest($returnFields, $choiceFilter, $lang, $choice, $max);
-            }
-            self::$bxClient->addBundleRequest($groupRequest);
-            $request = null;
-            $customerID = $this->getCustomerID();
-            if (isset($_REQUEST['bx_customer_id'])) {
-                $customerID = $_REQUEST['bx_customer_id'];
-            }
-            self::$bxClient->addRequestContextParameter('_system_customerid', $customerID);
-            if($_REQUEST['dev_bx_debug'] == 'true'){
-                $t6 = (microtime(true) - $t6) * 1000 ;
-                $this->addNotification("Pre bundle request for group {$group['name']} took: " . $t6 . "ms.");
-            }
-        }
-        if($_REQUEST['dev_bx_debug'] == 'true'){
-            $t4 = (microtime(true) - $t4) * 1000 ;
-            $this->addNotification("Total time of pre bundle request took: " . $t4 . "ms.");
-        }
-        if($_REQUEST['dev_bx_debug'] == 'true'){
-            $t5 = microtime(true);
-        }
-        $response = $this->getResponse(true);
-
-        if($_REQUEST['dev_bx_debug'] == 'true'){
-            $t5 = (microtime(true) - $t5) * 1000 ;
-            $this->addNotification("Bundle request took: " . $t5 . "ms.");
-        }
-
-        foreach ($groups as $index => $group) {
-            if($_REQUEST['dev_bx_debug'] == 'true'){
-                $t7 = microtime(true);
-            }
-            $groupTime['total_after'] = microtime(true);
-            $groupData = $group;
-            $values = $this->convertToFieldArray(
-                $response->getHitFieldValues(['products_ordernumber'], $reorientChoice, true, $index),
-                'products_ordernumber');
-            $groupData['reorient']['sArticles'] = $this->getLocalArticles($values);
-
-
-            $purchaseDates = $response->getHitFieldValues(['purchase_date'], $rebuyChoice, true, $index);
-
-            $firstDate = reset(reset($purchaseDates)['purchase_date']);
-
-            if($response->getTotalHitCount($rebuyChoice, true, $index) > 0 &&
-                getdate(strtotime($firstDate))['year'] != 1970){
-
-                $values = $this->convertToFieldArray(
-                    $response->getHitFieldValues(['products_ordernumber'], $rebuyChoice, true, $index),
-                    'products_ordernumber');
-                $articles = $this->getLocalArticles($values);
-                $addArticles = array();
-                foreach ($articles as $i => $article) {
-                    $add = array_shift($purchaseDates);
-                    $date = reset($add['purchase_date']);
-                    if(getdate(strtotime($date))['year'] != 1970) {
-                        $article['bxTransactionDate'] = reset($add['purchase_date']);
-                        $addArticles[] = $article;
-                    }
-                }
-                $articles = null;
-                $groupData['rebuy']['sArticles'] = $addArticles;
-                $rebuyRecommendations[] = $groupData;
-            } else {
-                $values = $this->convertToFieldArray(
-                    $response->getHitFieldValues(['products_ordernumber'], $newbuyChoice, true, $index),
-                    'products_ordernumber');
-                $groupData['rebuy']['sArticles'] = $this->getLocalArticles($values);
-                $groupData['rebuy']['title'] = $groupData['rebuy']['alternative title'];
-                $newbuyRecommendations[] = $groupData;
-            }
-            if($_REQUEST['dev_bx_debug'] == 'true'){
-                $t7 = (microtime(true) - $t7) * 1000 ;
-                $this->addNotification("Post bundle request for group {$group['name']} took: " . $t7 . "ms.");
-            }
-        }
-        $this->flushResponses();
-        $this->resetRequests();
-        usort($rebuyRecommendations, function($a, $b){
-            return sizeof($a['rebuy']['sArticles']) < sizeof($b['rebuy']['sArticles']);
-        });
-
-        $portfolioData = array_merge($rebuyRecommendations, $newbuyRecommendations);
-        if($_REQUEST['dev_bx_debug'] == 'true'){
-            $t1 = (microtime(true) - $t1) * 1000 ;
-            $this->addNotification("Total time for all requests: " . ($t3 + $t5) . "ms.");
-            $this->addNotification("Total time of addPortfolio: " . $t1 . "ms.");
-        }
-        if($_REQUEST['portfolio_data'] == 'true'){
-            echo "<pre>";
-            var_dump($portfolioData);exit;
-        }
-        return $portfolioData;
     }
 
 
@@ -1145,7 +1043,8 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
      * @return mixed
      */
     public function getRecommendationHitFieldValues($choice, $field = 'id', $count = 0) {
-        return $this->getResponse()->getHitFieldValues([$field], $choice, true, $count);
+        $fields = is_array($field) ? $field : [$field];
+        return $this->getResponse()->getHitFieldValues($fields, $choice, true, $count);
     }
 
     /**

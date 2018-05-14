@@ -6,6 +6,17 @@
     </div>
 {/block}
 
+
+{block name='frontend_index_content_inner'}
+    {$smarty.block.parent}
+    {block name='detail_blog_recommendation'}
+        {if $bx_load_blogs}
+            <div class="bx-detail-blog" style="background-color: #ffffff">
+            </div>
+        {/if}
+    {/block}
+{/block}
+
 {block name="frontend_index_header_javascript_jquery_lib"}
     {$smarty.block.parent}
     <script>
@@ -30,6 +41,16 @@
                     StateManager.updatePlugin('*[data-product-slider="true"]', 'swProductSlider');
                     StateManager.destroyPlugin('.tab-menu--cross-selling', 'swTabMenu');
                     StateManager.addPlugin('.tab-menu--cross-selling', 'swTabMenu', {literal}{}{/literal}, ['xs', 's', 'm', 'l', 'xl']);
+                }, function (err) {
+                });
+
+                var blogcontroller = '{url controller=RecommendationSlider action=detailBlogRecommendation articleId=$sArticle.articleID}';
+                $.ajax({
+                    type: "GET",
+                    url: blogcontroller
+                }).done(function (res) {
+                    $('.bx-detail-blog').html(res);
+                    StateManager.updatePlugin('*[data-product-slider="true"]', 'swProductSlider');
                 }, function (err) {
                 });
             });

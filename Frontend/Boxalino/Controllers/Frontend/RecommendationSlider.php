@@ -28,7 +28,6 @@ class Shopware_Controllers_Frontend_RecommendationSlider extends Enlight_Control
     public function detailAction() {
         $choiceIds = array();
         $this->config = Shopware()->Config();
-        $this->marketingModule = Shopware()->Modules()->Marketing();
         $id = $this->request->getParam('articleId');
         if($id == 'sCategory') {
             $exception = new \Exception("Request with empty parameters from : " . $_SERVER['HTTP_REFERER']);
@@ -40,7 +39,9 @@ class Shopware_Controllers_Frontend_RecommendationSlider extends Enlight_Control
         $categoryId = $this->request->getParam('sCategory');
         $number = $this->Request()->getParam('number', null);
         $selection = $this->Request()->getParam('group', array());
-        if (!$this->isValidCategory($categoryId)) {
+
+        $bxData = Shopware_Plugins_Frontend_Boxalino_Helper_BxData::instance();
+        if (!$bxData->isValidCategory($categoryId)) {
             $categoryId = 0;
         }
         $this->config->offsetSet('similarLimit', 0);
@@ -138,23 +139,7 @@ class Shopware_Controllers_Frontend_RecommendationSlider extends Enlight_Control
         }
     }
 
-    private function isValidCategory($categoryId) {
-        $defaultShopCategoryId = Shopware()->Shop()->getCategory()->getId();
 
-        /**@var $repository \Shopware\Models\Category\Repository*/
-        $repository = Shopware()->Models()->getRepository('Shopware\Models\Category\Category');
-        $categoryPath = $repository->getPathById($categoryId);
-
-        if (!$categoryPath) {
-            return true;
-        }
-
-        if (!array_key_exists($defaultShopCategoryId, $categoryPath)) {
-            return false;
-        }
-
-        return true;
-    }
 
     public function portfolioRecommendationAction() {
 
@@ -205,21 +190,19 @@ class Shopware_Controllers_Frontend_RecommendationSlider extends Enlight_Control
 
         try{
             $helper = Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper::instance();
+            $bxData = Shopware_Plugins_Frontend_Boxalino_Helper_BxData::instance();
             $choiceId = 'read_portfolio';
             $min = 10;
             $max = 10;
             $context = $this->Request()->getQuery('category_label');
             $helper->getRecommendation($choiceId, $max, $min, 0, $context, 'portfolio_blog', false, array(), true);
-            $blogIds = $helper->getRecommendation($choiceId, $max, $min, 0, $context, 'portfolio_blog', true, array(), true);
-            foreach ($blogIds as $index => $id) {
-                $blogIds[$index] = str_replace('blog_', '', $id);
-            }
+            $fields = ['products_blog_title', 'products_blog_id', 'products_blog_category_id', 'products_blog_short_description', 'products_blog_media_id'];
+            $blogs = $helper->getRecommendationHitFieldValues($choiceId, $fields);
+            $blogArticles = $bxData->transformBlog($blogs);
             $this->View()->loadTemplate('frontend/_includes/product_slider_items.tpl');
             $path = Shopware()->Plugins()->Frontend()->Boxalino()->Path();
             $this->View()->addTemplateDir($path . 'Views/emotion/');
             $this->View()->extendsTemplate('frontend/plugins/boxalino/_includes/product_slider_item.tpl');
-            $blogArticles = $helper->getBlogs($blogIds);
-            $blogArticles = $this->enhanceBlogArticles($blogArticles);
             $this->View()->assign('articles', $blogArticles);
             $this->View()->assign('bxBlogRecommendation', true);
         } catch(\Exception $exception) {
@@ -227,45 +210,33 @@ class Shopware_Controllers_Frontend_RecommendationSlider extends Enlight_Control
         }
     }
 
-    private function enhanceBlogArticles($blogArticles) {
-        if(empty($blogArticles)) {
-            return $blogArticles;
+    public function detailBlogRecommendationAction() {
+
+        try{
+            $helper = Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper::instance();
+            $bxData = Shopware_Plugins_Frontend_Boxalino_Helper_BxData::instance();
+            $choiceId = Shopware()->Config()->get('boxalino_detail_blog_recommendation_name');
+            $min = Shopware()->Config()->get('boxalino_detail_blog_recommendation_min');
+            $max = Shopware()->Config()->get('boxalino_detail_blog_recommendation_max');
+            $context = $this->Request()->getQuery('articleId');
+            $relatedBlogs = $bxData->getRelatedBlogs($context);
+            $contextParams = ["bx_{$choiceId}_$context" => $relatedBlogs];
+            $helper->getRecommendation($choiceId, $max, $min, 0, $context, 'product', false, array(), true, $contextParams);
+            $fields = ['products_blog_title', 'products_blog_id', 'products_blog_category_id', 'products_blog_short_description', 'products_blog_media_id'];
+            $blogs = $helper->getRecommendationHitFieldValues($choiceId, $fields);
+            $articles = $bxData->transformBlog($blogs);
+            $this->View()->loadTemplate('frontend/plugins/boxalino/detail/ajax_blog_rec.tpl');
+            $path = Shopware()->Plugins()->Frontend()->Boxalino()->Path();
+            $this->View()->addTemplateDir($path . 'Views/emotion/');
+            $this->View()->extendsTemplate('frontend/plugins/boxalino/_includes/product_slider_item.tpl');
+            $this->View()->assign('articles', $articles);
+            $this->View()->assign('bxBlogRecommendation', true);
+            $this->View()->assign('fixedImage', true);
+            $this->View()->assign('productBoxLayout', 'emotion');
+            $this->View()->assign('Data', ['article_slider_arrows' => 1]);
+            $this->View()->assign('sBlogTitle', $helper->getSearchResultTitle($choiceId));
+        } catch(\Exception $exception) {
+            Shopware()->Plugins()->Frontend()->Boxalino()->logException($exception, __FUNCTION__, $this->request->getRequestUri());
         }
-        $mediaIds = array_map(function ($blogArticle) {
-            if (isset($blogArticle['media']) && $blogArticle['media'][0]['mediaId']) {
-                return $blogArticle['media'][0]['mediaId'];
-            }
-        }, $blogArticles);
-
-        $context = Shopware()->Container()->get('shopware_storefront.context_service')->getShopContext();
-        $medias = Shopware()->Container()->get('shopware_storefront.media_service')->getList($mediaIds, $context);
-
-
-        foreach ($blogArticles as $key => $blogArticle) {
-            //adding number of comments to the blog article
-            $blogArticles[$key]["numberOfComments"] = count($blogArticle["comments"]);
-
-            //adding thumbnails to the blog article
-            if (empty($blogArticle["media"][0]['mediaId'])) {
-                continue;
-            }
-
-            $mediaId = $blogArticle["media"][0]['mediaId'];
-
-            if (!isset($medias[$mediaId])) {
-                continue;
-            }
-
-            /**@var $media \Shopware\Bundle\StoreFrontBundle\Struct\Media*/
-            $media = $medias[$mediaId];
-            $media = Shopware()->Container()->get('legacy_struct_converter')->convertMediaStruct($media);
-
-            if (Shopware()->Shop()->getTemplate()->getVersion() < 3) {
-                $blogArticles[$key]["preview"]["thumbNails"] = array_column($media['thumbnails'], 'source');
-            } else {
-                $blogArticles[$key]['media'] = $media;
-            }
-        }
-        return $blogArticles;
     }
 }

@@ -31,7 +31,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
     }
 
     public function getVersion() {
-        return '1.6.9';
+        return '1.6.10';
     }
 
     public function getInfo() {
@@ -318,6 +318,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
         $this->registerLandingPageEmotion();
         $this->registerVoucherEmotion();
         $this->registerCPOFinderEmotion();
+        $this->registerNarrativeEmotion();
 
         $this->subscribeEvent(
             'Enlight_Controller_Action_PostDispatchSecure_Widgets_Campaign',
@@ -348,6 +349,15 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
         if ($position !== false)
             $shortLocale = substr($shortLocale, 0, $position);
         return $shortLocale;
+    }
+
+    public function registerNarrativeEmotion() {
+        $component = $this->createEmotionComponent(array(
+            'name' => 'Boxalino Narrative',
+            'template' => 'boxalino_narrative',
+            'description' => 'Dynamic rendering of visual elements.',
+            'convertFunction' => null
+        ));
     }
 
     /**
@@ -572,6 +582,14 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
             return $data;
         }
 
+        if ($args['element']['component']['template'] == "boxalino_narrative") {
+            $this->disableHttpCache();
+
+            $narrativeData = $this->onNarrative();
+            $data = array_merge($data, $narrativeData);
+            return $data;
+        }
+
         if ($args['element']['component']['template'] == "boxalino_product_finder") {
             $this->disableHttpCache();
             Shopware()->PluginLogger()->info("bootstrap HTTP_REFERER: " . json_encode($_SERVER['HTTP_REFERER']));
@@ -669,6 +687,14 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
         Shopware()->Template()->addTemplateDir(Shopware()->Plugins()->Frontend()->Boxalino()->Path() . 'Views/');
         return Shopware()->Plugins()->Frontend()->Boxalino()->Path() . "/Controllers/backend/BoxalinoPerformance.php";
 
+    }
+
+    public function onNarrative() {
+        try{
+            return $this->searchInterceptor->narrative();
+        }catch (\Exception $e) {
+            $this->logException($e, __FUNCTION__);
+        }
     }
 
     public function onBlog(Enlight_Event_EventArgs $arguments) {

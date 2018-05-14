@@ -99,31 +99,31 @@ class BxChooseResponse
 
         $searchResult = $variant->searchResult;
         if($considerRelaxation && $variant->searchResult->totalHitCount == 0 && !($discardIfSubPhrases && $this->areThereSubPhrases())) {
-           $correctedResult = $this->getFirstPositiveSuggestionSearchResult($variant, $maxDistance);
+            $correctedResult = $this->getFirstPositiveSuggestionSearchResult($variant, $maxDistance);
         }
         return isset($correctedResult) ? $correctedResult : $searchResult;
     }
-	
-	public function getSearchResultHitVariable($searchResult, $hitId, $field) {
-		if($searchResult) {
-			if($searchResult->hits) {
-				foreach ($searchResult->hits as $item) {
-					if($item->values['id'] == $hitId) {
-						return $item->$$field;
-					}
-				}
-			} else if(isset($searchResult->hitsGroups)) {
-				foreach($searchResult->hitsGroups as $hitGroup) {
-					if($hitGroup->groupValue == $hitId) {
-						return $hitGroup->hits[0]->$field;
-					}
-				}
-			}
-		}
-		return null;
-	}
-	
-	public function getSearchResultHitFieldValue($searchResult, $hitId, $fieldName=''){
+
+    public function getSearchResultHitVariable($searchResult, $hitId, $field) {
+        if($searchResult) {
+            if($searchResult->hits) {
+                foreach ($searchResult->hits as $item) {
+                    if($item->values['id'][0] == $hitId) {
+                        return $item->values[$field][0];
+                    }
+                }
+            } else if(isset($searchResult->hitsGroups)) {
+                foreach($searchResult->hitsGroups as $hitGroup) {
+                    if($hitGroup->groupValue == $hitId && isset($hitGroup->hits[0]->values[$field])) {
+                        return $hitGroup->hits[0]->values[$field];
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    public function getSearchResultHitFieldValue($searchResult, $hitId, $fieldName=''){
 
         if($searchResult && $fieldName != '') {
             if($searchResult->hits) {
@@ -245,8 +245,8 @@ class BxChooseResponse
         $searchResult = $this->getVariantSearchResult($variant, $considerRelaxation, $maxDistance, $discardIfSubPhrases);
         $facets = $this->getRequestFacets($choice);
 
-        if(empty($facets) || $searchResult == null){
-            return new \com\boxalino\bxclient\v1\BxFacets();;
+        if(is_null($facets)){
+            $facets =  new \com\boxalino\bxclient\v1\BxFacets();
         }
         $facets->setSearchResults($searchResult);
         return $facets;
@@ -392,6 +392,107 @@ class BxChooseResponse
         return $defaultExtraInfoValue;
     }
 
+    public function mergeJourneyParams($parentParams, $childParams) {
+        $mergedParams = is_null($parentParams) ? [] : $parentParams;
+        $childParams = is_null($childParams) ? [] : $childParams;
+        foreach ($childParams as $childParam) {
+            $add = true;
+            $childParamName = $childParam['name'];
+            foreach ($parentParams as $parentParam) {
+                $parentParamName = $parentParam['name'];
+                if($parentParamName == $childParamName) {
+                    $add = false;
+                    break;
+                }
+            }
+            if($add && !is_null($childParam)) {
+                $mergedParams[] = $childParam;
+            }
+        }
+        return $mergedParams;
+    }
+
+    public function getCPOJourney($choice_id = 'narrative') {
+        $variant = $this->getChoiceResponseVariant($choice_id);
+        $journey = array();
+        if($variant) {
+            foreach ($variant->extraInfo as $k => $v) {
+                if(strpos($k, 'cpo_journey') === 0) {
+                    $journey = json_decode($v, true);
+                    break;
+                }
+            }
+        }
+        return $journey;
+    }
+
+    public function getStoryLine($choice_id = 'narrative') {
+        $journey = $this->getCPOJourney($choice_id);
+        $params = $journey['parameters'];
+        foreach ($journey['storyLines'] as $gi => $groupedStoryLine) {
+            $params = $this->mergeJourneyParams($params, $groupedStoryLine['parameters']);
+            $storyLine = $groupedStoryLine['storyLine'];
+            $storyLine['parameters'] = $this->mergeJourneyParams($params, $storyLine['parameters']);
+            return $storyLine;
+        }
+        return [];
+    }
+
+    public function getNarratives($choice_id = 'narrative') {
+        $storyLine = $this->getStoryLine($choice_id);
+        $params = $storyLine['parameters'];
+        foreach ($storyLine['groupedNarratives'] as $groupedNarrative) {
+            $narratives = reset($groupedNarrative['narratives']);
+            $params = $this->mergeJourneyParams($params, $narratives['parameters']);
+            $params = $this->mergeJourneyParams($params, $narratives['narrative']['parameters']);
+            $acts = $narratives['narrative']['acts'];
+            $narratives['narrative']['acts'] = $this->propagateParams($acts , $params);
+            return $narratives['narrative'];
+        }
+        return array();
+    }
+
+    protected function prepareVisualElement($render, $overwriteParams) {
+
+        $visualElement = $render['visualElement'];
+        $visualElementParams = $this->mergeJourneyParams($render['parameters'], $visualElement['parameters']);
+        $visualElement['parameters'] = $this->mergeJourneyParams($overwriteParams, $visualElementParams);
+        if(sizeof($visualElement['subRenderings'])) {
+            foreach ($visualElement['subRenderings'] as $index => $subRendering) {
+                foreach ($subRendering['rendering']['visualElements'] as $index2 => $subElement) {
+                    $subRendering['rendering']['visualElements'][$index2] = $this->prepareVisualElement($subElement, $overwriteParams);
+                }
+                $visualElement['subRenderings'][$index] = $subRendering;
+            }
+        }
+        $render['visualElement'] = $visualElement;
+        return $render;
+    }
+
+    protected function propagateParams($acts, $params) {
+        foreach ($acts as $index => $act) {
+            $params = $this->mergeJourneyParams($params, $act['parameters']);
+            $act['parameters'] = $params;
+            $chapter = $act['chapter'];
+            $params = $this->mergeJourneyParams($params, $chapter['parameters']);
+            $chapter['parameters'] = $params;
+            foreach ($chapter['renderings'] as $index1 => $rendering) {
+                $params = $this->mergeJourneyParams($params, $rendering['parameters']);
+                $rendering['parameters'] = $params;
+                $params = $this->mergeJourneyParams($params, $rendering['rendering']['parameters']);
+                $rendering['rendering']['parameters'] = $params;
+                foreach ($rendering['rendering']['visualElements'] as $index2 => $render) {
+                    $render = $this->prepareVisualElement($render, $params);
+                    $rendering['rendering']['visualElements'][$index2] = $render;
+                }
+                $chapter['renderings'][$index1] = $rendering;
+            }
+            $act['chapter'] = $chapter;
+            $acts[$index] = $act;
+        }
+        return $acts;
+    }
+
     public function getVariantExtraInfo($variant, $extraInfoKey, $defaultExtraInfoValue = null) {
         if($variant) {
             if(is_array($variant->extraInfo) && sizeof($variant->extraInfo) > 0 && isset($variant->extraInfo[$extraInfoKey])) {
@@ -504,4 +605,20 @@ class BxChooseResponse
         return $this->getExtraInfo('search_message_display_type', $defaultExtraInfoValue, $choice, $considerRelaxation, $count, $maxDistance, $discardIfSubPhrases);
     }
 
+    public function getLocalizedValue($values, $key = null) {
+        if(is_array($values)) {
+            $language = $this->getLanguage();
+            if(is_null($key) && isset($values[$language])) {
+                return $values[$language];
+            }
+            if(isset($values[$key])) {
+                foreach ($values[$key] as $lang => $val) {
+                    if($lang == $language) {
+                        return $val;
+                    }
+                }
+            }
+        }
+        return $values;
+    }
 }
