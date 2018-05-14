@@ -520,7 +520,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                     'productBoxLayout' => $boxLayout,
                     'sCategoryCurrent' => $catId,
                 ]);
-                $body['listing'] = $this->View()->fetch('frontend/listing/listing_ajax.tpl');
+                $body['listing'] = '<div style="display:none;">'.$this->Helper()->getRequestId().'</div>' . $this->View()->fetch('frontend/listing/listing_ajax.tpl');
                 $sPerPage = $this->Request()->getParam('sPerPage');
                 $this->View()->assign([
                     'sPage' => $this->Request()->getParam('sPage'),
@@ -775,6 +775,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             'sSort' => $this->Request()->getParam('sSort'),
             'showListing' => true,
             'shortParameters' => $this->get('query_alias_mapper')->getQueryAliases(),
+            'bx_request_id' => $this->Helper()->getRequestId()
         );
         $templateProperties = array_merge($viewData, $templateProperties);
         $this->View()->assign($templateProperties);

@@ -1275,4 +1275,8 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
     public function callNotification($force=false) {
         self::$bxClient->finalNotificationCheck($force);
     }
+
+    public function getRequestId() {
+        return $this->getResponse()->getExtraInfo("_bx_request_id");
+    }
 }
