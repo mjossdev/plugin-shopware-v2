@@ -1938,7 +1938,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                         $key = 'immediate_delivery';
                     }
                     $facet = $facets[$key];
-                    $facetFieldName = $key == 'shipping_free' ? 'shippingFree' : 'immediateDelivery';
+                    $facetFieldName = $key == 'shipping_free' ? $mapper->getShortAlias('shippingFree') : $mapper->getShortAlias('immediateDelivery');
 
                     $facetValues = $bxFacets->getFacetValues($fieldName);
                     if($facetValues && sizeof($facetValues) == 1 && reset($facetValues) == 0) {
