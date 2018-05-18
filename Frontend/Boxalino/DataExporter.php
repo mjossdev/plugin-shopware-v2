@@ -1168,6 +1168,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
                         $this->shopProductIds[$row['id']] = $shop_id;
                         unset($row['price']);
                         $row['purchasable'] = ($row['laststock'] == 1 && $row['instock'] == 0) ? 0 : 1;
+                        $row['immediate_delivery'] = ($row['instock'] >= $row['minpurchase']) ? 1 : 0;
                         if ($this->delta && !isset($this->deltaIds[$row['articleID']])) {
                             $this->deltaIds[$row['articleID']] = $row['articleID'];
                         }
@@ -1208,6 +1209,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
         $this->log->info("All shops for main product took: $end ms, memory: " . memory_get_usage(true));
         $mainSourceKey = $this->bxData->addMainCSVItemFile($files->getPath('products.csv'), 'id');
         $this->bxData->addSourceStringField($mainSourceKey, 'bx_purchasable', 'purchasable');
+        $this->bxData->addSourceStringField($mainSourceKey, 'immediate_delivery', 'immediate_delivery');
         $this->bxData->addSourceStringField($mainSourceKey, 'bx_type', 'id');
         $pc_field = $this->_config->isVoucherExportEnabled($account) ?
             'CASE WHEN group_id IS NULL THEN CASE WHEN %%LEFTJOINfield_products_voucher_id%% IS NULL THEN "blog" ELSE "voucher" END ELSE "product" END AS final_value' :

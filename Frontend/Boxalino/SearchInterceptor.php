@@ -1491,9 +1491,9 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                     break;
                 case 'immediate_delivery':
                     $immediate_delivery = isset($params[$mapper->getShortAlias('immediateDelivery')]) ? $params[$mapper->getShortAlias('immediateDelivery')] : null;
-                    $options['products_bx_purchasable']['label'] = $snippetManager->get('immediate_delivery', 'Sofort lieferbar');
+                    $options['products_immediate_delivery']['label'] = $snippetManager->get('immediate_delivery', 'Sofort lieferbar');
                     if($immediate_delivery) {
-                        $options['products_bx_purchasable']['value'] = [1];
+                        $options['products_immediate_delivery']['value'] = [1];
                     }
                     break;
                 case 'vote_average':
@@ -1933,7 +1933,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                     break;
                 case 'products_shippingfree':
                     $key = 'shipping_free';
-                case 'products_bx_purchasable':
+                case 'products_immediate_delivery':
                     if($key == '') {
                         $key = 'immediate_delivery';
                     }
