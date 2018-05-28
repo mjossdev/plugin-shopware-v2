@@ -765,6 +765,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         }
         $totalHitCount = $this->Helper()->getTotalHitCount();
         $templateProperties = array(
+            'sPage' => $this->Request()->getParam('sPage', 1),
             'bxFacets' => $this->Helper()->getFacets(),
             'criteria' => $criteria,
             'facets' => $facets,
