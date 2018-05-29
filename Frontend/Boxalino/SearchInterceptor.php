@@ -764,7 +764,10 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             $sortings = $service->getList($sortingIds, $context);
         }
         $totalHitCount = $this->Helper()->getTotalHitCount();
+        $pageCounts = array_values(explode('|', $this->get('config')->get('numberarticlestoshow')));
         $templateProperties = array(
+            'pageSizes' => $pageCounts,
+            'sPerPage' => $pageCounts,
             'sPage' => $this->Request()->getParam('sPage', 1),
             'bxFacets' => $this->Helper()->getFacets(),
             'criteria' => $criteria,

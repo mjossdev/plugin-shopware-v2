@@ -11,15 +11,25 @@ class P13nTCurlClient extends TCurlClient {
 
     protected $authorizationString;
 
-  /**
-   * Opens and sends the actual request over the HTTP connection
-   *
-   * @throws TTransportException if a writing error occurs
-   */
+    protected $curl_timeout;
+
+    public function __construct(
+        $host, $port=80, $uri='', $scheme = 'http', $curl_timeout = 1000
+    )
+    {
+        $this->curl_timeout = $curl_timeout;
+        parent::__construct($host, $port, $uri, $scheme);
+    }
+
+    /**
+     * Opens and sends the actual request over the HTTP connection
+     *
+     * @throws TTransportException if a writing error occurs
+     */
     public function flush() {
         // God, PHP really has some esoteric ways of doing simple things.
         if (!self::$curlHandle) {
-            register_shutdown_function(array('Thrift\\Transport\\TCurlClient', 'closeCurlHandle'));
+            //register_shutdown_function(array('Thrift\\Transport\\TCurlClient', 'closeCurlHandle'));
             self::$curlHandle = curl_init();
             curl_setopt(self::$curlHandle, CURLOPT_RETURNTRANSFER, true);
             curl_setopt(self::$curlHandle, CURLOPT_BINARYTRANSFER, true);
@@ -29,6 +39,7 @@ class P13nTCurlClient extends TCurlClient {
             // FOLLOWLOCATION cannot be activated when safe_mode is enabled or an open_basedir is set
             @curl_setopt(self::$curlHandle, CURLOPT_FOLLOWLOCATION, true);
             @curl_setopt(self::$curlHandle, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
+            curl_setopt(self::$curlHandle, CURLOPT_CONNECTTIMEOUT_MS, $this->curl_timeout);
             curl_setopt(self::$curlHandle, CURLOPT_MAXREDIRS, 1);
         }
         $host = $this->host_.($this->port_ != 80 ? ':'.$this->port_ : '');
