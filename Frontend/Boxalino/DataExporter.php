@@ -631,10 +631,11 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
         $db = $this->db;
         $headers = array('id', 'title', 'author_id', 'active', 'short_description', 'description', 'views',
             'display_date', 'category_id', 'template', 'meta_keywords', 'meta_description', 'meta_title',
-            'assigned_articles', 'tags', 'media_id', 'shop_id');
+            'assigned_articles', 'tags', 'media_id', 'shop_id', 'media_url');
         $id = $this->_config->getAccountStoreId($account);
         $shopCategories = $this->getShopCategoryIds($id);
         $data = array();
+        $media_service = Shopware()->Container()->get('shopware_media.media_service');
         $sql = $db->select()
             ->from(array('b' => 's_blog'),
                 array('id' => new Zend_Db_Expr("CONCAT('blog_', b.id)"),
@@ -644,12 +645,14 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
                     'b.meta_keywords','b.meta_keywords','b.meta_description','b.meta_title',
                     'assigned_articles' => new Zend_Db_Expr("GROUP_CONCAT(bas.article_id)"),
                     'tags' => new Zend_Db_Expr("GROUP_CONCAT(bt.name)"),
-                    'media_id' => 'bm.media_id'
+                    'media_id' => 'bm.media_id',
+                    'media_path' => 'm.path'
                 )
             )
             ->joinLeft(array('bas' => 's_blog_assigned_articles'), 'bas.blog_id = b.id',array())
             ->joinLeft(array('bt' => 's_blog_tags'), 'bt.blog_id = b.id',array())
             ->joinLeft(array('bm' => 's_blog_media'), 'bm.blog_id = b.id AND bm.preview = 1',array())
+            ->joinLeft(array('m' => 's_media'), 'bm.media_id = m.id',array())
             ->join(
                 array('c' => 's_categories'),
                 $this->qi('c.id') . ' = ' . $this->qi('b.category_id') .
@@ -668,6 +671,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
             }
             unset($row['path']);
             $row['shop_id'] = $blog_shop_id;
+            $row['media_url'] = $row['media_path'] ? $media_service->getUrl($row['media_path']) : null;
             $data[] = $row;
         }
         if (count($data)) {

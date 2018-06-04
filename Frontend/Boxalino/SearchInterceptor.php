@@ -61,6 +61,9 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         }
         foreach ($params as $key => $value) {
             $request->setParam($key, $value);
+            if($key == 'p') {
+                $request->setParam('sPage', (int) $value);
+            }
         }
         return $request;
     }
@@ -88,9 +91,28 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
 
     public function narrative() {
         $data = array();
-        $data['narrative'] = $this->Helper()->getNarrative();
         $request = Shopware()->Front()->Request();
         $request = $this->setRequestWithRefererParams($request);
+        $params = $request->getParams();
+        $context  = $this->get('shopware_storefront.context_service')->getShopContext();
+        $criteria = $this->get('shopware_search.store_front_criteria_factory')->createSearchCriteria($request, $context);
+        $hitCount = $criteria->getLimit();
+        $pageOffset = $criteria->getOffset();
+        $orderParam = $this->get('query_alias_mapper')->getShortAlias('sSort');
+        $defaultSort = null;
+        if(is_null($request->getParam($orderParam))) {
+            $request->setParam('sSort', 7);
+        }
+        if(is_null($request->getParam('sSort')) && is_null($request->getParam($orderParam))) {
+            if($this->Config()->get('boxalino_navigation_sorting')) {
+                $request->setParam('sSort', 7);
+            } else {
+                $default = $this->get('config')->get('defaultListingSorting');
+                $request->setParam('sSort', $default);
+            }
+        }
+        $sort =  $this->getSortOrder($criteria, null, true);
+        $data['narrative'] = $this->Helper()->getNarrative($hitCount, $pageOffset, $sort, $params);
         $data['bxRender'] = new Shopware_Plugins_Frontend_Boxalino_Helper_BxRender($this->Helper(), $this->BxData(), $this, $request);
         return $data;
     }
@@ -142,7 +164,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         if (!$this->Helper()->areThereSubPhrases() && $totalHitCount = $this->Helper()->getTotalHitCount()) {
             $ids = $this->Helper()->getHitFieldValues('products_ordernumber');
             $articles = $this->BxData()->getLocalArticles($ids);
-            $facets = $this->updateFacetsWithResult($facets, $context);
+            $facets = $this->updateFacetsWithResult($facets, $context, $request);
         }
 //        $view->addTemplateDir($this->Bootstrap()->Path() . 'Views/emotion/');
         $view->loadTemplate('frontend/search/fuzzy.tpl');
@@ -1167,7 +1189,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
     }
 
     // mostly copied from Frontend/Blog.php#indexAction
-    private function enhanceBlogArticles($blogArticles) {
+    public function enhanceBlogArticles($blogArticles) {
         $mediaIds = array_map(function ($blogArticle) {
             if (isset($blogArticle['media']) && $blogArticle['media'][0]['mediaId']) {
                 return $blogArticle['media'][0]['mediaId'];

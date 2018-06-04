@@ -10,12 +10,15 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxRender{
 
     protected $searchInterceptor;
 
+    protected $resourceManager;
+
     public function __construct($p13Helper, $dataHelper, $searchInterceptor, $request)
     {
         $this->p13Helper = $p13Helper;
         $this->dataHelper = $dataHelper;
         $this->searchInterceptor = $searchInterceptor;
         $this->request = $request;
+        $this->resourceManager = Shopware_Plugins_Frontend_Boxalino_Helper_BxResourceManager::instance();
     }
 
     protected function isJson($string) {
@@ -58,7 +61,13 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxRender{
                     }
                 }
             }
-            $html = $view->render();
+            try{
+                $html = $view->render();
+            }catch(\Exception $e) {
+                var_dump($e->getMessage());
+                var_dump($additionalParameter);
+                var_dump($viewElement);exit;
+            }
         }
         return $html;
     }
@@ -79,24 +88,84 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxRender{
     }
 
     protected function assignTemplateData(&$view, $viewElement, $additionalParameter) {
+        $parameters = $viewElement['parameters'];
+        foreach ($parameters as $parameter) {
+            if($parameter['name'] == 'format') {
+                $viewElement['format']  = reset($parameter['values']);
+            }
+        }
         switch($viewElement['format']) {
             case 'product':
                 if(!empty($additionalParameter)) {
                     $index = isset($additionalParameter['list_index']) ? $additionalParameter['list_index'] : 0;
-                    $view->assign('sArticle', $this->getViewElementProduct($index));
+                    $view->assign('sArticle', $this->getViewElementProduct($viewElement, $index));
+                } else {
+                    $this->getListingData($view, $viewElement);
+                    $this->prepareCollection($viewElement);
+                    $view->assign('sPage', $this->request->getParam('sPage', 1));
+
                 }
                 break;
             case 'filter_panel':
                 $this->getFilterPanelData($view);
                 break;
             case 'banner':
-                $this->getFilterPanelData($view);
+                $this->getBannerData($view);
                 break;
             case 'blog':
-                $this->getBlogData($view);
+                $this->getBlogData($view, $viewElement);
+            case 'voucher':
+                $this->getVoucherData($view);
             default:
                 break;
         }
+    }
+
+    protected function getBlogData(&$view, $visualElement) {
+        $product = false;
+        $variant_index = 0;
+        $index = 0;
+        foreach ($visualElement['parameters'] as $parameter) {
+            if($parameter['name'] == 'variant') {
+                $variant_index = reset($parameter['values']);
+            } else if($parameter['name'] == 'index') {
+                $index = reset($parameter['values']);
+            }
+        }
+        $ids = $this->p13Helper->getHitFieldValues('id', 'blog', null, $variant_index);
+        foreach ($ids as $i => $id) {
+            $ids[$index] = str_replace('blog_', '', $id);
+        }
+        $entity_id = isset($ids[$index]) ? $ids[$index] : null;
+        if($entity_id) {
+            $collection = $this->resourceManager->getResource($variant_index, 'collection');
+            if(!is_null($collection)) {
+                foreach ($collection as $product) {
+                    if($product['id'] == $entity_id){
+                        return $product;
+                    }
+                }
+            }
+
+            $product = $this->resourceManager->getResource($entity_id, 'blog');
+            if(is_null($product)) {
+                $articles = $this->p13Helper->enhanceBlogArticles($this->p13Helper->getBlogs([$entity_id]));
+                $product = reset($articles);
+                $this->resourceManager->setResource($product, $entity_id, 'blog');
+            }
+        }
+        return $product;
+    }
+
+    protected function getBannerData(&$view) {
+        $config = ['choiceId_banner' => 'banner', 'max_banner' => 1, 'min_banner' => 1];
+        $bannerData = $this->p13Helper->addBanner($config);
+        $view->assign('Data', $bannerData);
+    }
+
+    protected function getVoucherData(&$view) {
+        $voucherData = $this->p13Helper->addVoucher('voucher');
+        $view->assign('voucher', $voucherData);
     }
 
     protected function getFilterPanelData(&$view) {
@@ -110,7 +179,35 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxRender{
         $facets = $this->searchInterceptor->updateFacetsWithResult($facets, $context, $this->request);
         $view->assign('facets', $facets);
         $view->assign('criteria', $criteria);
+        $view->assign('listingMode', 'full_page_reload');
+        $view->assign('sSort', $this->request->getParam('sSort', 7));
         $view->assign('facetOptions', $this->searchInterceptor->getFacetOptions());
+        $view->assign('shortParameters', Shopware()->Container()->get('query_alias_mapper')->getQueryAliases());
+    }
+
+    protected function getListingData(&$view, $visualElement) {
+        $variant_index = 0;
+        foreach ($visualElement['parameters'] as $parameter) {
+            if($parameter['name'] == 'variant') {
+                $variant_index = reset($parameter['values']);
+                break;
+            }
+        }
+        $context = Shopware()->Container()->get('shopware_storefront.context_service')->getShopContext();
+        $criteria = Shopware()->Container()->get('shopware_search.store_front_criteria_factory')->createSearchCriteria($this->request, $context);
+        $view->assign('sPage', $this->request->getParam('sPage', 1));
+        $view->assign('sSort', $this->request->getParam('sSort', 7));
+        $view->assign('baseUrl', '/shopware_5_3v2/');
+        $view->assign('pages', ceil($this->p13Helper->getTotalHitCount('product', null, $variant_index) / $criteria->getLimit()));
+        $view->assign('shortParameters', Shopware()->Container()->get('query_alias_mapper')->getQueryAliases());
+        $view->assign('listingMode', 'full_page_reload');
+        $sortingIds = Shopware()->Container()->get('config')->get('searchSortings');
+        $sortingIds = array_filter(explode('|', $sortingIds));
+        $service = Shopware()->Container()->get('shopware_storefront.custom_sorting_service');
+        $sortings = $service->getList($sortingIds, $context);
+        $view->assign('sortings', $sortings);
+        $view->assign('criteria', $criteria);
+        $view->assign('pageSizes', explode('|', Shopware()->Container()->get('config')->get('numberArticlesToShow')));
     }
 
     protected function applyThemeConfig(&$view) {
@@ -138,15 +235,55 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxRender{
         $view->assign('bxRender', $this);
     }
 
-    protected function getViewElementProduct($index) {
-        $numbers = $this->p13Helper->getHitFieldValues('products_ordernumber');
-        $product = null;
-        foreach ($numbers as $i => $number) {
-            if($i == $index) {
-                $product = reset($this->p13Helper->getLocalArticles([$number]));
-                break;
+    protected function getViewElementProduct($visualElement, $index) {
+
+        $product = false;
+        $variant_index = 0;
+        foreach ($visualElement['parameters'] as $parameter) {
+            if($parameter['name'] == 'variant') {
+                $variant_index = reset($parameter['values']);
+            } else if($parameter['name'] == 'index') {
+                $index = reset($parameter['values']);
+            }
+        }
+        $ids = $this->p13Helper->getHitFieldValues('products_ordernumber', 'product', null, $variant_index);
+        $entity_id = isset($ids[$index]) ? $ids[$index] : null;
+        if($entity_id) {
+            $collection = $this->resourceManager->getResource($variant_index, 'collection');
+            if(!is_null($collection)) {
+                foreach ($collection as $product) {
+                    if($product['ordernumber'] == $entity_id){
+                        return $product;
+                    }
+                }
+            }
+
+            $product = $this->resourceManager->getResource($entity_id, 'product');
+            if(is_null($product)) {
+                $product = reset($this->p13Helper->getLocalArticles([$entity_id]));
+                $this->resourceManager->setResource($product, $entity_id, 'product');
             }
         }
         return $product;
+    }
+
+    protected function prepareCollection($visualElement) {
+        $variant_index = 0;
+        foreach ($visualElement['parameters'] as $parameter) {
+            if($parameter['name'] == 'variant') {
+                $variant_index = reset($parameter['values']);
+                break;
+            }
+        }
+        $collection = $this->resourceManager->getResource($variant_index, 'collection');
+        if(is_null($collection)) {
+            $ids = $this->p13Helper->getHitFieldValues('products_ordernumber', 'product', null, $variant_index);
+            $collection = $this->p13Helper->getLocalArticles($ids);
+            $this->resourceManager->setResource($collection, $variant_index, 'collection');
+        }
+    }
+
+    public function getLocalizedValue($values) {
+        return $this->p13Helper->getResponse()->getLocalizedValue($values);
     }
 }

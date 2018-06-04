@@ -264,11 +264,11 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         self::$bxClient->addRequestContextParameter('_system_customerid', $customerID);
         $bxResponse = $this->getResponse();
 
-        $voucherIdFromHits = $bxResponse->getHitFieldValues(['products_voucher_id'], 'voucher');
+        $voucherIdFromHits = $bxResponse->getHitFieldValues(['products_voucher_id'], $choiceId);
 
-        foreach ($voucherIdFromHits as $voucherIdFromHit) {
+        foreach ($voucherIdFromHits as $id => $voucherIdFromHit) {
 
-          $voucherId = $voucherIdFromHit['products_voucher_id'][0];
+          $voucherId = $id;
 
           if(strpos($voucherId, 'voucher_') === 0) {
               $voucherId = str_replace('voucher_', '', $voucherId);
@@ -279,46 +279,45 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
     }
 
     public function addBanner($config){
-      $this->flushResponses();
-      $this->resetRequests();
-      $type = 'bxi_content';
-      $returnFields = $this->getReturnFields($type);
-      $lang = $this->getShortLocale();
-      $choiceId = $config['choiceId_banner'];
-      $max = $config['max_banner'];
-      $min = $config['min_banner'];
-      $bxRequest = new \com\boxalino\bxclient\v1\BxParametrizedRequest($lang, $choiceId, $max, $min);
-      $this->setPrefixContextParameter($bxRequest->getRequestWeightedParametersPrefix());
-      $this->checkPrefixContextParameter($this->getPrefixContextParameter());
-      $bxRequest->setGroupBy($this->getEntityIdFieldName($type));
-      $bxRequest->setReturnFields($returnFields);
-      $bxRequest->setOffset(0);
+//      $this->flushResponses();
+//      $this->resetRequests();
 
-      self::$bxClient->addRequest($bxRequest);
-      self::$choiceContexts[$choiceId][] = $type;
+        $type = 'bxi_content';
+        $returnFields = $this->getReturnFields($type);
+        $lang = $this->getShortLocale();
+        $choiceId = $config['choiceId_banner'];
+        $max = $config['max_banner'];
+        $min = $config['min_banner'];
+        $bxRequest = new \com\boxalino\bxclient\v1\BxParametrizedRequest($lang, $choiceId, $max, $min);
+        $this->setPrefixContextParameter($bxRequest->getRequestWeightedParametersPrefix());
+        $this->checkPrefixContextParameter($this->getPrefixContextParameter());
+        $bxRequest->setGroupBy($this->getEntityIdFieldName($type));
+        $bxRequest->setReturnFields($returnFields);
+        $bxRequest->setOffset(0);
 
-      $bxResponse = $this->getResponse();
-      $hitCount = $bxResponse->getTotalHitCount();
+        self::$bxClient->addRequest($bxRequest);
+        self::$choiceContexts[$choiceId][] = $type;
+        $bxResponse = $this->getResponse();
+        $hitCount = $bxResponse->getTotalHitCount($choiceId);
+        $bannerData = [
 
-      $bannerData = [
+            'id' => $bxResponse->getExtraInfo('banner_jssor_id', null, $choiceId),
+            'style' => $bxResponse->getExtraInfo('banner_jssor_style', null, $choiceId),
+            'slides_style' => $bxResponse->getExtraInfo('banner_jssor_slides_style', null, $choiceId),
+            'max_width' => $bxResponse->getExtraInfo('banner_jssor_max_width', null, $choiceId),
+            'css' => $bxResponse->getExtraInfo('banner_jssor_css', null, $choiceId),
+            'loading_screen' => $bxResponse->getExtraInfo('banner_jssor_loading_screen', null, $choiceId),
+            'bullet_navigator' => $bxResponse->getExtraInfo('banner_jssor_bullet_navigator', null, $choiceId),
+            'arrow_navigator' => $bxResponse->getExtraInfo('banner_jssor_arrow_navigator', null, $choiceId),
+            'function' => $bxResponse->getExtraInfo('banner_jssor_function', null, $choiceId),
+            'options' => $bxResponse->getExtraInfo('banner_jssor_options', null, $choiceId),
+            'break' => $this->getBannerJssorSlideGenericJS('products_bxi_bxi_jssor_break'),
+            'transition' => $this->getBannerJssorSlideGenericJS('products_bxi_bxi_jssor_transition'),
+            'control' => $this->getBannerJssorSlideGenericJS('products_bxi_bxi_jssor_control'),
+            'slides' => $this->getBannerSlides(),
+            'hitCount' => $hitCount
 
-        'id' => $bxResponse->getExtraInfo('banner_jssor_id'),
-        'style' => $bxResponse->getExtraInfo('banner_jssor_style'),
-        'slides_style' => $bxResponse->getExtraInfo('banner_jssor_slides_style'),
-        'max_width' => $bxResponse->getExtraInfo('banner_jssor_max_width'),
-        'css' => $bxResponse->getExtraInfo('banner_jssor_css'),
-        'loading_screen' => $bxResponse->getExtraInfo('banner_jssor_loading_screen'),
-        'bullet_navigator' => $bxResponse->getExtraInfo('banner_jssor_bullet_navigator'),
-        'arrow_navigator' => $bxResponse->getExtraInfo('banner_jssor_arrow_navigator'),
-        'function' => $bxResponse->getExtraInfo('banner_jssor_function'),
-        'options' => $bxResponse->getExtraInfo('banner_jssor_options'),
-        'break' => $this->getBannerJssorSlideGenericJS('products_bxi_bxi_jssor_break'),
-        'transition' => $this->getBannerJssorSlideGenericJS('products_bxi_bxi_jssor_transition'),
-        'control' => $this->getBannerJssorSlideGenericJS('products_bxi_bxi_jssor_control'),
-        'slides' => $this->getBannerSlides(),
-        'hitCount' => $hitCount
-
-      ];
+        ];
 
       return $bannerData;
     }
@@ -418,14 +417,34 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         return false;
     }
 
-    public function getNarrative($choice_id = null) {
-
+    protected function addNarrativeRequest($choice, $hitCount, $pageOffset, $sort) {
         $lang = $this->getShortLocale();
-        $choice_id = is_null($choice_id) ? 'narrative' : $choice_id;
-        $bxRequest = new \com\boxalino\bxclient\v1\BxSearchRequest($lang, "", 20, $choice_id);
+        $bxRequest = new \com\boxalino\bxclient\v1\BxRequest($lang, $choice, $hitCount);
+        $bxRequest->setOffset($pageOffset);
         $bxRequest->setReturnFields(['products_ordernumber']);
         $bxRequest->setGroupBy('products_group_id');
+        if ($sort != null && is_array($sort)) {
+            foreach ($sort as $s) {
+                $bxRequest->addSortField($s['field'], $s['reverse']);
+            }
+        }
         self::$bxClient->addRequest($bxRequest);
+    }
+
+    public function getNarrative($hitCount, $pageOffset, $sort, $params) {
+
+        $this->addNarrativeRequest('narrative', $hitCount, $pageOffset, $sort);
+        foreach ($params as $key => $value) {
+            self::$bxClient->addRequestContextParameter($key, $value);
+            if($key == 'choice_id') {
+                $choice_ids = explode(',', $value);
+                if(is_array($choice_ids)) {
+                    foreach ($choice_ids as $choice) {
+                        $this->addNarrativeRequest($choice, $hitCount, $pageOffset, $sort);
+                    }
+                }
+            }
+        }
         $response = $this->getResponse();
         $narrative = $response->getNarratives();
         return $narrative;
@@ -1052,10 +1071,11 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
      * @param string $type
      * @return array
      */
-    public function getHitFieldValues($field, $type = "product") {
-        $count = array_search($type, self::$choiceContexts[$this->currentSearchChoice]);
+    public function getHitFieldValues($field, $type = "product", $choiceId = '', $index = null) {
+        $choiceId = $choiceId == '' ? $this->currentSearchChoice : $choiceId;
+        $count = is_null($index) ? array_search($type, self::$choiceContexts[$choiceId]) : $index;
         $values = $this->convertToFieldArray(
-            $this->getResponse()->getHitFieldValues([$field], $this->currentSearchChoice, true, $count),
+            $this->getResponse()->getHitFieldValues([$field], $choiceId, true, $count),
             $field);
         return $values;
     }
@@ -1150,13 +1170,14 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
      * @param string $type
      * @return mixed
      */
-    public function getTotalHitCount($type = "product"){
+    public function getTotalHitCount($type = "product", $choiceId = '', $index = null) {
 
-        $count = array_search($type, self::$choiceContexts[$this->currentSearchChoice]);
+        $choiceId = $choiceId == '' ? $this->currentSearchChoice : $choiceId;
+        $count = is_null($index) ? array_search($type, self::$choiceContexts[$choiceId]) : $index;
         if ($count === false) {
             return 0;
         }
-        return $this->getResponse()->getTotalHitCount($this->currentSearchChoice, true, $count);
+        return $this->getResponse()->getTotalHitCount($choiceId, true, $count);
     }
 
     /**

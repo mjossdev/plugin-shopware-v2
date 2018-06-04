@@ -1,1 +1,3 @@
-{extends file="parent:widgets/emotion/slide_articles.tpl"}
+{if $articles}
+    {include file="frontend/_includes/product_slider_items.tpl"}
+{/if}

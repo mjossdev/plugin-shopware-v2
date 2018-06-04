@@ -121,8 +121,12 @@ class Shopware_Controllers_Frontend_RecommendationSlider extends Enlight_Control
         if ($_REQUEST['dev_bx_debug'] == 'true') {
             $t3 = microtime(true);
         }
-        if($hitsIds) {
-            $this->View()->loadTemplate('frontend/_includes/product_slider_items.tpl');
+
+        $path = Shopware()->Plugins()->Frontend()->Boxalino()->Path();
+        $this->View()->addTemplateDir($path . 'Views/emotion/');
+        $this->View()->loadTemplate('frontend/plugins/boxalino/recommendation_slider/product_stream_slider_recommendations.tpl');
+
+        if(!empty($hitsIds)) {
             if ($_REQUEST['dev_bx_debug'] == 'true') {
                 $t4 = microtime(true);
             }
