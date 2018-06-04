@@ -98,14 +98,12 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
             if($choice == null) {
                 $choice = "navigation";
             }
-            $this->currentSearchChoice = $choice;
             $this->navigation = true;
-            return $choice;
-        }
-
-        $choice = $this->config->get('boxalino_search_widget_name');
-        if($choice == null) {
-            $choice = "search";
+        } else {
+            $choice = $this->config->get('boxalino_search_widget_name');
+            if($choice == null) {
+                $choice = "search";
+            }
         }
         $this->currentSearchChoice = $choice;
         return $choice;
@@ -527,10 +525,11 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
      * @param string $type
      * @return null
      */
-    public function getFacets($type = "product") {
+    public function getFacets($type = "product", $choiceId = '', $index = null) {
 
-        $count = array_search($type, self::$choiceContexts[$this->currentSearchChoice]);
-        $facets = $this->getResponse()->getFacets($this->currentSearchChoice, true, $count);
+        $choiceId = $choiceId == '' ? $this->currentSearchChoice : $choiceId;
+        $count = is_null($index) ? array_search($type, self::$choiceContexts[$choiceId]) : $index;
+        $facets = $this->getResponse()->getFacets($choiceId, true, $count);
         if (empty($facets)) {
             return null;
         }

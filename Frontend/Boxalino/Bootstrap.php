@@ -578,7 +578,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
 
         if ($args['element']['component']['template'] == "boxalino_landingpage") {
             $this->disableHttpCache();
-            $data['view'] = $this->onLandingPage();
+            $data['view'] = $this->onLandingPage($args);
             return $data;
         }
 
@@ -820,9 +820,25 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
                 ));
         }
     }
+
+
+    protected function isLandingPage($categoryId) {
+        $db = Shopware()->Db();
+        $sql = $db->select()->from(array('e_c' => 's_emotion_categories'), array())
+            ->joinLeft(array('e_e' => 's_emotion_element'), 'e_c.emotion_id = e_e.emotionID', array())
+            ->joinLeft(array('comp' => 's_library_component'), 'e_e.componentID = comp.id AND comp.template = \'boxalino_landingpage\'')
+            ->where('e_c.category_id = ?', $categoryId);
+        $result = $db->query($sql);
+        return $result->rowCount() > 0;
+    }
+
     protected $showListing = true;
     public function onEmotionConfiguration(Enlight_Hook_HookArgs $arguments) {
         if($arguments->getArgs()[1] === false) {
+            $request = $arguments->getSubject()->Request();
+            if($request->getParam('sPage') && $this->isLandingPage($request->getParam('sCategory'))) {
+                $request->setParam('sPage', 0);
+            }
             $return = $arguments->getSubject()->executeParent(
                 $arguments->getMethod(),
                 $arguments->getArgs()

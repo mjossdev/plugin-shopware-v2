@@ -52,7 +52,14 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
      * @return Enlight_Controller_Request_Request
      */
     public function setRequestWithRefererParams($request) {
+
         $address = $_SERVER['HTTP_REFERER'];
+        $basePath = $request->getBasePath();
+        $start = strpos($address, $basePath) + strlen($basePath);
+        $end = strpos($address, '?');
+        $length = $end ? $end - $start : strlen($address);
+        $pathInfo = substr($address, $start, $length);
+        $request->setPathInfo($pathInfo);
         $params = explode('&', substr ($address,strpos($address, '?')+1, strlen($address)));
         foreach ($params as $index => $param){
             $keyValue = explode("=", $param);
@@ -161,16 +168,16 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         $this->Helper()->addSearch('', $pageOffset, $hitCount, 'product', $sort, $options, array(), false, 'landingpage');
 
         $articles = array();
-        if (!$this->Helper()->areThereSubPhrases() && $totalHitCount = $this->Helper()->getTotalHitCount()) {
-            $ids = $this->Helper()->getHitFieldValues('products_ordernumber');
+
+        if ($totalHitCount = $this->Helper()->getTotalHitCount('product', 'landingpage')) {
+            $ids = $this->Helper()->getHitFieldValues('products_ordernumber', 'product', 'landingpage');
             $articles = $this->BxData()->getLocalArticles($ids);
-            $facets = $this->updateFacetsWithResult($facets, $context, $request);
+            $facets = $this->updateFacetsWithResult($facets, $context, $request, 'landingpage');
         }
-//        $view->addTemplateDir($this->Bootstrap()->Path() . 'Views/emotion/');
-        $view->loadTemplate('frontend/search/fuzzy.tpl');
+
         $view->addTemplateDir($this->Bootstrap()->Path() . 'Views/emotion/');
-        $view->extendsTemplate('frontend/plugins/boxalino/listing/actions/action-pagination.tpl');
-        $view->extendsTemplate('frontend/plugins/boxalino/search/fuzzy.tpl');
+
+        $view->loadTemplate('frontend/plugins/boxalino/landingpage/content.tpl');
         if(version_compare(Shopware::VERSION, '5.3.0', '<')) {
             $view->extendsTemplate('frontend/plugins/boxalino/listing/filter/facet-value-list.tpl');
             $view->extendsTemplate('frontend/plugins/boxalino/listing/index.tpl');
@@ -184,27 +191,23 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         $sortings = $service->getList($sortingIds, $context);
 
         $templateProperties = array(
-            'bxFacets' => $this->Helper()->getFacets(),
-            'term' => '',
-            'criteria' => $criteria,
-            'sortings' => $sortings,
-            'facets' => $facets,
-            'sPage' => $request->getParam('sPage', 1),
-            'sSort' => $request->getParam('sSort', 7),
             'sTemplate' => $request->getParam('sTemplate'),
             'sPerPage' => $pageCounts,
             'sRequests' => $request->getParams(),
+            'ajaxCountUrlParams' => [],
+            'sPage' => $request->getParam('sPage', 1),
+            'bxFacets' => $this->Helper()->getFacets('product', 'landingpage', 0),
+            'criteria' => $criteria,
+            'facets' => $facets,
+            'sortings' => $sortings,
+            'sNumberArticles' => $totalHitCount,
+            'sArticles' => $articles,
+            'facetOptions' => $this->facetOptions,
+            'sSort' => $request->getParam('sSort'),
+            'showListing' => true,
             'shortParameters' => $this->get('query_alias_mapper')->getQueryAliases(),
-            'pageSizes' => $pageCounts,
-            'ajaxCountUrlParams' => version_compare(Shopware::VERSION, '5.3.0', '<') ?
-                ['sCategory' => $context->getShop()->getCategory()->getId()] : [],
-            'sSearchResults' => array(
-                'sArticles' => $articles,
-                'sArticlesCount' => $totalHitCount
-            ),
-            'productBoxLayout' => $this->get('config')->get('searchProductBoxLayout'),
-            'bxActiveTab' => $request->getParam('bxActiveTab', 'article'),
-            'facetOptions' => $this->facetOptions
+            'bx_request_id' => $this->Helper()->getRequestId(),
+            'baseUrl' => $request->getBaseUrl() . $request->getPathInfo(),
         );
         $view->assign($templateProperties);
         return $view->render();
@@ -1827,12 +1830,13 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
      * @param $facets
      * @return array
      */
-    public function updateFacetsWithResult($facets, $context, $request = null) {
+    public function updateFacetsWithResult($facets, $context, $request = null, $choice = '') {
         $request = is_null($request) ? $this->Request() : $request;
         $start = microtime(true);
         $lang = substr(Shopware()->Shop()->getLocale()->getLocale(), 0, 2);
         $this->facetOptions['mode'] = Shopware()->Config()->get('listingMode');
-        $bxFacets = $this->Helper()->getFacets();
+        $variant_index = $choice == '' ? null : 0;
+        $bxFacets = $this->Helper()->getFacets('product', $choice, $variant_index);
         $propertyFacets = [];
         $filters = array();
         $mapper = $this->get('query_alias_mapper');
