@@ -131,6 +131,7 @@ class Shopware_Controllers_Frontend_RecommendationSlider extends Enlight_Control
                 $t4 = microtime(true);
             }
             $this->View()->assign('articles', $helper->getLocalArticles($hitsIds));
+            $this->View()->assign('title', $helper->getSearchResultTitle($choiceId));
             if ($_REQUEST['dev_bx_debug'] == 'true') {
                 $helper->addNotification("Recommendation Slider getLocalArticles took: " . (microtime(true) - $t4) * 1000 . "ms. IDS: " .json_encode($hitsIds));
             }

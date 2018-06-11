@@ -137,7 +137,6 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
                                 $this->bxData->pushDataSpecifications();
                             } else {
                                 $this->log->info("BxIndexLog: pushDataSpecifications failed with exception: " . $e->getMessage());
-                                continue;
                             }
                         }
 

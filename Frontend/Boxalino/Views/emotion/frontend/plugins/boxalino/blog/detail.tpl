@@ -3,15 +3,13 @@
 {block name='frontend_blog_detail_crossselling'}
     {$smarty.block.parent}
     {if $bxProductRecommendation}
-        <div class="bx-blog-product-rec">
-            <div class="bx-blog-product-rec--title">
-                <h2 style="text-align:center;">{$bxRecTitle}</h2>
-            </div>
+        <div class="product-slider panel has--border">
+            <h2 class="panel--title is--underline product-slider--title">{$bxRecTitle}</h2>
             {include file="frontend/_includes/product_slider.tpl"
             articles=$bxProductRecommendation
             sliderAjaxCtrlUrl=''
             sliderAjaxCategoryID=''
-            productSliderCls="product-slider--content"
+            productSliderCls=''
             sliderMode={''}
             sliderAjaxMaxShow=$bxProductRecommendation|@count
             sliderArrowControls={'1'}
@@ -21,5 +19,12 @@
             productBoxLayout="emotion"
             fixedImageSize="true"}
         </div>
+        <script>
+            document.asyncReady(function() {
+                $(document).ready(function () {
+                    StateManager.updatePlugin('*[data-product-slider="true"]', 'swProductSlider');
+                });
+            });
+        </script>
     {/if}
 {/block}

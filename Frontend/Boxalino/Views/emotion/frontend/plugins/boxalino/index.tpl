@@ -24,6 +24,11 @@
                             $(o.$el).parent().parent().remove();
                         }
                     }
+                    var replace = $(o.$el).find('.bx_replace');
+                    if(replace.length > 0) {
+                        $(o.$el).prev('.panel--title.is--underline.product-slider--title').text(replace.text());
+                        replace.remove();
+                    }
                 });
             });
         });
