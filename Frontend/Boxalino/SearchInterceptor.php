@@ -973,7 +973,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             $this->Helper()->addNotification("Search before response took in total: " . (microtime(true)- $start) * 1000 . "ms.");
         }
 
-        if($this->Helper()->getResponse()->getRedirectLink() != '') {
+        if($this->Helper()->getResponse()->getRedirectLink() != '' && $this->Request()->getParam('bxActiveTab') !== 'blog') {
             $this->Controller()->redirect($this->Helper()->getResponse()->getRedirectLink());
         }
 
