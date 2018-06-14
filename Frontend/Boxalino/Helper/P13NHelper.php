@@ -295,6 +295,10 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
 
         self::$bxClient->addRequest($bxRequest);
         self::$choiceContexts[$choiceId][] = $type;
+        return $this->getBannerData($choiceId);
+    }
+
+    public function getBannerData($choiceId) {
         $bxResponse = $this->getResponse();
         $hitCount = $bxResponse->getTotalHitCount($choiceId);
         $bannerData = [
@@ -316,8 +320,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
             'hitCount' => $hitCount
 
         ];
-
-      return $bannerData;
+        return $bannerData;
     }
 
     public function getBannerSlides() {
@@ -416,14 +419,26 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
     }
 
     protected function addNarrativeRequest($choice, $hitCount, $pageOffset, $sort) {
+
         $lang = $this->getShortLocale();
-        $bxRequest = new \com\boxalino\bxclient\v1\BxRequest($lang, $choice, $hitCount);
-        $bxRequest->setOffset($pageOffset);
-        $bxRequest->setReturnFields(['products_ordernumber']);
-        $bxRequest->setGroupBy('products_group_id');
-        if ($sort != null && is_array($sort)) {
-            foreach ($sort as $s) {
-                $bxRequest->addSortField($s['field'], $s['reverse']);
+        if($choice == 'banner'){
+            $type = 'bxi_content';
+            $returnFields = $this->getReturnFields($type);
+            $bxRequest = new \com\boxalino\bxclient\v1\BxParametrizedRequest($lang, $choice, 1, 1);
+            $this->setPrefixContextParameter($bxRequest->getRequestWeightedParametersPrefix());
+            $this->checkPrefixContextParameter($this->getPrefixContextParameter());
+            $bxRequest->setGroupBy($this->getEntityIdFieldName($type));
+            $bxRequest->setReturnFields($returnFields);
+            $bxRequest->setOffset(0);
+        } else {
+            $bxRequest = new \com\boxalino\bxclient\v1\BxRequest($lang, $choice, $hitCount);
+            $bxRequest->setOffset($pageOffset);
+            $bxRequest->setReturnFields(['products_ordernumber']);
+            $bxRequest->setGroupBy('id');
+            if ($sort != null && is_array($sort)) {
+                foreach ($sort as $s) {
+                    $bxRequest->addSortField($s['field'], $s['reverse']);
+                }
             }
         }
         self::$bxClient->addRequest($bxRequest);
@@ -446,6 +461,11 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         $response = $this->getResponse();
         $narrative = $response->getNarratives();
         return $narrative;
+    }
+
+    public function getNarrativeDependencies() {
+        $response = $this->getResponse();
+        return $response->getNarrativeDependencies();
     }
 
     public function addPortfolio($data){

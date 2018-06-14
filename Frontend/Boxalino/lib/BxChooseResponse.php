@@ -438,6 +438,37 @@ class BxChooseResponse
         return [];
     }
 
+    protected function getParameterValuesForVisualElement($element, $paramName) {
+
+	    if(isset($element['parameters']) && is_array($element['parameters'])) {
+            foreach ($element['parameters'] as $parameter) {
+                if($parameter['name'] == $paramName) {
+                    return $parameter['values'];
+                }
+            }
+        }
+        return null;
+    }
+
+    public function getNarrativeDependencies() {
+	    $dependencies = array();
+	    $narratives = $this->getNarratives();
+	    foreach ($narratives['acts'] as $act) {
+            $chapter = $act['chapter'];
+            foreach ($chapter['renderings'] as $rendering) {
+                $render = $rendering['rendering'];
+                foreach ($render['visualElements'] as $visualElement) {
+                    $value = reset($this->getParameterValuesForVisualElement($visualElement, 'dependencies'));
+                    if($value) {
+                        $dependency = json_decode($value, true);
+                        $dependencies = array_merge($dependencies, $dependency);
+                    }
+                }
+            }
+        }
+	    return $dependencies;
+    }
+
     public function getNarratives($choice_id = 'narrative') {
         $storyLine = $this->getStoryLine($choice_id);
         $params = $storyLine['parameters'];

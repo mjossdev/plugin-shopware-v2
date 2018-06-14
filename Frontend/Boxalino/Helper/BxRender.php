@@ -92,6 +92,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxRender{
         foreach ($parameters as $parameter) {
             if($parameter['name'] == 'format') {
                 $viewElement['format']  = reset($parameter['values']);
+                break;
             }
         }
         switch($viewElement['format']) {
@@ -113,7 +114,8 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxRender{
                 $this->getBannerData($view);
                 break;
             case 'blog':
-                $this->getBlogData($view, $viewElement);
+                $view->assign('sArticle', $this->getBlogArticle($viewElement, $additionalParameter));
+                $view->assign('productBoxLayout', 'minimal');
             case 'voucher':
                 $this->getVoucherData($view);
             default:
@@ -121,10 +123,10 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxRender{
         }
     }
 
-    protected function getBlogData(&$view, $visualElement) {
+    protected function getBlogArticle($visualElement, $additionalParameter) {
         $product = false;
         $variant_index = 0;
-        $index = 0;
+        $index = isset($additionalParameter['list_index']) ? $additionalParameter['list_index'] : 0;
         foreach ($visualElement['parameters'] as $parameter) {
             if($parameter['name'] == 'variant') {
                 $variant_index = reset($parameter['values']);
@@ -134,7 +136,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxRender{
         }
         $ids = $this->p13Helper->getHitFieldValues('id', 'blog', null, $variant_index);
         foreach ($ids as $i => $id) {
-            $ids[$index] = str_replace('blog_', '', $id);
+            $ids[$i] = str_replace('blog_', '', $id);
         }
         $entity_id = isset($ids[$index]) ? $ids[$index] : null;
         if($entity_id) {
@@ -149,7 +151,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxRender{
 
             $product = $this->resourceManager->getResource($entity_id, 'blog');
             if(is_null($product)) {
-                $articles = $this->p13Helper->enhanceBlogArticles($this->p13Helper->getBlogs([$entity_id]));
+                $articles = $this->dataHelper->enhanceBlogArticles($this->p13Helper->getBlogs([$entity_id]));
                 $product = reset($articles);
                 $this->resourceManager->setResource($product, $entity_id, 'blog');
             }
@@ -158,8 +160,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxRender{
     }
 
     protected function getBannerData(&$view) {
-        $config = ['choiceId_banner' => 'banner', 'max_banner' => 1, 'min_banner' => 1];
-        $bannerData = $this->p13Helper->addBanner($config);
+        $bannerData = $this->p13Helper->getBannerData('banner');
         $view->assign('Data', $bannerData);
     }
 

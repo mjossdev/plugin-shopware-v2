@@ -18,6 +18,10 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
         $this->frontendInterceptor = new Shopware_Plugins_Frontend_Boxalino_FrontendInterceptor($this);
     }
 
+    public function getSearchInterceptor() {
+        return $this->searchInterceptor;
+    }
+
     public function getCapabilities() {
         return array(
             'install' => true,
@@ -31,7 +35,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
     }
 
     public function getVersion() {
-        return '1.6.10';
+        return '1.6.14';
     }
 
     public function getInfo() {
@@ -331,6 +335,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
         $this->registerController('Frontend', 'RecommendationSlider');
         $this->registerController('Frontend', 'BxDebug');
         $this->registerController('Frontend', 'BxNotification');
+        $this->registerController('Frontend', 'BxNarrative');
     }
 
     public function onPostDispatchBackendEmotion(Enlight_Event_EventArgs $args) {
@@ -338,6 +343,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
         $view->addTemplateDir($this->Path() . 'Views/');
         if ($args->getRequest()->getActionName() === 'index') {
             $view->extendsTemplate('backend/boxalino_emotion/app.js');
+            $view->extendsTemplate('backend/boxalino_narrative/app.js');
         }
     }
 
@@ -358,6 +364,18 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
             'description' => 'Dynamic rendering of visual elements.',
             'convertFunction' => null
         ));
+        if ($component->getFields()->count() == 0) {
+            $component->createComboBoxField(
+                array(
+                    'name' => 'render_option',
+                    'fieldLabel' => 'Render Option',
+                    'store' => 'Shopware.apps.BoxalinoNarrative.store.List',
+                    'displayField' => 'render_option',
+                    'valueField' => 'id',
+                    'allowBlank' => false
+                )
+            );
+        }
     }
 
     /**
@@ -583,10 +601,10 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
         }
 
         if ($args['element']['component']['template'] == "boxalino_narrative") {
-            $this->disableHttpCache();
-
-            $narrativeData = $this->onNarrative();
-            $data = array_merge($data, $narrativeData);
+            if($data['render_option'] == 1) {
+                $narrativeData = $this->onNarrative();
+                $data = array_merge($data, $narrativeData);
+            }
             return $data;
         }
 

@@ -35,4 +35,17 @@ class Shopware_Controllers_Backend_BoxalinoPerformance extends Shopware_Controll
             'total' => 3
         ));
     }
+
+    public function getNarrativeOptionsAction(){
+        $data = [
+            ['id' => 1, 'render_option' => 'Server Side'],
+            ['id' => 2, 'render_option' => 'AJAX']
+        ];
+
+        $this->View()->assign(array(
+            'success' => true,
+            'data' => $data,
+            'total' => 3
+        ));
+    }
 }

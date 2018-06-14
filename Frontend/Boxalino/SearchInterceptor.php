@@ -120,8 +120,37 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         }
         $sort =  $this->getSortOrder($criteria, null, true);
         $data['narrative'] = $this->Helper()->getNarrative($hitCount, $pageOffset, $sort, $params);
+        $data['dependencies'] = $this->renderDependencies();
         $data['bxRender'] = new Shopware_Plugins_Frontend_Boxalino_Helper_BxRender($this->Helper(), $this->BxData(), $this, $request);
         return $data;
+    }
+
+    protected function getDependencyElement($url, $type) {
+        $element = '';
+        if($type == 'css'){
+            $element = "<link href=\"{$url}\" type=\"text/css\" rel=\"stylesheet\" />";
+        } else if($type == 'js') {
+            $element = "<script src=\"{$url}\" type=\"text/javascript\"></script>";
+        }
+        return $element;
+    }
+
+    public function renderDependencies() {
+        $html = '';
+        $dependencies = $this->Helper()->getNarrativeDependencies();
+        if(isset($dependencies['js'])) {
+            foreach ($dependencies['js'] as $js) {
+                $url = $js;
+                $html .= $this->getDependencyElement($url, 'js');
+            }
+        }
+        if(isset($dependencies['css'])) {
+            foreach ($dependencies['css'] as $css) {
+                $url = $css;
+                $html .= $this->getDependencyElement($url, 'css');
+            }
+        }
+        return $html;
     }
 
     public function landingPage() {
