@@ -1,5 +1,5 @@
 {block name="frontend_blog_recommendation"}
-    <a href="{url controller=blog action=detail sCategory=$sArticle.categoryId blogArticle=$sArticle.id}" title="{$sArticle.title|escape}">
+    <a href="{url controller=blog action=detail sCategory=$sArticle.category_id blogArticle=$sArticle.id}" title="{$sArticle.title|escape}">
         <div class="box--content">
             <div class="product--info">
                 <div class="product--box box--{$productBoxLayout}">

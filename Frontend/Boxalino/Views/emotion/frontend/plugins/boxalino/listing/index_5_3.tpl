@@ -190,5 +190,7 @@
     </script>
 {/block}
 {block name="frontend_index_header_meta_tags" append}
-    <meta name="bx_request_id" content="{$bx_request_id}" />
+    {if $bx_request_id}
+        <meta name="bx_request_id" content="{$bx_request_id}" />
+    {/if}
 {/block}

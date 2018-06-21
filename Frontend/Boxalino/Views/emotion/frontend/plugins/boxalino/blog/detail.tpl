@@ -20,11 +20,11 @@
             fixedImageSize="true"}
         </div>
         <script>
-            document.asyncReady(function() {
-                $(document).ready(function () {
-                    StateManager.updatePlugin('*[data-product-slider="true"]', 'swProductSlider');
-                });
-            });
+//            document.asyncReady(function() {
+//                $(document).ready(function () {
+//                    StateManager.updatePlugin('*[data-product-slider="true"]', 'swProductSlider');
+//                });
+//            });
         </script>
     {/if}
 {/block}
