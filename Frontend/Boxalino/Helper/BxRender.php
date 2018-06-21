@@ -111,13 +111,13 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxRender{
                 $this->getFilterPanelData($view);
                 break;
             case 'banner':
-                $this->getBannerData($view);
+                $this->getBannerData($view, $viewElement);
                 break;
             case 'blog':
                 $view->assign('sArticle', $this->getBlogArticle($viewElement, $additionalParameter));
                 $view->assign('productBoxLayout', 'minimal');
             case 'voucher':
-                $this->getVoucherData($view);
+                $this->getVoucherData($view, $viewElement);
             default:
                 break;
         }
@@ -159,13 +159,25 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxRender{
         return $product;
     }
 
-    protected function getBannerData(&$view) {
-        $bannerData = $this->p13Helper->getBannerData('banner');
+    protected function getBannerData(&$view, $visualElement) {
+        $variant_index = 0;
+        foreach ($visualElement['parameters'] as $parameter) {
+            if($parameter['name'] == 'variant') {
+                $variant_index = reset($parameter['values']);
+            }
+        }
+        $bannerData = $this->p13Helper->getBannerData(null, $variant_index);
         $view->assign('Data', $bannerData);
     }
 
-    protected function getVoucherData(&$view) {
-        $voucherData = $this->p13Helper->addVoucher('voucher');
+    protected function getVoucherData(&$view, $visualElement) {
+        $variant_index = 0;
+        foreach ($visualElement['parameters'] as $parameter) {
+            if($parameter['name'] == 'variant') {
+                $variant_index = reset($parameter['values']);
+            }
+        }
+        $voucherData = $this->p13Helper->getVoucherResponse(null, $variant_index);
         $view->assign('voucher', $voucherData);
     }
 
@@ -179,6 +191,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxRender{
         $facets = $criteria->getFacets();
         $facets = $this->searchInterceptor->updateFacetsWithResult($facets, $context, $this->request);
         $view->assign('facets', $facets);
+        $view->assign('bxFacets', $this->p13Helper->getFacets('product', null, 0));
         $view->assign('criteria', $criteria);
         $view->assign('listingMode', 'full_page_reload');
         $view->assign('sSort', $this->request->getParam('sSort', 7));

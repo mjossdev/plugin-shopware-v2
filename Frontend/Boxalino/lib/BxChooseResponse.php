@@ -450,23 +450,21 @@ class BxChooseResponse
         return null;
     }
 
-    public function getNarrativeDependencies() {
-	    $dependencies = array();
-	    $narratives = $this->getNarratives();
-	    foreach ($narratives['acts'] as $act) {
-            $chapter = $act['chapter'];
-            foreach ($chapter['renderings'] as $rendering) {
-                $render = $rendering['rendering'];
-                foreach ($render['visualElements'] as $visualElement) {
-                    $value = reset($this->getParameterValuesForVisualElement($visualElement, 'dependencies'));
-                    if($value) {
-                        $dependency = json_decode($value, true);
-                        $dependencies = array_merge($dependencies, $dependency);
-                    }
+    public function getNarrativeDependencies($choice_id = 'narrative') {
+        $dependencies = array();
+        $narratives = $this->getNarratives($choice_id);
+        foreach ($narratives as $visualElement) {
+            $values = $this->getParameterValuesForVisualElement($visualElement['visualElement'], 'dependencies');
+            if($values) {
+                $value = reset($values);
+                $value = str_replace("\\", '', $value);
+                $dependency = json_decode($value, true);
+                if($dependency) {
+                    $dependencies = array_merge($dependencies, $dependency);
                 }
             }
         }
-	    return $dependencies;
+        return $dependencies;
     }
 
     public function getNarratives($choice_id = 'narrative') {
@@ -478,9 +476,21 @@ class BxChooseResponse
             $params = $this->mergeJourneyParams($params, $narratives['narrative']['parameters']);
             $acts = $narratives['narrative']['acts'];
             $narratives['narrative']['acts'] = $this->propagateParams($acts , $params);
-            return $narratives['narrative'];
+            return $narratives['narrative']['acts'][0]['chapter']['renderings'][0]['rendering']['visualElements'];
         }
         return array();
+    }
+
+    protected function getOverwriteParams($parameters) {
+        $overwriteParameters = array();
+        foreach ($parameters as $parameter) {
+            if(strpos($parameter['name'], '!') === 0) {
+                $overwrite = $parameter;
+                $overwrite['name'] = ltrim($overwrite['name'], '!');
+                $overwriteParameters[] = $overwrite;
+            }
+        }
+        return $overwriteParameters;
     }
 
     protected function prepareVisualElement($render, $overwriteParams) {
@@ -488,7 +498,8 @@ class BxChooseResponse
         $visualElement = $render['visualElement'];
         $visualElementParams = $this->mergeJourneyParams($render['parameters'], $visualElement['parameters']);
         $visualElement['parameters'] = $this->mergeJourneyParams($overwriteParams, $visualElementParams);
-        if(sizeof($visualElement['subRenderings'])) {
+        $overwriteParams = array_merge($overwriteParams, $this->getOverwriteParams($visualElement['parameters']));
+        if(isset($visualElement['subRenderings']) && sizeof($visualElement['subRenderings'])) {
             foreach ($visualElement['subRenderings'] as $index => $subRendering) {
                 foreach ($subRendering['rendering']['visualElements'] as $index2 => $subElement) {
                     $subRendering['rendering']['visualElements'][$index2] = $this->prepareVisualElement($subElement, $overwriteParams);

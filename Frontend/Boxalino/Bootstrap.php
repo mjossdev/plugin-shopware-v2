@@ -35,7 +35,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
     }
 
     public function getVersion() {
-        return '1.6.14';
+        return '1.6.15';
     }
 
     public function getInfo() {
@@ -375,6 +375,18 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
                     'allowBlank' => false
                 )
             );
+            $component->createTextField(array(
+                'name' => 'choiceId',
+                'fieldLabel' => 'Choice id',
+                'supportText' => 'Choice ID used for the narrative. If left empty \'narrative\' will be used.',
+                'allowBlank' => false
+            ));
+            $component->createTextField(array(
+                'name' => 'additional_choiceId',
+                'fieldLabel' => 'Additional Choice id',
+                'supportText' => 'Additional Choice IDs for the narrative. Write multiple Choice IDs separated by comma.',
+                'allowBlank' => true
+            ));
         }
     }
 
@@ -602,7 +614,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
 
         if ($args['element']['component']['template'] == "boxalino_narrative") {
             if($data['render_option'] == 1) {
-                $narrativeData = $this->onNarrative();
+                $narrativeData = $this->onNarrative($data);
                 $data = array_merge($data, $narrativeData);
             }
             return $data;
@@ -707,9 +719,9 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
 
     }
 
-    public function onNarrative() {
+    public function onNarrative($data) {
         try{
-            return $this->searchInterceptor->narrative();
+            return $this->searchInterceptor->narrative($data);
         }catch (\Exception $e) {
             $this->logException($e, __FUNCTION__);
         }

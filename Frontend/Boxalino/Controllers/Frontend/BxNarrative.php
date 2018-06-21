@@ -58,6 +58,8 @@ class Shopware_Controllers_Frontend_BxNarrative extends Enlight_Controller_Actio
 
     public function getNarrativeAction() {
         try{
+            $choiceId = $this->Request()->getQuery('choice_id');
+            $additional = $this->Request()->getQuery('additional');
             $request = Shopware()->Front()->Request();
             $request = $this->setRequestWithReferrerParams($request);
             $params = $request->getParams();
@@ -82,8 +84,8 @@ class Shopware_Controllers_Frontend_BxNarrative extends Enlight_Controller_Actio
             }
 
             $sort =  $this->getSortOrder($criteria, null, true);
-            $narratives = $helper->getNarrative($hitCount, $pageOffset, $sort, $params);
-            $dependencies = $this->renderDependencies($helper->getNarrativeDependencies());
+            $narratives = $helper->getNarrative($choiceId, $additional, $hitCount, $pageOffset, $sort, $params);
+            $dependencies = $this->renderDependencies($helper->getNarrativeDependencies($choiceId));
             $searchInterceptor = Shopware()->Plugins()->Frontend()->Boxalino()->getSearchInterceptor();
             $bxData = Shopware_Plugins_Frontend_Boxalino_Helper_BxData::instance();
             $bxRender = new Shopware_Plugins_Frontend_Boxalino_Helper_BxRender($helper, $bxData, $searchInterceptor, $request);

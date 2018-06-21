@@ -253,24 +253,27 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
     }
 
     public function addVoucher($choiceId) {
-        $data = [];
+
         $lang = $this->getShortLocale();
         $bxRequest = new \com\boxalino\bxclient\v1\BxRequest($lang, $choiceId, 1);
         $bxRequest->setReturnFields(['products_voucher_id']);
         self::$bxClient->addRequest($bxRequest);
         $customerID = $this->getCustomerID();
         self::$bxClient->addRequestContextParameter('_system_customerid', $customerID);
+        $data = $this->getVoucherResponse($choiceId);
+        return $data;
+    }
+
+    public function getVoucherResponse($choice_id, $variant_index = 0) {
         $bxResponse = $this->getResponse();
-
-        $voucherIdFromHits = $bxResponse->getHitFieldValues(['products_voucher_id'], $choiceId);
-
+        $voucherIdFromHits = $bxResponse->getHitFieldValues(['products_voucher_id'], $choice_id, true, $variant_index);
+        $data = [];
+        $voucherId = 0;
         foreach ($voucherIdFromHits as $id => $voucherIdFromHit) {
-
-          $voucherId = $id;
-
-          if(strpos($voucherId, 'voucher_') === 0) {
-              $voucherId = str_replace('voucher_', '', $voucherId);
-          }
+            $voucherId = $id;
+            if(strpos($voucherId, 'voucher_') === 0) {
+                $voucherId = str_replace('voucher_', '', $voucherId);
+            }
         }
         $data = array_merge($data, $this->getVoucherData($voucherId));
         return $data;
@@ -298,34 +301,34 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         return $this->getBannerData($choiceId);
     }
 
-    public function getBannerData($choiceId) {
+    public function getBannerData($choiceId, $variant_index = 0) {
         $bxResponse = $this->getResponse();
         $hitCount = $bxResponse->getTotalHitCount($choiceId);
         $bannerData = [
 
-            'id' => $bxResponse->getExtraInfo('banner_jssor_id', null, $choiceId),
-            'style' => $bxResponse->getExtraInfo('banner_jssor_style', null, $choiceId),
-            'slides_style' => $bxResponse->getExtraInfo('banner_jssor_slides_style', null, $choiceId),
-            'max_width' => $bxResponse->getExtraInfo('banner_jssor_max_width', null, $choiceId),
-            'css' => $bxResponse->getExtraInfo('banner_jssor_css', null, $choiceId),
-            'loading_screen' => $bxResponse->getExtraInfo('banner_jssor_loading_screen', null, $choiceId),
-            'bullet_navigator' => $bxResponse->getExtraInfo('banner_jssor_bullet_navigator', null, $choiceId),
-            'arrow_navigator' => $bxResponse->getExtraInfo('banner_jssor_arrow_navigator', null, $choiceId),
-            'function' => $bxResponse->getExtraInfo('banner_jssor_function', null, $choiceId),
-            'options' => $bxResponse->getExtraInfo('banner_jssor_options', null, $choiceId),
+            'id' => $bxResponse->getExtraInfo('banner_jssor_id', null, $choiceId, true, $variant_index),
+            'style' => $bxResponse->getExtraInfo('banner_jssor_style', null, $choiceId, true, $variant_index),
+            'slides_style' => $bxResponse->getExtraInfo('banner_jssor_slides_style', null, $choiceId, true, $variant_index),
+            'max_width' => $bxResponse->getExtraInfo('banner_jssor_max_width', null, $choiceId, true, $variant_index),
+            'css' => $bxResponse->getExtraInfo('banner_jssor_css', null, $choiceId, true, $variant_index),
+            'loading_screen' => $bxResponse->getExtraInfo('banner_jssor_loading_screen', null, $choiceId, true, $variant_index),
+            'bullet_navigator' => $bxResponse->getExtraInfo('banner_jssor_bullet_navigator', null, $choiceId, true, $variant_index),
+            'arrow_navigator' => $bxResponse->getExtraInfo('banner_jssor_arrow_navigator', null, $choiceId, true, $variant_index),
+            'function' => $bxResponse->getExtraInfo('banner_jssor_function', null, $choiceId, true, $variant_index),
+            'options' => $bxResponse->getExtraInfo('banner_jssor_options', null, $choiceId, true, $variant_index),
             'break' => $this->getBannerJssorSlideGenericJS('products_bxi_bxi_jssor_break'),
             'transition' => $this->getBannerJssorSlideGenericJS('products_bxi_bxi_jssor_transition'),
             'control' => $this->getBannerJssorSlideGenericJS('products_bxi_bxi_jssor_control'),
-            'slides' => $this->getBannerSlides(),
+            'slides' => $this->getBannerSlides($choiceId, $variant_index),
             'hitCount' => $hitCount
 
         ];
         return $bannerData;
     }
 
-    public function getBannerSlides() {
+    public function getBannerSlides($choiceId, $variant_index = 0) {
 
-        $slides = $this->getResponse()->getHitFieldValues(array('products_bxi_bxi_jssor_slide', 'products_bxi_bxi_name'), 'banner');
+        $slides = $this->getResponse()->getHitFieldValues(array('products_bxi_bxi_jssor_slide', 'products_bxi_bxi_name'), $choiceId, true, $variant_index);
         $counters = array();
         foreach($slides as $id => $vals) {
             $slides[$id]['div'] = $this->getBannerSlide($id, $vals, $counters);
@@ -421,7 +424,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
     protected function addNarrativeRequest($choice, $hitCount, $pageOffset, $sort) {
 
         $lang = $this->getShortLocale();
-        if($choice == 'banner'){
+        if(strpos($choice, 'banner') !== FALSE){
             $type = 'bxi_content';
             $returnFields = $this->getReturnFields($type);
             $bxRequest = new \com\boxalino\bxclient\v1\BxParametrizedRequest($lang, $choice, 1, 1);
@@ -440,13 +443,14 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
                     $bxRequest->addSortField($s['field'], $s['reverse']);
                 }
             }
+
         }
         self::$bxClient->addRequest($bxRequest);
     }
 
-    public function getNarrative($hitCount, $pageOffset, $sort, $params) {
+    public function getNarrative($choiceId, $additional_choices, $hitCount, $pageOffset, $sort, $params) {
 
-        $this->addNarrativeRequest('narrative', $hitCount, $pageOffset, $sort);
+        $this->addNarrativeRequest($choiceId, $hitCount, $pageOffset, $sort);
         foreach ($params as $key => $value) {
             self::$bxClient->addRequestContextParameter($key, $value);
             if($key == 'choice_id') {
@@ -458,14 +462,23 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
                 }
             }
         }
+
+        if($additional_choices != '') {
+            $choice_ids = explode(',', $additional_choices);
+            if(is_array($choice_ids)) {
+                foreach ($choice_ids as $choice) {
+                    $this->addNarrativeRequest($choice, $hitCount, $pageOffset, $sort);
+                }
+            }
+        }
         $response = $this->getResponse();
-        $narrative = $response->getNarratives();
+        $narrative = $response->getNarratives($choiceId);
         return $narrative;
     }
 
-    public function getNarrativeDependencies() {
+    public function getNarrativeDependencies($choice_id) {
         $response = $this->getResponse();
-        return $response->getNarrativeDependencies();
+        return $response->getNarrativeDependencies($choice_id);
     }
 
     public function addPortfolio($data){

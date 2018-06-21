@@ -96,8 +96,8 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         return $view;
     }
 
-    public function narrative() {
-        $data = array();
+    public function narrative($data) {
+
         $request = Shopware()->Front()->Request();
         $request = $this->setRequestWithRefererParams($request);
         $params = $request->getParams();
@@ -119,8 +119,8 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             }
         }
         $sort =  $this->getSortOrder($criteria, null, true);
-        $data['narrative'] = $this->Helper()->getNarrative($hitCount, $pageOffset, $sort, $params);
-        $data['dependencies'] = $this->renderDependencies();
+        $data['narrative'] = $this->Helper()->getNarrative($data['choiceId'], $data['additional_choiceId'], $hitCount, $pageOffset, $sort, $params);
+        $data['dependencies'] = $this->renderDependencies($data['choiceId']);
         $data['bxRender'] = new Shopware_Plugins_Frontend_Boxalino_Helper_BxRender($this->Helper(), $this->BxData(), $this, $request);
         return $data;
     }
@@ -135,9 +135,9 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         return $element;
     }
 
-    public function renderDependencies() {
+    public function renderDependencies($choice_id) {
         $html = '';
-        $dependencies = $this->Helper()->getNarrativeDependencies();
+        $dependencies = $this->Helper()->getNarrativeDependencies($choice_id);
         if(isset($dependencies['js'])) {
             foreach ($dependencies['js'] as $js) {
                 $url = $js;
