@@ -584,7 +584,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         }
 
         else {
-            $returnFields = array_merge($returnFields, ['id', 'score', 'products_bx_type', 'products_blog_title', 'products_blog_id', 'products_blog_category_id', 'products_blog_media_id']);
+            $returnFields = array_merge($returnFields, ['id', 'score', 'products_bx_type', 'products_blog_title', 'products_blog_id', 'products_blog_category_id', 'products_blog_media_id', 'products_blog_short_description']);
         }
         $additionalFields = explode(',', $this->config->get('boxalino_returned_fields'));
         if (isset($additionalFields) && $additionalFields[0] != '') {
