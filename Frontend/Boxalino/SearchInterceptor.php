@@ -119,7 +119,10 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             }
         }
         $sort =  $this->getSortOrder($criteria, null, true);
-        $data['narrative'] = $this->Helper()->getNarrative($data['choiceId'], $data['additional_choiceId'], $hitCount, $pageOffset, $sort, $params);
+
+        $facets = $criteria->getFacets();
+        $options = $this->getFacetConfig($facets, $request);
+        $data['narrative'] = $this->Helper()->getNarrative($data['choiceId'], $data['additional_choiceId'], $options, $hitCount, $pageOffset, $sort, $params);
         $data['dependencies'] = $this->renderDependencies($data['choiceId']);
         $data['bxRender'] = new Shopware_Plugins_Frontend_Boxalino_Helper_BxRender($this->Helper(), $this->BxData(), $this, $request);
         return $data;
@@ -1459,7 +1462,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
      * @param $facets
      * @return array
      */
-    protected function getFacetConfig($facets, $landingpageRequest = null) {
+    public function getFacetConfig($facets, $landingpageRequest = null) {
         $snippetManager = Shopware()->Snippets()->getNamespace('frontend/listing/facet_labels');
         $options = [];
         $mapper = $this->get('query_alias_mapper');

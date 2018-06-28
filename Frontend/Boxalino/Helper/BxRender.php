@@ -134,7 +134,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxRender{
                 $index = reset($parameter['values']);
             }
         }
-        $ids = $this->p13Helper->getHitFieldValues('id', 'blog', null, $variant_index);
+        $ids = $this->p13Helper->getHitFieldValues('id', 'blog', $variant_index);
         foreach ($ids as $i => $id) {
             $ids[$i] = str_replace('blog_', '', $id);
         }
@@ -166,7 +166,8 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxRender{
                 $variant_index = reset($parameter['values']);
             }
         }
-        $bannerData = $this->p13Helper->getBannerData(null, $variant_index);
+        $choice_id = $this->p13Helper->getResponse()->getChoiceIdFromVariantIndex($variant_index);
+        $bannerData = $this->p13Helper->getBannerData($choice_id);
         $view->assign('Data', $bannerData);
     }
 
@@ -177,7 +178,8 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxRender{
                 $variant_index = reset($parameter['values']);
             }
         }
-        $voucherData = $this->p13Helper->getVoucherResponse(null, $variant_index);
+        $choice_id = $this->p13Helper->getResponse()->getChoiceIdFromVariantIndex($variant_index);
+        $voucherData = $this->p13Helper->getVoucherResponse($choice_id);
         $view->assign('voucher', $voucherData);
     }
 
@@ -191,7 +193,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxRender{
         $facets = $criteria->getFacets();
         $facets = $this->searchInterceptor->updateFacetsWithResult($facets, $context, $this->request);
         $view->assign('facets', $facets);
-        $view->assign('bxFacets', $this->p13Helper->getFacets('product', null, 0));
+        $view->assign('bxFacets', $this->p13Helper->getFacets('product'));
         $view->assign('criteria', $criteria);
         $view->assign('listingMode', 'full_page_reload');
         $view->assign('sSort', $this->request->getParam('sSort', 7));
@@ -207,12 +209,13 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxRender{
                 break;
             }
         }
+        $choice_id = $this->p13Helper->getResponse()->getChoiceIdFromVariantIndex($variant_index);
         $context = Shopware()->Container()->get('shopware_storefront.context_service')->getShopContext();
         $criteria = Shopware()->Container()->get('shopware_search.store_front_criteria_factory')->createSearchCriteria($this->request, $context);
         $view->assign('sPage', $this->request->getParam('sPage', 1));
         $view->assign('sSort', $this->request->getParam('sSort', 7));
         $view->assign('baseUrl', '/shopware_5_3v2/');
-        $view->assign('pages', ceil($this->p13Helper->getTotalHitCount('product', null, $variant_index) / $criteria->getLimit()));
+        $view->assign('pages', ceil($this->p13Helper->getTotalHitCount('product', $choice_id) / $criteria->getLimit()));
         $view->assign('shortParameters', Shopware()->Container()->get('query_alias_mapper')->getQueryAliases());
         $view->assign('listingMode', 'full_page_reload');
         $sortingIds = Shopware()->Container()->get('config')->get('searchSortings');
@@ -260,7 +263,8 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxRender{
                 $index = reset($parameter['values']);
             }
         }
-        $ids = $this->p13Helper->getHitFieldValues('products_ordernumber', 'product', null, $variant_index);
+        $choice_id = $this->p13Helper->getResponse()->getChoiceIdFromVariantIndex($variant_index);
+        $ids = $this->p13Helper->getHitFieldValues('products_ordernumber', 'product', $choice_id);
         $entity_id = isset($ids[$index]) ? $ids[$index] : null;
         if($entity_id) {
             $collection = $this->resourceManager->getResource($variant_index, 'collection');
@@ -291,7 +295,8 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxRender{
         }
         $collection = $this->resourceManager->getResource($variant_index, 'collection');
         if(is_null($collection)) {
-            $ids = $this->p13Helper->getHitFieldValues('products_ordernumber', 'product', null, $variant_index);
+            $choice_id = $this->p13Helper->getResponse()->getChoiceIdFromVariantIndex($variant_index);
+            $ids = $this->p13Helper->getHitFieldValues('products_ordernumber', 'product', $choice_id);
             $collection = $this->p13Helper->getLocalArticles($ids);
             $this->resourceManager->setResource($collection, $variant_index, 'collection');
         }

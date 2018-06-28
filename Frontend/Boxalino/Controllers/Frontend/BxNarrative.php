@@ -83,10 +83,12 @@ class Shopware_Controllers_Frontend_BxNarrative extends Enlight_Controller_Actio
                 }
             }
 
-            $sort =  $this->getSortOrder($criteria, null, true);
-            $narratives = $helper->getNarrative($choiceId, $additional, $hitCount, $pageOffset, $sort, $params);
-            $dependencies = $this->renderDependencies($helper->getNarrativeDependencies($choiceId));
             $searchInterceptor = Shopware()->Plugins()->Frontend()->Boxalino()->getSearchInterceptor();
+            $sort =  $searchInterceptor->getSortOrder($criteria, null, true);
+            $facets = $criteria->getFacets();
+            $options = $searchInterceptor->getFacetConfig($facets, $request);
+            $narratives = $helper->getNarrative($choiceId, $additional, $options, $hitCount, $pageOffset, $sort, $params);
+            $dependencies = $this->renderDependencies($helper->getNarrativeDependencies($choiceId));
             $bxData = Shopware_Plugins_Frontend_Boxalino_Helper_BxData::instance();
             $bxRender = new Shopware_Plugins_Frontend_Boxalino_Helper_BxRender($helper, $bxData, $searchInterceptor, $request);
 
@@ -102,88 +104,4 @@ class Shopware_Controllers_Frontend_BxNarrative extends Enlight_Controller_Actio
         }
 
     }
-
-    public function getSortOrder(Shopware\Bundle\SearchBundle\Criteria $criteria, $default_sort = null, $listing = false) {
-
-        /* @var Shopware\Bundle\SearchBundle\Sorting\Sorting $sort */
-        $sort = current($criteria->getSortings());
-        $dir = null;
-        $additionalSort = null;
-        if($listing && is_null($default_sort) && Shopware()->Config()->get('boxalino_navigation_sorting')){
-            return array();
-        }
-        switch ($sort->getName()) {
-            case 'popularity':
-                $field = 'products_sales';
-                break;
-            case 'prices':
-                $field = 'products_bx_grouped_price';
-                break;
-            case 'product_name':
-                $field = 'title';
-                break;
-            case 'release_date':
-                $field = 'products_datum';
-                $additionalSort = true;
-                break;
-            default:
-                if ($listing == true) {
-                    $default_sort = is_null($default_sort) ? $this->getDefaultSort() : $default_sort;
-                    switch ($default_sort) {
-                        case 1:
-                            $field = 'products_datum';
-                            $additionalSort = true;
-                            break 2;
-                        case 2:
-                            $field = 'products_sales';
-                            break 2;
-                        case 3:
-                        case 4:
-                            if ($default_sort == 3) {
-                                $dir = false;
-                            }
-                            $field = 'products_bx_grouped_price';
-                            break 2;
-                        case 5:
-                        case 6:
-                            if ($default_sort == 5) {
-                                $dir = false;
-                            }
-                            $field = 'title';
-                            break 2;
-                        default:
-                            if (Shopware()->Config()->get('boxalino_navigation_sorting') == false) {
-                                $field = 'products_datum';
-                                $additionalSort = true;
-                                break 2;
-                            }
-                            break;
-                    }
-                }
-                return array();
-        }
-        $sortReturn[] = array(
-            'field' => $field,
-            'reverse' => (is_null($dir) ? $sort->getDirection() == Shopware\Bundle\SearchBundle\SortingInterface::SORT_DESC : $dir)
-        );
-        if($additionalSort) {
-            $sortReturn[] = array(
-                'field' => 'products_changetime',
-                'reverse' => (is_null($dir) ? $sort->getDirection() == Shopware\Bundle\SearchBundle\SortingInterface::SORT_DESC : $dir)
-            );
-        }
-        return $sortReturn;
-    }
-
-    protected function getDefaultSort(){
-        $db = Shopware()->Db();
-        $sql = $db->select()
-            ->from(array('c_e' => 's_core_config_elements', array('c_v.value')))
-            ->join(array('c_v' => 's_core_config_values'), 'c_v.element_id = c_e.id')
-            ->where("name = ?", "defaultListingSorting");
-        $result = $db->fetchRow($sql);
-        return isset($result) ? unserialize($result['value']) : null;
-
-    }
-
 }

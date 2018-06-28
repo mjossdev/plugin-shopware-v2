@@ -421,7 +421,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         return false;
     }
 
-    protected function addNarrativeRequest($choice, $hitCount, $pageOffset, $sort) {
+    protected function addNarrativeRequest($choice, $hitCount, $pageOffset, $sort, $options = array()) {
 
         $lang = $this->getShortLocale();
         if(strpos($choice, 'banner') !== FALSE){
@@ -438,19 +438,25 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
             $bxRequest->setOffset($pageOffset);
             $bxRequest->setReturnFields(['products_ordernumber']);
             $bxRequest->setGroupBy('id');
+            $bxRequest->setHitsGroupsAsHits(true);
             if ($sort != null && is_array($sort)) {
                 foreach ($sort as $s) {
                     $bxRequest->addSortField($s['field'], $s['reverse']);
                 }
+            }
+            if(!empty($options)) {
+                $facets = $this->prepareFacets($options);
+                $bxRequest->setFacets($facets);
+                $bxRequest->setGroupFacets(true);
             }
 
         }
         self::$bxClient->addRequest($bxRequest);
     }
 
-    public function getNarrative($choiceId, $additional_choices, $hitCount, $pageOffset, $sort, $params) {
+    public function getNarrative($choiceId, $additional_choices, $options, $hitCount, $pageOffset, $sort, $params) {
 
-        $this->addNarrativeRequest($choiceId, $hitCount, $pageOffset, $sort);
+        $this->addNarrativeRequest($choiceId, $hitCount, $pageOffset, $sort, $options);
         foreach ($params as $key => $value) {
             self::$bxClient->addRequestContextParameter($key, $value);
             if($key == 'choice_id') {
@@ -1101,13 +1107,13 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
     /**
      * @param $field
      * @param string $type
+     * @param string $choice
      * @return array
      */
-    public function getHitFieldValues($field, $type = "product", $choiceId = '', $index = null) {
-        $choiceId = $choiceId == '' ? $this->currentSearchChoice : $choiceId;
-        $count = is_null($index) ? array_search($type, self::$choiceContexts[$choiceId]) : $index;
+    public function getHitFieldValues($field, $type = "product", $choice = '') {
+        $choiceId = $choice == '' ? $this->currentSearchChoice : $choice;
         $values = $this->convertToFieldArray(
-            $this->getResponse()->getHitFieldValues([$field], $choiceId, true, $count),
+            $this->getResponse()->getHitFieldValues([$field], $choiceId),
             $field);
         return $values;
     }
@@ -1202,14 +1208,10 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
      * @param string $type
      * @return mixed
      */
-    public function getTotalHitCount($type = "product", $choiceId = '', $index = null) {
+    public function getTotalHitCount($type = "product", $choiceId = '') {
 
         $choiceId = $choiceId == '' ? $this->currentSearchChoice : $choiceId;
-        $count = is_null($index) ? array_search($type, self::$choiceContexts[$choiceId]) : $index;
-        if ($count === false) {
-            return 0;
-        }
-        return $this->getResponse()->getTotalHitCount($choiceId, true, $count);
+        return $this->getResponse()->getTotalHitCount($choiceId);
     }
 
     /**
