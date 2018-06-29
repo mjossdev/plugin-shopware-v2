@@ -12,8 +12,21 @@
                         <span class="action--collapse-icon"></span>
                     </a>
                 </div>
-                {*{include file="frontend/listing/actions/action-sorting.tpl"}*}
+                {include file="frontend/listing/actions/action-sorting.tpl"}
+                <script>
+                    document.asyncReady(function() {
+                        $(document).ready(function () {
+                            $('.sort--field.action--field').on('change', function(e) {
+                                var selectValue = this.options[e.target.selectedIndex].value;
+                                $('input[name=o]').each(function(i, el){
+                                    el.value = selectValue;
+                                    $("#filter").submit();
+                                });
 
+                            });
+                        });
+                    });
+                </script>
 
                 {include file="frontend/listing/actions/action-pagination.tpl"}
 

@@ -118,8 +118,8 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                 $request->setParam('sSort', $default);
             }
         }
-        $sort =  $this->getSortOrder($criteria, null, true);
-
+        $deafult = $request->getParam('o');
+        $sort =  $this->getSortOrder($criteria, $deafult, true);
         $facets = $criteria->getFacets();
         $options = $this->getFacetConfig($facets, $request);
         $data['narrative'] = $this->Helper()->getNarrative($data['choiceId'], $data['additional_choiceId'], $options, $hitCount, $pageOffset, $sort, $params);
