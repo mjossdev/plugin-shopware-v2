@@ -1,1 +1,4 @@
-{extends file="parent:widgets/emotion/slide_articles.tpl"}
+{if $articles}
+    {if $title != ''}<div class="bx_replace">{$title}</div>{/if}
+    {include file="frontend/_includes/product_slider_items.tpl"}
+{/if}

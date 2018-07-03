@@ -144,7 +144,7 @@ class BxFacets
     public function getFacetExtraInfoFacets($extraInfoKey, $extraInfoValue, $default=false, $returnHidden=false, $withSoftFacets=false) {
         $selectedFacets = array();
         foreach($this->getFieldNames() as $fieldName) {
-            if (!$returnHidden && $this->isFacetHidden($fieldName)) {
+            if(!$returnHidden && $this->isFacetHidden($fieldName)) {
                 continue;
             }
             $facetValues = $this->getFacetValues($fieldName);
@@ -808,6 +808,19 @@ class BxFacets
             }
         }
         return $ids;
+    }
+
+    public function getCategoryFromLevel($level) {
+        $facetResponse = $this->getFacetResponse($this->getCategoryFieldName());
+        $categories = [];
+        if(!is_null($facetResponse)) {
+            foreach ($facetResponse->values as $category) {
+                if(sizeof($category->hierarchy) == $level + 2){
+                    $categories[] = $category->stringValue;
+                }
+            }
+        }
+        return $categories;
     }
 
     public function getSelectedCategoryIds()

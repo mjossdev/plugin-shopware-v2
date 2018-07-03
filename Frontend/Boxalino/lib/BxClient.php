@@ -28,6 +28,7 @@ class BxClient
 	const VISITOR_COOKIE_TIME = 31536000;
 
 	private $_timeout = 2;
+    private $curl_timeout = 2000;
 	private $requestContextParameters = array();
 	
 	private $sessionId = null;
@@ -81,17 +82,26 @@ class BxClient
 	public function setTestMode($isTest) {
 		$this->isTest = $isTest;
 	}
-
+	
 	public function setSocket($socketHost, $socketPort=4040, $socketSendTimeout=1000, $socketRecvTimeout=1000) {
 		$this->socketHost = $socketHost;
 		$this->socketPort = $socketPort;
 		$this->socketSendTimeout = $socketSendTimeout;
 		$this->socketRecvTimeout = $socketRecvTimeout;
 	}
-
+	
 	public function setRequestMap($requestMap) {
 		$this->requestMap = $requestMap;
 	}
+
+	private $choiceIdOverwrite = "owbx_choice_id";
+	public function getChoiceIdOverwrite()
+    {
+        if (isset($this->requestMap[$this->choiceIdOverwrite])) {
+            return $this->requestMap[$this->choiceIdOverwrite];
+        }
+        return null;
+    }
 
 	public function getRequestMap() {
 		return $this->requestMap;
@@ -189,6 +199,10 @@ class BxClient
 		$userRecord->username = $this->getAccount();
 		return $userRecord;
 	}
+
+    public function setCurlTimeout($timeout) {
+        $this->curl_timeout = $timeout;
+    }
 	
 	private function getP13n($timeout=2, $useCurlIfAvailable=true){
 		
@@ -202,7 +216,7 @@ class BxClient
 		}
 
 		if($useCurlIfAvailable && function_exists('curl_version')) {
-			$transport = new \Thrift\Transport\P13nTCurlClient($this->host, $this->port, $this->uri, $this->schema);
+			$transport = new \Thrift\Transport\P13nTCurlClient($this->host, $this->port, $this->uri, $this->schema, $this->curl_timeout);
 		} else {
 			$transport = new \Thrift\Transport\P13nTHttpClient($this->host, $this->port, $this->uri, $this->schema);
 		}
@@ -259,7 +273,18 @@ class BxClient
 
 		return $protocol . '://' . $hostname . $requesturi;
 	}
-	
+
+	public function forwardRequestMapAsContextParameters($filterPrefix = '', $setPrefix = ''){
+		foreach ($this->requestMap as $key => $value) {
+			if($filterPrefix != ''){
+				if(strpos($key, $filterPrefix) !== 0) {
+					continue;
+				}
+			}
+			$this->requestContextParameters[$setPrefix . $key] = is_array($value) ? $value : array($value);
+		}
+	}
+
 	public function addRequestContextParameter($name, $values) {
 		if(!is_array($values)) {
 			$values = array($values);
@@ -351,14 +376,26 @@ class BxClient
                 $this->addNotification('bxRequest', $choiceRequest);
                 $this->addNotification('bxResponse', $choiceResponse);
             }
-			if(isset($this->requestMap['dev_bx_disp']) && $this->requestMap['dev_bx_disp'] == 'true') {
-				echo "<pre><h1>Choice Request</h1>";
-				var_dump($choiceRequest);
-				echo "<br><h1>Choice Response</h1>";
-				var_dump($choiceResponse);
-				echo "</pre>";
-				exit;
-			}
+            if(isset($this->requestMap['dev_bx_disp']) && $this->requestMap['dev_bx_disp'] == 'true') {
+                $debug = true;
+                if(isset($this->requestMap['dev_bx_choice'])) {
+                    $debug = false;
+                    foreach ($choiceRequest->inquiries as $inqury) {
+                        if($inqury->choiceId == $this->requestMap['dev_bx_choice']) {
+                            $debug = true;
+                            break;
+                        }
+                    }
+                }
+                if($debug) {
+                    echo "<pre><h1>Choice Request</h1>";
+                    var_dump($choiceRequest);
+                    echo "<br><h1>Choice Response</h1>";
+                    var_dump($choiceResponse);
+                    echo "</pre>";
+                    exit;
+                }
+            }
 			return $choiceResponse;
 		} catch(\Exception $e) {
 			$this->throwCorrectP13nException($e);
@@ -445,6 +482,9 @@ class BxClient
 			
 			$choiceInquiry = new \com\boxalino\p13n\api\thrift\ChoiceInquiry();
 			$choiceInquiry->choiceId = $request->getChoiceId();
+			if(sizeof($choiceInquiries) == 0 && $this->getChoiceIdOverwrite()) {
+				$choiceInquiry->choiceId = $this->getChoiceIdOverwrite();
+			}
 			if($this->isTest === true || ($this->isDev && $this->isTest === null)) {
 				$choiceInquiry->choiceId .= "_debugtest";
 			}
@@ -619,6 +659,7 @@ class BxClient
 
 	public function setTimeout($timeout) {
 		$this->_timeout = $timeout;
+		return $this;
 	}
 
     public function notifyWarning($warning) {

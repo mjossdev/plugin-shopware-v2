@@ -3,11 +3,11 @@
 
   <div class="quickFinder" style="">
 
-    <div class="content" style="">
+    <div class="quickFinderContent" style="">
 
     </div>
 
-    <div class="button" style="">
+    <div class="quickFinderButton" style="">
 
     </div>
 
@@ -55,12 +55,12 @@ var expertFieldName =  facets.getDataOwnerFacet();
 
   // append default expert to template
 
-  jQuery('.content').append('<img src="https://' + defaultExpertQuestionImage + '" alt="" style="width:90%;border-radius: 50%;right:0;left:0;margin-left:auto;margin-right:auto;"><div class="text"><p style="font-size: 1.2rem;text-align:center;">' + quickFinderIntro + '</p></div>');
+  jQuery('.quickFinderContent').append('<img src="https://' + defaultExpertQuestionImage + '" alt="" style="width:90%;border-radius: 50%;right:0;left:0;margin-left:auto;margin-right:auto;"><div class="text"><p style="font-size: 1.2rem;text-align:center;">' + quickFinderIntro + '</p></div>');
 
   createButton();
 
   function createButton() {
-      $('.button').append($('<button id="b-find" style="background-color: #993366; border:none; color:white; text-align:center;width:100%;font-size:1.2rem;">ZUM PRODUKTEFINDER</button>'));
+      $('.quickFinderButton').append($('<button id="b-find" style="background-color: #993366; border:none; color:white; text-align:center;width:100%;font-size:1.2rem;">ZUM PRODUKTEFINDER</button>'));
       $('#b-find').on('click', function (e) {
           var urlString = '{url controller=cat sCategory=$Data.cpo_finder_link}',
               params = facets.getFacetParameters();

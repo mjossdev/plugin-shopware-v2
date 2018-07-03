@@ -137,7 +137,6 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
                                 $this->bxData->pushDataSpecifications();
                             } else {
                                 $this->log->info("BxIndexLog: pushDataSpecifications failed with exception: " . $e->getMessage());
-                                continue;
                             }
                         }
 
@@ -214,10 +213,12 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
                 $this->log->info("exportItemUrls after memory: " . memory_get_usage(true));
                 $this->log->info("BxIndexLog: Finished products - url.");
             }
-            $this->log->info("BxIndexLog: Preparing products - blogs.");
-            $this->exportItemBlogs($account, $files);
-            $this->log->info("exportItemBlogs after memory: " . memory_get_usage(true));
-            $this->log->info("BxIndexLog: Finished products - blogs.");
+            if(!$this->delta) {
+                $this->log->info("BxIndexLog: Preparing products - blogs.");
+                $this->exportItemBlogs($account, $files);
+                $this->log->info("exportItemBlogs after memory: " . memory_get_usage(true));
+                $this->log->info("BxIndexLog: Finished products - blogs.");
+            }
             $this->log->info("BxIndexLog: Preparing products - votes.");
             $this->exportItemVotes($files);
             $this->log->info("exportItemVotes after memory: " . memory_get_usage(true));
@@ -629,10 +630,11 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
         $db = $this->db;
         $headers = array('id', 'title', 'author_id', 'active', 'short_description', 'description', 'views',
             'display_date', 'category_id', 'template', 'meta_keywords', 'meta_description', 'meta_title',
-            'assigned_articles', 'tags', 'shop_id');
+            'assigned_articles', 'tags', 'media_id', 'shop_id', 'media_url');
         $id = $this->_config->getAccountStoreId($account);
         $shopCategories = $this->getShopCategoryIds($id);
         $data = array();
+        $media_service = Shopware()->Container()->get('shopware_media.media_service');
         $sql = $db->select()
             ->from(array('b' => 's_blog'),
                 array('id' => new Zend_Db_Expr("CONCAT('blog_', b.id)"),
@@ -641,11 +643,15 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
                     'b.display_date','b.category_id','b.template',
                     'b.meta_keywords','b.meta_keywords','b.meta_description','b.meta_title',
                     'assigned_articles' => new Zend_Db_Expr("GROUP_CONCAT(bas.article_id)"),
-                    'tags' => new Zend_Db_Expr("GROUP_CONCAT(bt.name)")
+                    'tags' => new Zend_Db_Expr("GROUP_CONCAT(bt.name)"),
+                    'media_id' => 'bm.media_id',
+                    'media_path' => 'm.path'
                 )
             )
             ->joinLeft(array('bas' => 's_blog_assigned_articles'), 'bas.blog_id = b.id',array())
             ->joinLeft(array('bt' => 's_blog_tags'), 'bt.blog_id = b.id',array())
+            ->joinLeft(array('bm' => 's_blog_media'), 'bm.blog_id = b.id AND bm.preview = 1',array())
+            ->joinLeft(array('m' => 's_media'), 'bm.media_id = m.id',array())
             ->join(
                 array('c' => 's_categories'),
                 $this->qi('c.id') . ' = ' . $this->qi('b.category_id') .
@@ -664,6 +670,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
             }
             unset($row['path']);
             $row['shop_id'] = $blog_shop_id;
+            $row['media_url'] = $row['media_path'] ? $media_service->getUrl($row['media_path']) : null;
             $data[] = $row;
         }
         if (count($data)) {
@@ -1164,6 +1171,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
                         $this->shopProductIds[$row['id']] = $shop_id;
                         unset($row['price']);
                         $row['purchasable'] = ($row['laststock'] == 1 && $row['instock'] == 0) ? 0 : 1;
+                        $row['immediate_delivery'] = ($row['instock'] >= $row['minpurchase']) ? 1 : 0;
                         if ($this->delta && !isset($this->deltaIds[$row['articleID']])) {
                             $this->deltaIds[$row['articleID']] = $row['articleID'];
                         }
@@ -1204,6 +1212,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
         $this->log->info("All shops for main product took: $end ms, memory: " . memory_get_usage(true));
         $mainSourceKey = $this->bxData->addMainCSVItemFile($files->getPath('products.csv'), 'id');
         $this->bxData->addSourceStringField($mainSourceKey, 'bx_purchasable', 'purchasable');
+        $this->bxData->addSourceStringField($mainSourceKey, 'immediate_delivery', 'immediate_delivery');
         $this->bxData->addSourceStringField($mainSourceKey, 'bx_type', 'id');
         $pc_field = $this->_config->isVoucherExportEnabled($account) ?
             'CASE WHEN group_id IS NULL THEN CASE WHEN %%LEFTJOINfield_products_voucher_id%% IS NULL THEN "blog" ELSE "voucher" END ELSE "product" END AS final_value' :
@@ -1501,7 +1510,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
      */
     protected function getLastDelta() {
         if (empty($this->deltaLast)) {
-            $this->deltaLast = '1950-01-01 12:00:00';
+            $this->deltaLast = date("Y-m-d H:i:s", strtotime("-30 minutes"));
             $db = $this->db;
             $sql = $db->select()
                 ->from('exports', array('export_date'))

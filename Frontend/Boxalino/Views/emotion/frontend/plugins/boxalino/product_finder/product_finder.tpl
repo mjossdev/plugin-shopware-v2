@@ -64,11 +64,10 @@
 
 <div class="listingBlock">
 
-  <div class="cpo-finder-listing-wrapper" style="width:75%; float:right;">
+  <div class="cpo-finder-listing-wrapper" style="width:60%; float:right;">
     {block name="frontend_cpo_finder_listing_present"}
-        {if $Data.top_match}
             <div class="cpo-finder-listing bx-present" style="display:none;">
-                {foreach $Data.top_match as $sArticle}
+                {foreach $Data.highlighted_articles as $sArticle}
 
                 {include file="frontend/detail/content/header.tpl"}
 
@@ -92,31 +91,15 @@
                     {include file="frontend/detail/content/buy_container.tpl" Shop = $Data.shop}
                 {/foreach}
             </div>
-        {/if}
     {/block}
     {block name="frontend_cpo_finder_listing_listing"}
          {* {if $Data.highlighted_articles} *}
-            {* {if $Data.top_match} *}
                 <div class="cpo-finder-listing bx-listing-emotion" style="display:none;">
-                    {foreach $Data.highlighted_articles as $sArticle}
-                         {include file="frontend/listing/box_article.tpl" productBoxLayout='image'}
+                    {foreach $Data.sArticles as $sArticle}
+                         {include file="frontend/listing/box_article.tpl" productBoxLayout='image' isFinder='true'}
                     {/foreach}
                 </div>
-            {* {else}
-                <div class="cpo-finder-listing bx-listing-slider" style="display:none;">
-                    {include file="widgets/emotion/components/component_article_slider.tpl" Data = $Data.slider_data}
-                </div>
-            {/if} *}
         {* {/if} *}
-    {/block}
-    {block name="frontend_cpo_finder_listing_question"}
-        <div class="cpo-finder-listing bx-listing-listing" style="display:none;width:100%;float:left;">
-            {* {foreach $Data.sArticles as $sArticle} *}
-            <div class="search--results">
-                {include file='frontend/listing/listing.tpl' showListing=true sArticles=$Data.sArticles}
-            </div>
-            {* {/foreach} *}
-        </div>
     {/block}
   </div>
 
@@ -147,9 +130,6 @@
           }
       }
     }
-
-        console.log({$Data.highlighted});
-            console.log(currentFacet);
 
     // Get the field name of the expert facet
     var expertFieldName =  facets.getDataOwnerFacet();
@@ -242,20 +222,6 @@
         }
 
     }else{
-
-      // Get the current facet
-
-      var currentFacet = null;
-      var questions = facets.getAdditionalFacets();
-      if({$Data.highlighted} == false) {
-          for(var i = 0; i < questions.length; i++) {
-            var fieldName = questions[i];
-            if(facets.getCurrentSelects(fieldName) === null) {
-                currentFacet = fieldName;
-                break;
-            }
-         }
-      }
 
       // Get question of the current facet for the expert
 
@@ -480,7 +446,6 @@
       function createFieldListener(field) {
           var type = facets.getFacetExtraInfo(field, 'visualisation');
           $("." + field + "_check").on('change', function() {
-            // console.log("set select field", field, "value", $(this).attr('value'));
               if(type == 'radio') {
                 facets.removeSelect(field);
                   if($(this).is(':checked')) {
@@ -539,7 +504,8 @@
 
               if (facetExtraInfo) {
 
-                jQuery('.rightCriteria').append('<p id="' + selects[key] + '_option" style="margin: 0;">- ' + facetExtraInfo[selects[key]]['additional_text'] + '</p>');
+                jQuery('.rightCriteria').append('<a class="' + key + '"><p id="' + selects[key] +'" style="margin: 0;">- ' + facetExtraInfo[selects[key]]['additional_text'] + '</p></a>');
+
               }
 
               // otherwise use value from DI
@@ -548,13 +514,38 @@
 
                 selects[key].forEach(function (key){
 
-                jQuery('.rightCriteria').append('<p id="' + key + '_option" style="margin: 0;">- ' + key + '</p>');
+                jQuery('.rightCriteria').append('<a class="' + key + '"><p id="' + key +'" style="margin: 0;">- ' + key + '</p></a>');
 
                 });
 
               }
 
             }
+
+            // return to questions
+
+            url = window.location.href;
+
+            jQuery('#' + selects[key]).click(function(){
+
+              var classname = jQuery(this).parent().attr('class');
+
+              var urlParams = new URLSearchParams(window.location.search);
+
+              var entries = urlParams.entries();
+              for(pair of entries) {
+                pair = pair.join('=')
+                if(pair.includes(classname)){
+
+                  newUrl = url.replace(pair, '');
+                  newUrl = url.replace('&&', '&');
+
+                  window.location = newUrl;
+
+                }
+              }
+
+            });
 
           }
 
@@ -595,6 +586,17 @@
 
         }else{
 
+          // comment
+
+          var button = jQuery('[class^=bxCommentButton_]');
+
+          button.click(function(){
+
+            jQuery(this).hide();
+            jQuery(this).next().show();
+
+          });
+
           jQuery('.buttonContainer').append('<button id="cpo-finder-back" type="button" name="backButton" style="background-color: #fff; border:none; color:black; text-align:center;float: left;margin-top:1%;">Zur&uuml;ck</button>');
 
           jQuery('.buttonContainerBelow').hide();
@@ -614,29 +616,18 @@
             }
           }
 
-          if (count >= 2) {
+          if ({$Data.max_score} >= 90) { //if highlighted == true
 
             jQuery('.centerContentHeader').append('<h2 style="margin:0;margin-bottom: 5px;">' + expertResultSentence10[lang] + '</h2>');
             $('.bx-present').show();
             $('.bx-listing-emotion').show();
-            $('.bx-listing-slider').show();
-            $('.bx-listing-listing').show();
 
           }
 
-          if (count == 1) {
+          else {
 
             jQuery('.centerContentHeader').append('<h2 style="margin:0;margin-bottom: 5px;">' + expertResultSentence5[lang] + '</h2>');
             $('.bx-listing-emotion').show();
-            $('.bx-listing-slider').show();
-            $('.bx-listing-listing').show();
-
-          }
-
-          if (count == 0) {
-
-            jQuery('.centerContentHeader').append('<h2 style="margin:0;margin-bottom: 5px;">' + expertResultSentence1[lang] + '</h2>');
-            $('.bx-listing-listing').show();
 
           }
 
@@ -758,26 +749,21 @@
       }
 
 
-      if (count >= 2) {
+      if ({$Data.max_score} >= 90) {
 
         $('.bx-present').show();
         $('.bx-listing-emotion').show();
-        $('.bx-listing-listing').show();
+        // $('.bx-listing-listing').show();
 
       }
 
-      if (count == 1) {
+      else {
 
         $('.bx-listing-emotion').show();
-        $('.bx-listing-listing').show();
+        // $('.bx-listing-listing').show();
 
       }
 
-      if (count == 0) {
-
-        $('.bx-listing-listing').show();
-
-      }
     });
 
 </script>

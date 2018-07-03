@@ -40,6 +40,9 @@ class Shopware_Plugins_Frontend_Boxalino_FrontendInterceptor
                     } else {
                         $this->View()->extendsTemplate('frontend/plugins/boxalino/detail/index_ajax.tpl');
                     }
+                    if ($this->Config()->get('boxalino_detail_blog_recommendation')) {
+                        $this->View()->assign('bx_load_blogs', true);
+                    }
                 } else {
                     $id = trim(strip_tags(htmlspecialchars_decode(stripslashes($this->Request()->sArticle))));
                     $choiceIds = array();
@@ -71,23 +74,24 @@ class Shopware_Plugins_Frontend_Boxalino_FrontendInterceptor
                         }
                     }
                     $this->View()->assign('sArticle', $sArticle);
-                }
-                if ($this->Config()->get('boxalino_detail_blog_recommendation')) {
-                    $choiceId = $this->Config()->get('boxalino_detail_blog_recommendation_name');
-                    $min = $this->Config()->get('boxalino_detail_blog_recommendation_min');
-                    $max = $this->Config()->get('boxalino_detail_blog_recommendation_max');
-                    $id = trim(strip_tags(htmlspecialchars_decode(stripslashes($this->Request()->sArticle))));
-                    $this->Helper()->getRecommendation($choiceId, $max, $min, 0, $id, 'product', false, array(), true);
-                    $blogIds = $this->Helper()->getRecommendation($choiceId, $max, $min, 0, $id, 'product', true, array(), true);
-                    foreach ($blogIds as $index => $id) {
-                        $blogIds[$index] = str_replace('blog_', '', $id);
+                    if ($this->Config()->get('boxalino_detail_blog_recommendation')) {
+                        $choiceId = $this->Config()->get('boxalino_detail_blog_recommendation_name');
+                        $min = $this->Config()->get('boxalino_detail_blog_recommendation_min');
+                        $max = $this->Config()->get('boxalino_detail_blog_recommendation_max');
+                        $id = trim(strip_tags(htmlspecialchars_decode(stripslashes($this->Request()->sArticle))));
+                        $relatedBlogs = $this->BxHelper()->getRelatedBlogs($id);
+                        $contextParams = ["bx_{$choiceId}_$id" => $relatedBlogs];
+                        $this->Helper()->getRecommendation($choiceId, $max, $min, 0, $id, 'product', false, array(), true, $contextParams);
+                        $fields = ['products_blog_title', 'products_blog_id', 'products_blog_category_id', 'products_blog_short_description', 'products_blog_media_id'];
+                        $blogs = $this->Helper()->getRecommendationHitFieldValues($choiceId, $fields);
+                        $blogArticles = $this->BxHelper()->transformBlog($blogs);
+                        $this->View()->extendsTemplate('frontend/plugins/boxalino/detail/content.tpl');
+                        $this->View()->extendsTemplate('frontend/plugins/boxalino/_includes/product_slider_item.tpl');
+                        $this->View()->assign('sBlogArticles', $blogArticles);
+                        $this->View()->assign('sBlogTitle', $this->Helper()->getSearchResultTitle($choiceId));
                     }
-                    $this->View()->extendsTemplate('frontend/plugins/boxalino/detail/content.tpl');
-                    $this->View()->extendsTemplate('frontend/plugins/boxalino/_includes/product_slider_item.tpl');
-                    $blogArticles = $this->Helper()->getBlogs($blogIds);
-                    $blogArticles = $this->enhanceBlogArticles($blogArticles);
-                    $this->View()->assign('sBlogArticles', $blogArticles);
                 }
+
                 $script = Shopware_Plugins_Frontend_Boxalino_EventReporter::reportProductView($sArticle['articleDetailsID']);
                 break;
             case 'search':
@@ -116,45 +120,6 @@ class Shopware_Plugins_Frontend_Boxalino_FrontendInterceptor
 
     public function get($name) {
         return Shopware()->Container()->get($name);
-    }
-
-    private function enhanceBlogArticles($blogArticles) {
-        $mediaIds = array_map(function ($blogArticle) {
-            if (isset($blogArticle['media']) && $blogArticle['media'][0]['mediaId']) {
-                return $blogArticle['media'][0]['mediaId'];
-            }
-        }, $blogArticles);
-
-        $context = $this->Bootstrap()->get('shopware_storefront.context_service')->getShopContext();
-        $medias = $this->Bootstrap()->get('shopware_storefront.media_service')->getList($mediaIds, $context);
-
-
-        foreach ($blogArticles as $key => $blogArticle) {
-            //adding number of comments to the blog article
-            $blogArticles[$key]["numberOfComments"] = count($blogArticle["comments"]);
-
-            //adding thumbnails to the blog article
-            if (empty($blogArticle["media"][0]['mediaId'])) {
-                continue;
-            }
-
-            $mediaId = $blogArticle["media"][0]['mediaId'];
-
-            if (!isset($medias[$mediaId])) {
-                continue;
-            }
-
-            /**@var $media \Shopware\Bundle\StoreFrontBundle\Struct\Media*/
-            $media = $medias[$mediaId];
-            $media = $this->get('legacy_struct_converter')->convertMediaStruct($media);
-
-            if (Shopware()->Shop()->getTemplate()->getVersion() < 3) {
-                $blogArticles[$key]["preview"]["thumbNails"] = array_column($media['thumbnails'], 'source');
-            } else {
-                $blogArticles[$key]['media'] = $media;
-            }
-        }
-        return $blogArticles;
     }
 
     /**
@@ -361,13 +326,12 @@ class Shopware_Plugins_Frontend_Boxalino_FrontendInterceptor
         return $arguments->getReturn();
     }
 
-    public function getBannerInfo() {
+    public function getBannerInfo($arguments) {
         if (!$this->Config()->get('boxalino_active')) {
             return null;
         }
-
-        $data = $this->Helper()->addBanner();
-
+        $config = $arguments->getReturn();
+        $data = $this->Helper()->addBanner($config);
         return $data;
     }
 

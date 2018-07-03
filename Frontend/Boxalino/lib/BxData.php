@@ -487,12 +487,12 @@ class BxData
         return $dom->saveXML();
     }
 
-    protected function callAPI($fields, $url, $temporaryFilePath=null)
+    protected function callAPI($fields, $url, $temporaryFilePath=null, $timeout=60)
     {
         $s = curl_init();
 
         curl_setopt($s, CURLOPT_URL, $url);
-        curl_setopt($s, CURLOPT_TIMEOUT, 60);
+        curl_setopt($s, CURLOPT_TIMEOUT, $timeout);
         curl_setopt($s, CURLOPT_POST, true);
         curl_setopt($s, CURLOPT_ENCODING, '');
         curl_setopt($s, CURLOPT_RETURNTRANSFER, true);
@@ -653,7 +653,7 @@ class BxData
         return $files;
     }
 
-    public function createZip($temporaryFilePath=null, $name='bxdata.zip')
+    public function createZip($temporaryFilePath=null, $name='bxdata.zip', $clearFiles = true)
     {
         if($temporaryFilePath === null) {
             $temporaryFilePath = sys_get_temp_dir() . '/bxclient';
@@ -704,13 +704,18 @@ class BxData
                 $name . '" for writing. Please check the permissions and try again.'
             );
         }
+        if($clearFiles) {
+            foreach ($files as $file) {
+                unlink($file);
+            }
+        }
 
         return $zipFilePath;
     }
 
-    public function pushData($temporaryFilePath=null) {
+    public function pushData($temporaryFilePath=null, $timeout=60, $clearFiles=true) {
 
-        $zipFile = $this->createZip($temporaryFilePath);
+        $zipFile = $this->createZip($temporaryFilePath, 'bxdata.zip', $clearFiles);
 
         $fields = array(
             'username' => $this->bxClient->getUsername(),
@@ -723,7 +728,7 @@ class BxData
         );
 
         $url = $this->host . self::URL_ZIP;
-        return $this->callAPI($fields, $url, $temporaryFilePath);
+        return $this->callAPI($fields, $url, $temporaryFilePath, $timeout);
     }
 
     protected function getCurlFile($filename, $type)
