@@ -39,8 +39,11 @@ class BxChooseResponse
         $finalNotifications = $this->notifications;
         foreach($this->bxRequests as $bxRequest) {
             $finalNotifications[] = array('name'=>'bxFacet', 'parameters'=>$bxRequest->getChoiceId());
-            foreach($bxRequest->getFacets()->getNotifications() as $notification) {
-                $finalNotifications[] = $notification;
+            $facets = $bxRequest->getFacets();
+            if(!is_null($facets)) {
+                foreach($facets->getNotifications() as $notification) {
+                    $finalNotifications[] = $notification;
+                }
             }
         }
         return $finalNotifications;
@@ -253,7 +256,7 @@ class BxChooseResponse
         $facets = $this->getRequestFacets($choice);
 
         if(is_null($facets)){
-            $facets =  new \com\boxalino\bxclient\v1\BxFacets();
+            $facets = new \com\boxalino\bxclient\v1\BxFacets();;
         }
         $facets->setSearchResults($searchResult);
         return $facets;
