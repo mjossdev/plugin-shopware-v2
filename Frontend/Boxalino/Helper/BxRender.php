@@ -134,7 +134,8 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxRender{
                 $index = reset($parameter['values']);
             }
         }
-        $ids = $this->p13Helper->getHitFieldValues('id', 'blog', $variant_index);
+        $choiceId = $this->p13Helper->getVariantChoiceId($variant_index);
+        $ids = $this->p13Helper->getHitFieldValues('id', 'blog', $choiceId);
         foreach ($ids as $i => $id) {
             $ids[$i] = str_replace('blog_', '', $id);
         }

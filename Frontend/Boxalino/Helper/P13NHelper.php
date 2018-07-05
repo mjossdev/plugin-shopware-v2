@@ -1118,6 +1118,10 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         return $values;
     }
 
+    public function getVariantChoiceId($variantId) {
+        return $this->getResponse()->getChoiceIdFromVariantIndex($variantId);
+    }
+
     /**
      * @param $queryText
      * @param string $type

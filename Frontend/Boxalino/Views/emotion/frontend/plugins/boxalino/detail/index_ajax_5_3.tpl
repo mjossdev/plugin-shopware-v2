@@ -44,6 +44,7 @@
                 }, function (err) {
                 });
 
+                {if $bx_load_blogs}
                 var blogcontroller = '{url controller=RecommendationSlider action=detailBlogRecommendation articleId=$sArticle.articleID}';
                 $.ajax({
                     type: "GET",
@@ -53,6 +54,7 @@
                     StateManager.updatePlugin('*[data-product-slider="true"]', 'swProductSlider');
                 }, function (err) {
                 });
+                {/if}
             });
         });
     </script>
