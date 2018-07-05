@@ -378,7 +378,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             $c=0;
             foreach($articles as $index => $article) {
                 $id = $article['articleID'];
-                $article['score'] = $scores[$c];
+                $article['bx_score'] = $scores[$c];
                 $article['comment'] = "Sample comment nr {$id}" ; //$comment[$c];
                 $highlighted =  $highlightedValues[$c++] == 'true';
                 if($highlighted){
@@ -486,6 +486,12 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
 
         if($this->Request()->getActionName() == 'productNavigation'){
             return null;
+        }
+
+        $choice_id = $this->Request()->getParam('choice_id', null);
+
+        if($choice_id) {
+            $this->Request()->setParam('sCategory', Shopware()->Shop()->getCategory()->getId());
         }
 
         $viewData = $this->View()->getAssign();
@@ -1872,6 +1878,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         $propertyFacets = [];
         $filters = array();
         $mapper = $this->get('query_alias_mapper');
+        $request = is_null($request) ? $this->Request() : $request;
         if(!$propertyFieldName = $mapper->getShortAlias('sFilterProperties')) {
             $propertyFieldName = 'sFilterProperties';
         }
@@ -2296,7 +2303,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         return null;
     }
 
-    private function loadThemeConfig()
+    private function loadThemeConfig($return = false)
     {
         $inheritance = $this->container->get('theme_inheritance');
 
@@ -2310,6 +2317,10 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                 $shop->getTemplate()
             )
         );
+
+        if($return) {
+            return $config;
+        }
         $this->View()->assign('theme', $config);
     }
 
