@@ -170,6 +170,10 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
                 __DIR__
             ), new \Shopware\Components\Theme\LessDefinition(
                 array(),
+                array(__DIR__ . '/Views/responsive/frontend/_resources/less/productfinder.less'),
+                __DIR__
+            ), new \Shopware\Components\Theme\LessDefinition(
+                array(),
                 array(__DIR__ . '/Views/responsive/frontend/_resources/less/blog_recommendations.less'),
                 __DIR__
             )
