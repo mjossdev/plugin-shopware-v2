@@ -5,7 +5,12 @@
     {"search/resultsfor": "Search results for"},
     {"search/correctedresultsfor": "Corrected search results for"},
     {"filter/morevalues": "more values"},
-    {"filter/lessvalues": "less values"}
+    {"filter/lessvalues": "less values"},
+    {"productfinder/back": "back"},
+    {"productfinder/advance": "advance"},
+    {"productfinder/skip": "skip"},
+    {"productfinder/showresultsuntil": "Show results until"},
+    {"productfinder/yourchoice": "Your choice"}
   ],
   "en_US": [
     {"relaxation/didyoumean": "Did you mean..."},
@@ -13,7 +18,12 @@
     {"search/resultsfor": "Search results for"},
     {"search/correctedresultsfor": "Corrected search results for"},
     {"filter/morevalues": "more values"},
-    {"filter/lessvalues": "less values"}
+    {"filter/lessvalues": "less values"},
+    {"productfinder/back": "back"},
+    {"productfinder/advance": "advance"},
+    {"productfinder/skip": "skip"},
+    {"productfinder/showresultsuntil": "Show results until"},
+    {"productfinder/yourchoice": "Your choice"}
   ],
   "de_DE": [
     {"relaxation/didyoumean": "Meinten Sie..."},
@@ -21,7 +31,12 @@
     {"search/resultsfor": "Suchergebnis für"},
     {"search/correctedresultsfor": "Korrigiertes Suchergebnis für"},
     {"filter/morevalues": "mehr anzeigen"},
-    {"filter/lessvalues": "weniger anzeigen"}
+    {"filter/lessvalues": "weniger anzeigen"},
+    {"productfinder/back": "zurück"},
+    {"productfinder/advance": "weiter"},
+    {"productfinder/skip": "überspringen"},
+    {"productfinder/showresultsuntil": "Resultate Anzeigen bis"},
+    {"productfinder/yourchoice": "Ihre Auswahl"}
   ],
   "de_CH": [
     {"relaxation/didyoumean": "Meinten Sie..."},
@@ -29,7 +44,12 @@
     {"search/resultsfor": "Suchergebnis für"},
     {"search/correctedresultsfor": "Korrigiertes Suchergebnis für"},
     {"filter/morevalues": "mehr anzeigen"},
-    {"filter/lessvalues": "weniger anzeigen"}
+    {"filter/lessvalues": "weniger anzeigen"},
+    {"productfinder/back": "zurück"},
+    {"productfinder/advance": "weiter"},
+    {"productfinder/skip": "überspringen"},
+    {"productfinder/showresultsuntil": "Resultate Anzeigen bis"},
+    {"productfinder/yourchoice": "Ihre Auswahl"}
   ],
   "fr_CH": [
     {"relaxation/didyoumean": "Vouliez-vous dire..."},
@@ -37,7 +57,12 @@
     {"search/resultsfor": "Résultats recherche pour"},
     {"search/correctedresultsfor": "Résultats de recherche corrigés pour"},
     {"filter/morevalues": "voir plus"},
-    {"filter/lessvalues": "voir moins"}
+    {"filter/lessvalues": "voir moins"},
+    {"productfinder/back": "retour"},
+    {"productfinder/advance": "avancer"},
+    {"productfinder/skip": "passer"},
+    {"productfinder/showresultsuntil": "Afficher les résultats jusqu'à"},
+    {"productfinder/yourchoice": "Votre choix"}
   ],
   "fr_FR": [
     {"relaxation/didyoumean": "Vouliez-vous dire..."},
@@ -45,6 +70,11 @@
     {"search/resultsfor": "Résultats recherche pour"},
     {"search/correctedresultsfor": "Résultats de recherche corrigés pour"},
     {"filter/morevalues": "voir plus"},
-    {"filter/lessvalues": "voir moins"}
+    {"filter/lessvalues": "voir moins"},
+    {"productfinder/back": "retour"},
+    {"productfinder/advance": "avancer"},
+    {"productfinder/skip": "passer"},
+    {"productfinder/showresultsuntil": "Afficher les résultats jusqu'à"},
+    {"productfinder/yourchoice": "Votre choix"}
   ]
 }

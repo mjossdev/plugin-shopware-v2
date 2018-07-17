@@ -45,7 +45,7 @@
 
     <div class="cpo-finder-right-content">
 
-      <div class="cpo-finder-right-title">Ihre Auswahl</div>
+      <div class="cpo-finder-right-title">{s namespace='boxalino/intelligence' name='productfinder/yourchoice'}Your choice{/s}</div>
 
       <div class="cpo-finder-right-criteria">
 
@@ -191,17 +191,17 @@
                                         '</div>' +
                                     '</div>';
 
-    var additionalButton = '<button id="cpo-finder-additional" type="button" name="additionalButton">Mehr Anzeigen</button>';
+    var additionalButton = '<button id="cpo-finder-additional" type="button" name="additionalButton">{s namespace='boxalino/intelligence' name='filter/morevalues'}more values{/s}</button>';
 
-    var fewerButton = '<button id="cpo-finder-fewer" type="button" name="fewerButton">Weniger Anzeigen</button>';
+    var fewerButton = '<button id="cpo-finder-fewer" type="button" name="fewerButton">{s namespace='boxalino/intelligence' name='filter/lessvalues'}less values{/s}</button>';
 
-    var backButton = '<button id="cpo-finder-back" type="button" name="backButton">Zur&uuml;ck</button>';
+    var backButton = '<button id="cpo-finder-back" type="button" name="backButton">{s namespace='boxalino/intelligence' name='productfinder/back'}back{/s}</button>';
 
-    var resultsButton = '<button id="cpo-finder-results" type="button" name="resultsButton">WEITER</button>';
+    var resultsButton = '<button id="cpo-finder-results" type="button" name="resultsButton">{s namespace='boxalino/intelligence' name='productfinder/advance'}advance{/s}</button>';
 
-    var skipButton = '<button id="cpo-finder-skip" type="button" name="backButton">&Uuml;BERSPRINGEN</button>';
+    var skipButton = '<button id="cpo-finder-skip" type="button" name="backButton">{s namespace='boxalino/intelligence' name='productfinder/skip'}skip{/s}</button>';
 
-    var showProductsButton = '<button id="cpo-finder-show-products" style="">Ergebnisse bis %%CurrentScore%% % anzeigen</button>';
+    var showProductsButton = '<button id="cpo-finder-show-products" style="">{s namespace='boxalino/intelligence' name='productfinder/showresultsuntil'}Show results until %%CurrentScore%% %{/s}</button>';
 
     {include file="frontend/plugins/boxalino/product_finder/product_finder_js.tpl" Data = $Data}
 
