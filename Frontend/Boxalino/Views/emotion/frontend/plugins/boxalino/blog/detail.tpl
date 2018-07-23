@@ -3,13 +3,15 @@
 {block name='frontend_blog_detail_crossselling'}
     {$smarty.block.parent}
     {if $bxProductRecommendation}
-        <div class="product-slider has--border" style="position:unset;">
-            <h2 class="panel--title is--underline product-slider--title" style="position:unset;">{$bxRecTitle}</h2>
+        <div class="bx-blog-product-rec block">
+            <div class="bx-blog-product-rec--title">
+                <h2 class="panel--title is--underline product-slider--title">{$bxRecTitle}</h2>
+            </div>
             {include file="frontend/_includes/product_slider.tpl"
             articles=$bxProductRecommendation
             sliderAjaxCtrlUrl=''
             sliderAjaxCategoryID=''
-            productSliderCls=''
+            productSliderCls="product-slider--content"
             sliderMode={''}
             sliderAjaxMaxShow=$bxProductRecommendation|@count
             sliderArrowControls={'1'}
