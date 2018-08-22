@@ -660,19 +660,16 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
             )
             ->group('b.id');
         $stmt = $db->query($sql);
+
         while ($row = $stmt->fetch()) {
-            $blog_shop_id = $id;
-            foreach ($shopCategories as $shop_id => $cat_id) {
-                if(strpos($row['path'], $cat_id) !== false) {
-                    $blog_shop_id = $shop_id;
-                    break;
-                }
-            }
-            unset($row['path']);
-            $row['shop_id'] = $blog_shop_id;
+            $blogCategories= explode("|", trim($row['path'], "|"));
+            $rootBlogCategory = array_pop($blogCategories);
+            $shopId = array_search($rootBlogCategory, $shopCategories);
+            $row['shop_id'] = $shopId ? $shopId : $id;
             $row['media_url'] = $row['media_path'] ? $media_service->getUrl($row['media_path']) : null;
             $data[] = $row;
         }
+
         if (count($data)) {
             $data = array_merge(array(array_keys(end($data))), $data);
         } else {
