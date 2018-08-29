@@ -24,7 +24,7 @@ class Shopware_Plugins_Frontend_Boxalino_EventReporter
     private static function buildScript($pushes = null)
     {
         $account = Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper::getAccount();
-        $scriptFile = $this->getBaScriptServerPath();
+        $scriptFile = self::getBaScriptServerPath();
         return <<<SCRIPT
             <script type="text/javascript">
                 var _bxq = _bxq || [];
@@ -47,15 +47,15 @@ SCRIPT;
      * getting the upgraded script
      * @return string
      */
-    private function getBaScriptServerPath()
+    private static function getBaScriptServerPath()
     {
-        $apiKey = Shopware()->Config()->get('bxGeneral/general/apiKey');
-        $apiSecret = Shopware()->Config()->get('bxGeneral/general/apiSecret');
+        $apiKey = Shopware()->Config()->get('boxalino_api_key');
+        $apiSecret = Shopware()->Config()->get('boxalino_api_secret');
         if(empty($apiKey) || empty($apiSecret))
         {
             return self::BXL_INTELLIGENCE_SCRIPT;
         }
-        $isDev = Shopware()->Config()->get('bxGeneral/general/dev');
+        $isDev = Shopware()->Config()->get('boxalino_dev');
         if($isDev)
         {
             return self::BXL_INTELLIGENCE_STAGE_SCRIPT;
