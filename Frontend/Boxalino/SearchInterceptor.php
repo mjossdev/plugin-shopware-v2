@@ -2191,7 +2191,13 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             return array();
         }
 
-        switch ($sort->getName()) {
+        $name = "default";
+        if($sort instanceof Shopware\Bundle\SearchBundle\Sorting\Sorting)
+        {
+            $name = $name = $sort->getName();
+        }
+
+        switch ($name) {
             case 'popularity':
                 $field = 'products_sales';
                 break;

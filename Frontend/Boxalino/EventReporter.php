@@ -3,6 +3,10 @@
 
 class Shopware_Plugins_Frontend_Boxalino_EventReporter
 {
+    CONST BXL_INTELLIGENCE_STAGE_SCRIPT="//r-st.bx-cloud.com/static/ba.min.js";
+    CONST BXL_INTELLIGENCE_PROD_SCRIPT="//track.bx-cloud.com/static/ba.min.js";
+    CONST BXL_INTELLIGENCE_SCRIPT = "//cdn.bx-cloud.com/frontend/rc/js/ba.min.js";
+
     private static $configPriceFilter = array(
         1 => array("from" => 0, "to" => 5),
         2 => array("from" => 5, "to" => 10),
@@ -20,6 +24,7 @@ class Shopware_Plugins_Frontend_Boxalino_EventReporter
     private static function buildScript($pushes = null)
     {
         $account = Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper::getAccount();
+        $scriptFile = $this->getBaScriptServerPath();
         return <<<SCRIPT
             <script type="text/javascript">
                 var _bxq = _bxq || [];
@@ -31,11 +36,32 @@ class Shopware_Plugins_Frontend_Boxalino_EventReporter
                     var s = document.createElement('script');
 
                     s.async = 1;
-                    s.src = '//cdn.bx-cloud.com/frontend/rc/js/ba.min.js';
+                    s.src = '$scriptFile';
                     document.getElementsByTagName('head')[0].appendChild(s);
                  })();
             </script>
 SCRIPT;
+    }
+
+    /**
+     * getting the upgraded script
+     * @return string
+     */
+    private function getBaScriptServerPath()
+    {
+        $apiKey = Shopware()->Config()->get('bxGeneral/general/apiKey');
+        $apiSecret = Shopware()->Config()->get('bxGeneral/general/apiSecret');
+        if(empty($apiKey) || empty($apiSecret))
+        {
+            return self::BXL_INTELLIGENCE_SCRIPT;
+        }
+        $isDev = Shopware()->Config()->get('bxGeneral/general/dev');
+        if($isDev)
+        {
+            return self::BXL_INTELLIGENCE_STAGE_SCRIPT;
+        }
+
+        return self::BXL_INTELLIGENCE_PROD_SCRIPT;
     }
 
     public static function reportPageView()

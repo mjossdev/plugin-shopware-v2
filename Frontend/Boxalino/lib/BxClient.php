@@ -343,7 +343,8 @@ class BxClient
 			'User-Host'	  => array($this->getIP()),
 			'User-SessionId' => array($sessionid),
 			'User-Referer'   => array(@$_SERVER['HTTP_REFERER']),
-			'User-URL'	   => array($this->getCurrentURL())
+			'User-URL'	   => array($this->getCurrentURL()),
+            'X-BX-PROFILEID' => array($profileid)
 		);
 	}
 

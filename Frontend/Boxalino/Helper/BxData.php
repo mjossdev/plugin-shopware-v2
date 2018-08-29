@@ -333,15 +333,6 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxData {
         return $articles;
     }
 
-
-
-
-
-
-
-
-
-
     public function useValuesAsKeys($array){
         return array_combine(array_keys(array_flip($array)),$array);
     }
