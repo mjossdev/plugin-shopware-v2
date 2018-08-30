@@ -5,9 +5,17 @@ use Thrift\Transport\TTransport;
 use Thrift\Exception\TTransportException;
 use Thrift\Factory\TStringFuncFactory;
 
-class P13nTHttpClient extends THttpClient {
-
+class P13nTHttpClient extends THttpClient
+{
+    /**
+     * @var string
+     */
     protected $authorizationString;
+
+    /**
+     * @var string
+     */
+    protected $profileId = 0;
 
     /**
      * Opens and sends the actual request over the HTTP connection
@@ -15,7 +23,6 @@ class P13nTHttpClient extends THttpClient {
      * @throws TTransportException if a writing error occurs
      */
     public function flush() {
-        // God, PHP really has some esoteric ways of doing simple things.
         $host = $this->host_.($this->port_ != 80 ? ':'.$this->port_ : '');
 
         $headers = array('Host: '.$host,
@@ -48,5 +55,17 @@ class P13nTHttpClient extends THttpClient {
 
     public function setAuthorization($username, $password) {
         $this->authorizationString = base64_encode($username.':'.$password);
+    }
+
+    /**
+     * adding tracker for the node-pinning architecture
+     *
+     * @param $profileId
+     * @return $this
+     */
+    public function setProfileId($profileId)
+    {
+        $this->profileId = $profileId;
+        return $this;
     }
 }

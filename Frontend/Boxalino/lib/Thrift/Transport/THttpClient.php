@@ -88,10 +88,6 @@ class THttpClient extends TTransport
      */
     protected $headers_;
 
-    /**
-     * @var string
-     */
-    protected $profileId;
 
     /**
      * Make a new HTTP client.
@@ -100,7 +96,7 @@ class THttpClient extends TTransport
      * @param int    $port
      * @param string $uri
      */
-    public function __construct($host, $port=80, $profileId, $uri='', $scheme = 'http')
+    public function __construct($host, $port=80, $uri='', $scheme = 'http')
     {
         if ((TStringFuncFactory::create()->strlen($uri) > 0) && ($uri{0} != '/')) {
             $uri = '/'.$uri;
@@ -113,7 +109,6 @@ class THttpClient extends TTransport
         $this->handle_ = null;
         $this->timeout_ = null;
         $this->headers_ = array();
-        $this->profileId = $profileId;
     }
 
     /**
@@ -202,7 +197,6 @@ class THttpClient extends TTransport
             'Accept' => 'application/x-thrift',
             'User-Agent' => 'PHP/THttpClient',
             'Content-Type' => 'application/x-thrift',
-            'X-BX-PROFILEID' => $this->profileId,
             'Content-Length' => TStringFuncFactory::create()->strlen($this->buf_));
         foreach (array_merge($defaultHeaders, $this->headers_) as $key => $value) {
             $headers[] = "$key: $value";
