@@ -583,19 +583,17 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         $returnFields = array($this->getEntityIdFieldName($type));
         if ($type == 'product') {
             $returnFields = array_merge($returnFields, ['id', 'score', 'products_bx_type', 'title', 'products_ordernumber', 'discountedPrice', 'products_bx_grouped_price', 'products_active', 'products_bx_grouped_active']);
-        }
-
-        elseif ($type == 'bxi_content') {
+        } elseif ($type == 'bxi_content') {
           $returnFields = array_merge($returnFields, ['title', 'products_bxi_bxi_jssor_slide', 'products_bxi_bxi_jssor_transition', 'products_bxi_bxi_name', 'products_bxi_bxi_jssor_control', 'products_bxi_bxi_jssor_break']);
-        }
-
-        else {
+        } else {
             $returnFields = array_merge($returnFields, ['id', 'score', 'products_bx_type', 'products_blog_title', 'products_blog_id', 'products_blog_category_id', 'products_blog_media_id', 'products_blog_short_description']);
         }
+
         $additionalFields = explode(',', $this->config->get('boxalino_returned_fields'));
         if (isset($additionalFields) && $additionalFields[0] != '') {
             $returnFields = array_merge($returnFields, $additionalFields);
         }
+
         return $returnFields;
     }
 
@@ -660,6 +658,31 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
             $filters[] = new \com\boxalino\bxclient\v1\BxFilter('products_bx_purchasable', array('1'));
         }
         return $filters;
+    }
+
+    public function getSEOPageTitle($choice = null)
+    {
+        $seoPageTitle = $this->getExtraInfoWithKey('bx-page-title', $choice);
+        return $seoPageTitle;
+    }
+
+    public function getSEOMetaTitle($choice = null)
+    {
+        $seoMetaTitle = $this->getExtraInfoWithKey('bx-html-meta-title', $choice);
+        return $seoMetaTitle;
+    }
+
+    public function getSEOMetaDescription($choice = null)
+    {
+        $seoMetaDescription = $this->getExtraInfoWithKey('bx-html-meta-description', $choice);
+        return $seoMetaDescription;
+    }
+
+    public function getExtraInfoWithKey($key, $choice = null)
+    {
+        $choice = is_null($choice) ? $this->currentSearchChoice : $choice;
+        $extraInfo = $this->getResponse()->getExtraInfo($key, '', $choice);
+        return $extraInfo;
     }
 
     /**
