@@ -3,14 +3,14 @@
 /**
  * Will modify the properties displayed on listing (categories)
  *
- * Class Shopware_Plugins_Frontend_Boxalino_Models_Listing_ViewData
+ * Class Shopware_Plugins_Frontend_Boxalino_Models_Listing_Template_CategoryData
  */
 class Shopware_Plugins_Frontend_Boxalino_Models_Listing_Template_CategoryData
 {
     /**
      * to be used when addind dynamic fields in admin configuration (response, narative, etc) as extraInfo fields
      */
-    CONST BX_CATEGORY_DATA_PREFIX = "bx-page-";
+    CONST BX_CATEGORY_TEMPLATE_DATA_PREFIX = "bx-cat-view-";
 
     /**
      * @var \Boxalino\Helper\P13NHelper|null
@@ -23,20 +23,23 @@ class Shopware_Plugins_Frontend_Boxalino_Models_Listing_Template_CategoryData
     protected $data = array();
 
     /**
-     * category properties which can be changed via response
-     * the ones with missing values can be located in the extra info if they`re set or not
+     * category properties which can be changed via response (by default)
      *
      * @var array
      */
-    protected $changeableParams = array(
+    protected $defaultParams = array(
         'name' => 'bx-page-title',
         'metaTitle' => 'bx-html-meta-title',
-        'metaKeywords' => '',
         'metaDescription' => 'bx-html-meta-description',
-        'cmsHeadline' => '',
-        'cmsText' => '',
         'description' => 'bx-page-description'
     );
+
+    /**
+     * some category attributes are to be excluded from manipulations
+     *
+     * @var array
+     */
+    protected $excludedParams = array('id', 'parentId', 'blog', 'path');
 
     public function __construct($helper, $data = array())
     {
@@ -62,6 +65,7 @@ class Shopware_Plugins_Frontend_Boxalino_Models_Listing_Template_CategoryData
 
     /**
      * the latest element of the breadcrumb list is the category view
+     * it will be updated with the category name / page title
      */
     protected function updateBreadcrumbs()
     {
@@ -75,26 +79,28 @@ class Shopware_Plugins_Frontend_Boxalino_Models_Listing_Template_CategoryData
     }
 
     /**
-     * updates the data belonging to a category entity
+     * update category data according to the response params
      * @return $this
      */
     protected function updateData()
     {
         foreach($this->data['sCategoryContent'] as $key=>$value)
         {
-            if(in_array($key, array_keys($this->changeableParams)))
+            if(in_array($key, $this->excludedParams))
             {
-                $bxKeyMatch = $this->changeableParams[$key];
-                if (empty($this->changeableParams[$key]))
-                {
-                    $bxKeyMatch = self::BX_CATEGORY_DATA_PREFIX . $key;
-                }
-                $bxValue = $this->p13nHelper->getExtraInfoWithKey($bxKeyMatch);
-                $this->data['sCategoryContent'][$key] = $bxValue ? $bxValue : $this->data['sCategoryContent'][$key];
+                continue;
             }
+
+            $bxKeyMatch = self::BX_CATEGORY_TEMPLATE_DATA_PREFIX . $key;
+            if(isset($this->defaultParams[$key]))
+            {
+                $bxKeyMatch = $this->defaultParams[$key];
+            }
+
+            $bxValue = $this->p13nHelper->getExtraInfoWithKey($bxKeyMatch);
+            $this->data['sCategoryContent'][$key] = $bxValue ? $bxValue : $this->data['sCategoryContent'][$key];
         }
 
         return $this;
     }
-
 }
