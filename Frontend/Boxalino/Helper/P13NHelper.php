@@ -660,6 +660,18 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         return $filters;
     }
 
+    /**
+     * View description is the campaign/category description appearing under the page title
+     *
+     * @param null $choice
+     * @return string
+     */
+    public function getPageDescription($choice = null)
+    {
+        $viewTitle = $this->getExtraInfoWithKey('bx-page-description', $choice);
+        return $viewTitle;
+    }
+
     public function getSEOPageTitle($choice = null)
     {
         $seoPageTitle = $this->getExtraInfoWithKey('bx-page-title', $choice);
@@ -678,10 +690,26 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         return $seoMetaDescription;
     }
 
+    /**
+     * Decoding json for multi-language values
+     *
+     * @param $key
+     * @param null $choice
+     * @return mixed
+     */
     public function getExtraInfoWithKey($key, $choice = null)
     {
         $choice = is_null($choice) ? $this->currentSearchChoice : $choice;
         $extraInfo = $this->getResponse()->getExtraInfo($key, '', $choice);
+        if(substr( $extraInfo, 0, 2 ) === "[{")
+        {
+            $locale = $this->getShortLocale();
+            $extraInfo = json_decode($extraInfo, true);
+            $lgValues = array_column($extraInfo, 'value', 'language');
+
+            return $lgValues[$locale];
+        }
+
         return $extraInfo;
     }
 

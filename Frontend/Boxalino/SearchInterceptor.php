@@ -844,8 +844,12 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             'shortParameters' => $this->get('query_alias_mapper')->getQueryAliases(),
             'bx_request_id' => $this->Helper()->getRequestId()
         );
+        $categoryTemplateData = new Shopware_Plugins_Frontend_Boxalino_Models_Listing_Template_CategoryData($this->Helper(), $viewData);
+        $viewData = $categoryTemplateData->update();
+
         $templateProperties = array_merge($viewData, $templateProperties);
         $this->View()->assign($templateProperties);
+
         if($_REQUEST['dev_bx_debug'] == 'true'){
             $afterStart = microtime(true);
             $this->Helper()->addNotification("Search after response took in total: " . (microtime(true) - $afterStart) * 1000 . "ms.");
