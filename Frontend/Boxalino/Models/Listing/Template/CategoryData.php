@@ -10,7 +10,7 @@ class Shopware_Plugins_Frontend_Boxalino_Models_Listing_Template_CategoryData
     /**
      * to be used when addind dynamic fields in admin configuration (response, narative, etc) as extraInfo fields
      */
-    CONST BX_CATEGORY_TEMPLATE_DATA_PREFIX = "bx-cat-view-";
+    CONST BX_CATEGORY_TEMPLATE_DATA_PREFIX = "bx-seo-";
 
     /**
      * @var \Boxalino\Helper\P13NHelper|null
@@ -30,8 +30,8 @@ class Shopware_Plugins_Frontend_Boxalino_Models_Listing_Template_CategoryData
     protected $defaultParams = array(
         'name' => 'bx-page-title',
         'metaTitle' => 'bx-html-meta-title',
-        'metaDescription' => 'bx-html-meta-description',
-        'description' => 'bx-page-description'
+        'metaKeywords' => 'bx-html-meta-tags-keywords',
+        'metaDescription' => 'bx-html-meta-tags-description'
     );
 
     /**
@@ -39,7 +39,14 @@ class Shopware_Plugins_Frontend_Boxalino_Models_Listing_Template_CategoryData
      *
      * @var array
      */
-    protected $excludedParams = array('id', 'parentId', 'blog', 'path');
+    protected $excludedParams = array('id', 'parentId', 'blog', 'path', 'media', 'attributes', 'childrenCount');
+
+    /**
+     * request parameters that should be ignored when creating the route
+     *
+     * @var array
+     */
+    protected $defaultRequestParams = array('module', 'controller', 'action','sCategory', 'rewriteUrl');
 
     public function __construct($helper, $data = array())
     {
@@ -64,18 +71,22 @@ class Shopware_Plugins_Frontend_Boxalino_Models_Listing_Template_CategoryData
     }
 
     /**
-     * the latest element of the breadcrumb list is the category view
-     * it will be updated with the category name / page title
+     * to the end of the list of breadcrumbs, add another breadcrumb piece
+     *  - name as the title
+     *  - url/link
+     *
+     * if it has been configured for the breadcrumb to overwrite the existing category, it won`t add new breadcrumb
+     *
      */
     protected function updateBreadcrumbs()
     {
-        $breadcrumb = end($this->data['sBreadcrumb']);
-        $key = key($this->data['sBreadcrumb']);
-        $breadcrumb['name'] = $this->data['sCategoryContent']['name'];
+        $breadcrumbValue = $this->p13nHelper->getExtraInfoWithKey(self::BX_CATEGORY_TEMPLATE_DATA_PREFIX . "breadcrumbs");
+        if($breadcrumbValue)
+        {
+            return $this->prepareBreadcrumbs($breadcrumbValue);
+        }
 
-        $this->data['sBreadcrumb'][$key] = $breadcrumb;
-        return $this;
-
+        return $this->addNewBreadcrumb(['label' => $this->data['sCategoryContent']['name'], 'link'=>'']);
     }
 
     /**
@@ -102,5 +113,72 @@ class Shopware_Plugins_Frontend_Boxalino_Models_Listing_Template_CategoryData
         }
 
         return $this;
+    }
+
+    /**
+     * selecting strategy for the breadcrumbs
+     *
+     * @param $params
+     * @return Shopware_Plugins_Frontend_Boxalino_Models_Listing_Template_CategoryData
+     */
+    protected function prepareBreadcrumbs($params)
+    {
+        $options = json_decode($params, true);
+        if(isset($options[0]['replace']) && $options[0]['replace'])
+        {
+            return $this->replaceCurrentCategoryBreadcrumb($options[0]);
+        }
+
+        return $this->addNewBreadcrumb($options[0]);
+    }
+
+    /**
+     * add a new breadcrumb to the list of breadcrumbs
+     *
+     * @param $options
+     * @return $this
+     */
+    protected function addNewBreadcrumb($options)
+    {
+        end($this->data['sBreadcrumb']);
+        $key = key($this->data['sBreadcrumb']);
+        $breadcrumb = array(
+            'name' => $options['label'],
+            'link' => $options['link'] ? $options['link'] : $this->getLinkForBreadcrumb(),
+            'blog' => false
+        );
+
+        $this->data['sBreadcrumb'][$key+1] = $breadcrumb;
+        return $this;
+    }
+
+    /**
+     * replace current category breadcrumb with the new one
+     *
+     * @param $options
+     * @return $this
+     */
+    protected function replaceCurrentCategoryBreadcrumb($options)
+    {
+        $key = array_search($this->data['sCategoryContent']['id'], array_column($this->data['sBreadcrumb'], 'id'));
+        $this->data['sBreadcrumb'][$key]['name'] = $options['label'];
+        $this->data['sBreadcrumb'][$key]['link'] = $options['link'] ? $options['link'] : $this->getLinkForBreadcrumb();
+
+        return $this;
+    }
+
+    /**
+     * creating the link for the breadcrumb (if it was not provided)
+     *
+     * @TODO retrieve the SEO-friendly URL of the category
+     * @return string
+     */
+    protected function getLinkForBreadcrumb()
+    {
+        $correlation = array_diff_key($this->data['params'], array_flip($this->defaultRequestParams));
+        $catId = $this->data['sCategoryContent']['id'];
+        $url = http_build_query($correlation);
+
+        return "shopware.php?sViewPort=cat&sCategory={$catId}&{$url}";
     }
 }

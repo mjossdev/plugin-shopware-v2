@@ -218,6 +218,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         $returnFields = $this->getReturnFields($type);
         $lang = $this->getShortLocale();
         $bxRequest = new \com\boxalino\bxclient\v1\BxSearchRequest($lang, $queryText, $hitCount, $choiceId);
+        self::$bxClient->forwardRequestMapAsContextParameters();
         $requestFilters = $this->getSystemFilters($type, $queryText, false, $stream);
         $requestFilters = array_merge($requestFilters, $this->extractFilter($filters));
         $bxRequest->setFilters($requestFilters);
