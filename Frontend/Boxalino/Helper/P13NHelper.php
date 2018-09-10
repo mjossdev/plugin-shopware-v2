@@ -169,6 +169,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
             }
             if(strpos($key, 'bx_') === 0) {
                 $filters[$key] = new \com\boxalino\bxclient\v1\BxFilter(substr($key, 3), $values);
+                self::$bxClient->addRequestContextParameter(str_replace('bx_', '', $key), $values);
             }
         }
         return $filters;
