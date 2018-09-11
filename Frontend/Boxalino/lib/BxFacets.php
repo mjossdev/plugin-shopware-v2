@@ -19,6 +19,8 @@ class BxFacets
 
     protected $notificationMode = false;
 
+    protected $showEmptyFacets = false;
+
     public function setNotificationMode($mode) {
         $this->notificationMode = $mode;
     }
@@ -135,6 +137,10 @@ class BxFacets
         return $selectedValues;
     }
 
+    public function returnAllFacets($value){
+      $this->showEmptyFacets = true;
+    }
+
     public function getFieldNames() {
         $fieldNames = array();
 
@@ -154,9 +160,13 @@ class BxFacets
                 }
             }
         }
+
         foreach($this->facets as $fieldName => $facet) {
             $facetResponse = $this->getFacetResponse($fieldName);
-            if(!is_null($facetResponse) && (sizeof($facetResponse->values)>0 || sizeof($facet['selectedValues'])>0)) {
+            if(!is_null($facetResponse) && $this->showEmptyFacets){
+                $fieldNames[$fieldName] = array('fieldName'=>$fieldName, 'returnedOrder'=> sizeof($fieldNames));
+            }
+            elseif(!is_null($facetResponse) && (sizeof($facetResponse->values)>0 || sizeof($facet['selectedValues'])>0)) {
                 $fieldNames[$fieldName] = array('fieldName'=>$fieldName, 'returnedOrder'=> sizeof($fieldNames));
             }
         }
