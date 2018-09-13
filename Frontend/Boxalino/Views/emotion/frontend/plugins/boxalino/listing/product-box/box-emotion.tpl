@@ -43,3 +43,7 @@
     {/if}
 {/block}
 
+{if $isFinder == 'true'}
+  {block name="frontend_listing_product_box_button_detail_container"}
+  {/block}
+{/if}
