@@ -137,8 +137,9 @@ class BxFacets
         return $selectedValues;
     }
 
-    public function returnAllFacets($value){
-      $this->showEmptyFacets = true;
+    public function showEmptyFacets($value)
+    {
+        $this->showEmptyFacets = $value;
     }
 
     public function getFieldNames() {
@@ -163,10 +164,9 @@ class BxFacets
 
         foreach($this->facets as $fieldName => $facet) {
             $facetResponse = $this->getFacetResponse($fieldName);
-            if(!is_null($facetResponse) && $this->showEmptyFacets){
-                $fieldNames[$fieldName] = array('fieldName'=>$fieldName, 'returnedOrder'=> sizeof($fieldNames));
-            }
-            elseif(!is_null($facetResponse) && (sizeof($facetResponse->values)>0 || sizeof($facet['selectedValues'])>0)) {
+            if(is_null($facetResponse)){ continue; }
+
+            if($this->showEmptyFacets || sizeof($facetResponse->values)>0 || sizeof($facet['selectedValues'])>0) {
                 $fieldNames[$fieldName] = array('fieldName'=>$fieldName, 'returnedOrder'=> sizeof($fieldNames));
             }
         }
@@ -235,7 +235,7 @@ class BxFacets
     }
 
     public function getCPOFinderFacets($returnHidden=false){
-      return $this->getFacetExtraInfoFacets('finderFacet', 'true', false, $returnHidden, true);
+        return $this->getFacetExtraInfoFacets('finderFacet', 'true', false, $returnHidden, true);
     }
 
     public function getFacetResponseExtraInfo($facetResponse, $extraInfoKey, $defaultExtraInfoValue = null) {
@@ -728,7 +728,7 @@ class BxFacets
             if($facet['type'] == 'hierarchical') {
                 $facetResponse = $this->getFacetResponse($fieldName);
                 if(is_null($facetResponse)) {
-                   return false;
+                    return false;
                 }
                 $tree = $this->buildTree($facetResponse->values);
                 $tree = $this->getSelectedTreeNode($tree);
@@ -756,7 +756,7 @@ class BxFacets
         $fieldName = $this->getCategoryFieldName();
         $facetResponse = $this->getFacetResponse($fieldName);
         if(is_null($facetResponse)) {
-           return array();
+            return array();
         }
         $tree = $this->buildTree($facetResponse->values);
         $treeEnd = $this->getSelectedTreeNode($tree);

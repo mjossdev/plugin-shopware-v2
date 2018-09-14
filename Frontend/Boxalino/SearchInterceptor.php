@@ -2360,7 +2360,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
     private function convertFacetsToJson(){
         $json = [];
         $bxFacets =  $this->Helper()->getFacets();
-        $bxFacets->returnAllFacets(true);
+        $bxFacets->showEmptyFacets(true);
         $fieldNames = $bxFacets->getCPOFinderFacets();
         if(!empty($fieldNames)) {
             foreach ($fieldNames as $fieldName) {
