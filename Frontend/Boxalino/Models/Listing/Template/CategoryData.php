@@ -76,7 +76,7 @@ class Shopware_Plugins_Frontend_Boxalino_Models_Listing_Template_CategoryData
      *  - url/link
      *
      * if it has been configured for the breadcrumb to overwrite the existing category, it won`t add new breadcrumb
-     *
+     * The breadcrumb should be added only if there are other extra-info keys, otherwise it can not be connected to a dynamic category
      */
     protected function updateBreadcrumbs()
     {
@@ -85,8 +85,6 @@ class Shopware_Plugins_Frontend_Boxalino_Models_Listing_Template_CategoryData
         {
             return $this->prepareBreadcrumbs($breadcrumbValue);
         }
-
-        return $this->addNewBreadcrumb(['label' => $this->data['sCategoryContent']['name'], 'link'=>'']);
     }
 
     /**
