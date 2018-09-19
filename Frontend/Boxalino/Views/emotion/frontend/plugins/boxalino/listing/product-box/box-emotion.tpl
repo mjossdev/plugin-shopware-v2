@@ -9,11 +9,15 @@
     {$smarty.block.parent}
 {/block}
 {block name='frontend_listing_box_article_price_info'}
-{if $isFinder == 'true'}
-  <h2 class="bxScore" style="text-align:center;">score: {$sArticle.score}</h2>
-  <button class="bxCommentButton_{$sArticle.articleID}">comment</button>
-  <div class="bxComment_{$sArticle.articleID}" style="display:none">{$sArticle.comment}</div>
-{/if}
+
+    {if $isFinder == 'true'}
+        <h2 class="cpo-finder-listing-score bxScore" style="text-align:center;">Score: {$sArticle.bx_score}</h2>
+        {if !empty($sArticle.comment)}
+        <button class="cpo-finder-listing-comment-button bxCommentButton_{$sArticle.articleID}">comment</button>
+        <div class="cpo-finder-listing-comment-text bxComment_{$sArticle.articleID}" style="display:none">{$sArticle.comment}</div>
+        {/if}
+    {/if}
+
     {$smarty.block.parent}
     {if $withAddToBasket == 'true'}
 

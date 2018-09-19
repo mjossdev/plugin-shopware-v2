@@ -365,6 +365,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             $articles = $this->BxData()->getLocalArticles($this->Helper()->getHitFieldValues('products_ordernumber'));
             $scores = $this->Helper()->getHitFieldValues('finalScore');
             $highlightedValues = $this->Helper()->getHitFieldValues('highlighted');
+            $comments = $this->Helper()->getHitFieldValues('products_bxi_expert_sentence');
             $maxScore = 0;
             foreach($scores as $score) {
               if($score > $maxScore) {
