@@ -142,7 +142,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
           if(!isset($params[$keyValue[0]])) {
             $params[$keyValue[0]] = array();
           }
-          $params[$keyValue[0]][] = $keyValue[1];
+          $params[$keyValue[0]][] = urldecode($keyValue[1]);
       }
       return $params;
     }
