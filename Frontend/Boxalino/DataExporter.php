@@ -1,5 +1,6 @@
 <?php
-
+ini_set('max_execution_time', 0);
+ini_set('memory_limit', 0);
 class Shopware_Plugins_Frontend_Boxalino_DataExporter {
 
     protected $request;
@@ -75,9 +76,8 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
      *
      * @return array
      */
-    public function run() {
-
-        set_time_limit(7200);
+    public function run()
+    {
         $data = array();
         $type = $this->delta ? 'delta' : 'full';
         try {
@@ -1557,7 +1557,8 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
                     'used_codes' => new Zend_Db_Expr("IF( modus = '0',
                 (SELECT count(*) FROM s_order_details as d WHERE articleordernumber =v.ordercode AND d.ordernumber!='0'),
                 (SELECT count(*) FROM s_emarketing_voucher_codes WHERE voucherID =v.id AND cashed=1))")))
-                ->where('v.subshopID IS NULL OR v.subshopID = ?', $shop_id);
+                ->where('(v.subshopID IS NULL OR v.subshopID = ?)', $shop_id)
+                ->where('((CURDATE() BETWEEN v.valid_from AND v.valid_to) OR (v.valid_from IS NULL AND v.valid_to IS NULL) OR (DATE(NOW())<DATE(v.valid_to) AND v.valid_from IS NULL) OR (DATE(NOW())>DATE(v.valid_from) AND v.valid_to IS NULL))');
             $stmt = $db->query($sql);
             if($stmt->rowCount()) {
                 while($row = $stmt->fetch()){
