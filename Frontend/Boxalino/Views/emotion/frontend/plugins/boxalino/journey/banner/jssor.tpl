@@ -1,5 +1,6 @@
 <script type="text/javascript" async>
     document.asyncReady(function() {
+
         initialJssorScale = 0;
         {$Data.id}_slider_init = function() {
             var jssor_1_SlideoTransitions = {$Data.transition};
@@ -10,10 +11,10 @@
             var MAX_WIDTH = {$Data.max_width};
             function ScaleSlider() {$Data.function}
             ScaleSlider();
-
             $Jssor$.$AddEvent(window, "load", ScaleSlider);
             $Jssor$.$AddEvent(window, "resize", ScaleSlider);
             $Jssor$.$AddEvent(window, "orientationchange", ScaleSlider);
+
         }
     });
 </script>

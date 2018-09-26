@@ -23,7 +23,7 @@
                             {else}
                                 {$itemSize = "200px"}
 
-                                {/if}
+                            {/if}
                             {$srcSet = ''}
                             {$srcSetRetina = ''}
                             {foreach $sArticle.media.thumbnails as $image}

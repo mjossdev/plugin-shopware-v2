@@ -13,7 +13,7 @@
                 url: controller
             }).done(function(res) {
                 $('.narrative-container').html(res);
-                }, function (err) {
+            }, function (err) {
 
             });
         });

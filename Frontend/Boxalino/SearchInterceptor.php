@@ -96,64 +96,21 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         return $view;
     }
 
-    public function narrative($data) {
+    /**
+     * Display narrative server-side using emotion
+     * @param $data
+     * @return mixed
+     * @throws Exception
+     */
+    public function narrative($data)
+    {
+        $narrativeLogic = new Shopware_Plugins_Frontend_Boxalino_Models_Narrative_Narrative($data['choiceId'], Shopware()->Front()->Request(), true, $data['additional_choiceId']);
 
-        $request = Shopware()->Front()->Request();
-        $request = $this->setRequestWithRefererParams($request);
-        $params = $request->getParams();
-        $context  = $this->get('shopware_storefront.context_service')->getShopContext();
-        $criteria = $this->get('shopware_search.store_front_criteria_factory')->createSearchCriteria($request, $context);
-        $hitCount = $criteria->getLimit();
-        $pageOffset = $criteria->getOffset();
-        $orderParam = $this->get('query_alias_mapper')->getShortAlias('sSort');
-        $defaultSort = null;
-        if(is_null($request->getParam($orderParam))) {
-            $request->setParam('sSort', 7);
-        }
-        if(is_null($request->getParam('sSort')) && is_null($request->getParam($orderParam))) {
-            if($this->Config()->get('boxalino_navigation_sorting')) {
-                $request->setParam('sSort', 7);
-            } else {
-                $default = $this->get('config')->get('defaultListingSorting');
-                $request->setParam('sSort', $default);
-            }
-        }
-        $deafult = $request->getParam('o');
-        $sort =  $this->getSortOrder($criteria, $deafult, true);
-        $facets = $criteria->getFacets();
-        $options = $this->getFacetConfig($facets, $request);
-        $data['narrative'] = $this->Helper()->getNarrative($data['choiceId'], $data['additional_choiceId'], $options, $hitCount, $pageOffset, $sort, $params);
-        $data['dependencies'] = $this->renderDependencies($data['choiceId']);
-        $data['bxRender'] = new Shopware_Plugins_Frontend_Boxalino_Helper_BxRender($this->Helper(), $this->BxData(), $this, $request);
+        $data['narrative'] = $narrativeLogic->getNarratives();
+        $data['dependencies'] = $narrativeLogic->getDependencies();
+        $data['bxRender'] = $narrativeLogic->getRenderer();
+
         return $data;
-    }
-
-    protected function getDependencyElement($url, $type) {
-        $element = '';
-        if($type == 'css'){
-            $element = "<link href=\"{$url}\" type=\"text/css\" rel=\"stylesheet\" />";
-        } else if($type == 'js') {
-            $element = "<script src=\"{$url}\" type=\"text/javascript\"></script>";
-        }
-        return $element;
-    }
-
-    public function renderDependencies($choice_id) {
-        $html = '';
-        $dependencies = $this->Helper()->getNarrativeDependencies($choice_id);
-        if(isset($dependencies['js'])) {
-            foreach ($dependencies['js'] as $js) {
-                $url = $js;
-                $html .= $this->getDependencyElement($url, 'js');
-            }
-        }
-        if(isset($dependencies['css'])) {
-            foreach ($dependencies['css'] as $css) {
-                $url = $css;
-                $html .= $this->getDependencyElement($url, 'css');
-            }
-        }
-        return $html;
     }
 
     public function landingPage() {
@@ -731,6 +688,10 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
 
         $filter = array();
         $viewData = $this->View()->getAssign();
+        if(!empty($viewData['sCategoryContent']['narrativeChoice']))
+        {
+            return $this->processNarrativeRequest($arguments);
+        }
         $catId = $this->Request()->getParam('sCategory');
         $streamId = $this->findStreamIdByCategoryId($catId);
         if (($streamId != null && !$this->Config()->get('boxalino_navigation_product_stream'))) {
@@ -858,6 +819,48 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         }
         return true;
     }
+
+    /**
+     * catching a narrative request
+     * checking for the choice id and for the additional choice ids to render the requested narrative
+     *
+     */
+    public function processNarrativeRequest($arguments = null)
+    {
+        try {
+            $data = $this->View()->getAssign();
+            $choiceId = $data['sCategoryContent']['narrativeChoice'];
+            $additionalChoiceId = $data['sCategoryContent']['narrativeAdditionalChoice'];
+            $narrativeLogic = new Shopware_Plugins_Frontend_Boxalino_Models_Narrative_Narrative($choiceId, $this->Request(), false, $additionalChoiceId);
+
+            $narratives = $narrativeLogic->getNarratives();
+            $dependencies = $narrativeLogic->getDependencies();
+            $renderer = $narrativeLogic->getRenderer();
+
+            //updating content of the category view in case it was set via narrative
+            $categoryTemplateData = new Shopware_Plugins_Frontend_Boxalino_Models_Listing_Template_CategoryData($this->Helper(), $data);
+            $data = $categoryTemplateData->update();
+
+            $this->View()->addTemplateDir($narrativeLogic->getServerSideTemplateDirectory());
+            if ($this->Config()->get('boxalino_navigation_sorting') == true) {
+                $this->View()->extendsTemplate('frontend/plugins/boxalino/listing/actions/action-sorting.tpl');
+            }
+            $this->View()->extendsTemplate('frontend/plugins/boxalino/listing/index.tpl');
+            $this->View()->extendsTemplate('frontend/plugins/boxalino/listing/product-box/box-emotion.tpl');
+            $this->View()->extendsTemplate($narrativeLogic->getServerSideMainTemplate());
+
+            $this->View()->assign($data);
+            $this->View()->assign('dependencies', $dependencies);
+            $this->View()->assign('narrative', $narratives);
+            $this->View()->assign('bxRender', $renderer);
+
+            return true;
+        }  catch (\Exception $e) {
+            var_dump($e->getMessage());
+            exit;
+        }
+    }
+
 
     protected function prepareManufacturer() {
 
