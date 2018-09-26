@@ -1,6 +1,4 @@
 <?php
-ini_set('max_execution_time', 0);
-ini_set('memory_limit', 0);
 class Shopware_Plugins_Frontend_Boxalino_DataExporter {
 
     protected $request;
@@ -78,6 +76,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
      */
     public function run()
     {
+        set_time_limit(7200);
         $data = array();
         $type = $this->delta ? 'delta' : 'full';
         try {
