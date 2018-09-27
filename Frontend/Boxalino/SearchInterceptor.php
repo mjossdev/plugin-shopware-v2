@@ -690,7 +690,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         $viewData = $this->View()->getAssign();
         if(!empty($viewData['sCategoryContent']['narrativeChoice']))
         {
-            return $this->processNarrativeRequest($arguments);
+            return $this->processNarrativeRequest($viewData['sCategoryContent']['narrativeChoice'], $viewData['sCategoryContent']['narrativeAdditionalChoice'], $arguments);
         }
         $catId = $this->Request()->getParam('sCategory');
         $streamId = $this->findStreamIdByCategoryId($catId);
@@ -825,12 +825,10 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
      * checking for the choice id and for the additional choice ids to render the requested narrative
      *
      */
-    public function processNarrativeRequest($arguments = null)
+    public function processNarrativeRequest($choiceId, $additionalChoiceId = null, Enlight_Event_EventArgs $arguments)
     {
         try {
             $data = $this->View()->getAssign();
-            $choiceId = $data['sCategoryContent']['narrativeChoice'];
-            $additionalChoiceId = $data['sCategoryContent']['narrativeAdditionalChoice'];
             $narrativeLogic = new Shopware_Plugins_Frontend_Boxalino_Models_Narrative_Narrative($choiceId, $this->Request(), false, $additionalChoiceId);
 
             $narratives = $narrativeLogic->getNarratives();
@@ -838,15 +836,17 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             $renderer = $narrativeLogic->getRenderer();
 
             //updating content of the category view in case it was set via narrative
-            $categoryTemplateData = new Shopware_Plugins_Frontend_Boxalino_Models_Listing_Template_CategoryData($this->Helper(), $data);
-            $data = $categoryTemplateData->update();
+            if(isset($data['sCategoryContent']) || isset($data['sBreadcrumb']))
+            {
+                $categoryTemplateData = new Shopware_Plugins_Frontend_Boxalino_Models_Listing_Template_CategoryData($this->Helper(), $data);
+                $data = $categoryTemplateData->update();
+            }
 
             $this->View()->addTemplateDir($narrativeLogic->getServerSideTemplateDirectory());
             if ($this->Config()->get('boxalino_navigation_sorting') == true) {
                 $this->View()->extendsTemplate('frontend/plugins/boxalino/listing/actions/action-sorting.tpl');
             }
-            $this->View()->extendsTemplate('frontend/plugins/boxalino/listing/index.tpl');
-            $this->View()->extendsTemplate('frontend/plugins/boxalino/listing/product-box/box-emotion.tpl');
+            $this->View()->extendsTemplate($narrativeLogic->getServerSideScriptTemplate());
             $this->View()->extendsTemplate($narrativeLogic->getServerSideMainTemplate());
 
             $this->View()->assign($data);
@@ -859,8 +859,8 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             var_dump($e->getMessage());
             exit;
         }
-    }
 
+    }
 
     protected function prepareManufacturer() {
 

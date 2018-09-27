@@ -12,8 +12,9 @@ class Shopware_Plugins_Frontend_Boxalino_Models_Narrative_Narrative
 
     CONST BOXALINO_NARRATIVE_EMOTION_TEMPLATE_DIR = "Views/emotion/";
     CONST BOXALINO_NARRATIVE_AJAX_TEMPLATE_MAIN = "frontend/plugins/boxalino/journey/main.tpl";
-    CONST BOXALINO_NARRATIVE_SERVER_TEMPLATE_DIR = "Views/emotion/frontend/plugins/boxalino/";
-    CONST BOXALINO_NARRATIVE_SERVER_TEMPLATE_MAIN = "frontend/plugins/boxalino/journey/narrative/main.tpl";
+    CONST BOXALINO_NARRATIVE_SERVER_TEMPLATE_DIR = "Views/emotion/";
+    CONST BOXALINO_NARRATIVE_SERVER_TEMPLATE_MAIN = "frontend/plugins/boxalino/narrative/main.tpl";
+    CONST BOXALINO_NARRATIVE_SERVER_SCRIPTS_MAIN = "frontend/plugins/boxalino/narrative/script.tpl";
 
     protected $helper;
     protected $interceptor;
@@ -87,6 +88,11 @@ class Shopware_Plugins_Frontend_Boxalino_Models_Narrative_Narrative
     public function getServerSideMainTemplate()
     {
         return self::BOXALINO_NARRATIVE_SERVER_TEMPLATE_MAIN;
+    }
+
+    public function getServerSideScriptTemplate()
+    {
+        return self::BOXALINO_NARRATIVE_SERVER_SCRIPTS_MAIN;
     }
 
     protected function getPageSetup()

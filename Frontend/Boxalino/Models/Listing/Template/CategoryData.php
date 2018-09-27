@@ -93,6 +93,11 @@ class Shopware_Plugins_Frontend_Boxalino_Models_Listing_Template_CategoryData
      */
     protected function updateData()
     {
+        if(!isset($data['sCategoryContent']))
+        {
+            return $this;
+        }
+
         foreach($this->data['sCategoryContent'] as $key=>$value)
         {
             if(in_array($key, $this->excludedParams))
