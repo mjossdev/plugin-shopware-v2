@@ -1,18 +1,18 @@
 <style>
-    {$Data.css}
+    {$banner.css}
 </style>
 
-<div id={$Data.id} style={$Data.style}>
-    {$Data.loading_screen}
-    <div data-u="slides" style={$Data.slides_style}>
-        {foreach $Data.slides as $slide}
+<div id={$banner.id} style={$banner.style}>
+    {$banner.loading_screen}
+    <div data-u="slides" style={$banner.slides_style}>
+        {foreach $banner.slides as $slide}
             {$slide.div}
         {/foreach}
     </div>
 
-    {if $Data.hitCount > 1}
-        {$Data.bullet_navigator}
-        {$Data.arrow_navigator}
+    {if $banner.hitCount > 1}
+        {$banner.bullet_navigator}
+        {$banner.arrow_navigator}
     {/if}
 
 </div>

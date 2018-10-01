@@ -688,9 +688,9 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
 
         $filter = array();
         $viewData = $this->View()->getAssign();
-        if(!empty($viewData['sCategoryContent']['narrativeChoice']))
+        if(!empty($viewData['sCategoryContent']['attribute']['narrative_choice']))
         {
-            return $this->processNarrativeRequest($viewData['sCategoryContent']['narrativeChoice'], $viewData['sCategoryContent']['narrativeAdditionalChoice'], $arguments);
+            return $this->processNarrativeRequest($viewData['sCategoryContent']['attribute']['narrative_choice'], $viewData['sCategoryContent']['attribute']['narrative_additional_choice'], $arguments);
         }
         $catId = $this->Request()->getParam('sCategory');
         $streamId = $this->findStreamIdByCategoryId($catId);
@@ -834,6 +834,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             $narratives = $narrativeLogic->getNarratives();
             $dependencies = $narrativeLogic->getDependencies();
             $renderer = $narrativeLogic->getRenderer();
+            $narrativeData = $renderer->getTemplateDataToBeAssigned($narratives);
 
             //updating content of the category view in case it was set via narrative
             if(isset($data['sCategoryContent']) || isset($data['sBreadcrumb']))
@@ -850,9 +851,10 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             $this->View()->extendsTemplate($narrativeLogic->getServerSideMainTemplate());
 
             $this->View()->assign($data);
+            $this->View()->assign('narrativeData', $narrativeData);
             $this->View()->assign('dependencies', $dependencies);
             $this->View()->assign('narrative', $narratives);
-            $this->View()->assign('bxRender', $renderer);
+            $this->View()->assign('bxRender', $renderer->setDataForRendering($narrativeData));
 
             return true;
         }  catch (\Exception $e) {

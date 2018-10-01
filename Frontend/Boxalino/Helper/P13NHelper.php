@@ -307,7 +307,6 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         $bxResponse = $this->getResponse();
         $hitCount = $bxResponse->getTotalHitCount($choiceId);
         $bannerData = [
-
             'id' => $bxResponse->getExtraInfo('banner_jssor_id', null, $choiceId, true, $variant_index),
             'style' => $bxResponse->getExtraInfo('banner_jssor_style', null, $choiceId, true, $variant_index),
             'slides_style' => $bxResponse->getExtraInfo('banner_jssor_slides_style', null, $choiceId, true, $variant_index),
@@ -323,7 +322,6 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
             'control' => $this->getBannerJssorSlideGenericJS('products_bxi_bxi_jssor_control'),
             'slides' => $this->getBannerSlides($choiceId, $variant_index),
             'hitCount' => $hitCount
-
         ];
         return $bannerData;
     }
@@ -344,6 +342,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
             $json = $vals['products_bxi_bxi_jssor_slide'][0];
 
             $slide = json_decode($json, true);
+            $slide = str_replace('onload="pagespeed.CriticalImages.checkImageForCriticality(this);"', "", $slide);
             if(isset($slide[$language])) {
                 $json = $slide[$language];
 
@@ -371,7 +370,6 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
 
     public function getBannerJssorSlideGenericJS($key) {
         $language = $this->getShortLocale();
-
         $slides = $this->getHitFieldValues(array($key), 'banner');
 
         $jsArray = array();

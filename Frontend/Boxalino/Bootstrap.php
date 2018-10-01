@@ -35,7 +35,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
     }
 
     public function getVersion() {
-        return '1.6.16';
+        return '1.6.17';
     }
 
     public function getInfo() {
@@ -61,6 +61,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
         try {
             $this->registerEvents();
             $this->createConfiguration();
+            $this->addNarrativeAttributesOnCategory();
             $this->applyBackendViewModifications();
             $this->createDatabase();
             $this->registerCronJobs();
@@ -70,13 +71,15 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
             $this->logException($e, __FUNCTION__);
             return false;
         }
-        return true;
+
+        return array('success' => true, 'invalidateCache' => array('backend', 'proxy','template'));
     }
 
     public function update($version) {
         try {
             $this->registerEvents();
             $this->createConfiguration();
+            $this->addNarrativeAttributesOnCategory();
             $this->applyBackendViewModifications();
             $this->createDatabase();
             $this->registerEmotions();
@@ -85,7 +88,8 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
             $this->logException($e, __FUNCTION__);
             return false;
         }
-        return true;
+
+        return array('success' => true, 'invalidateCache' => array('backend', 'proxy','template'));
     }
 
     public function uninstall() {
@@ -97,6 +101,45 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
             return false;
         }
         return array('success' => true, 'invalidateCache' => array('frontend'));
+    }
+
+    public function addNarrativeAttributesOnCategory()
+    {
+        Shopware()->Models()->addAttribute(
+            's_categories_attributes',
+            'narrative',
+            'choice',
+            'VARCHAR(255)',
+            true);
+        Shopware()->Models()->addAttribute(
+            's_categories_attributes',
+            'narrative',
+            'additional_choice',
+            'VARCHAR(255)',
+            true);
+
+        $metaDataCacheDoctrine = Shopware()->Models()->getConfiguration()->getMetadataCacheImpl();
+        $metaDataCacheDoctrine->deleteAll();
+
+        Shopware()->Models()->generateAttributeModels(array('s_categories_attributes'));
+    }
+
+    /**
+     * method for integrate new order attributes in shopware order backend
+     * @param Enlight_Event_EventArgs $args
+     */
+    public function onBackendCategoryPostDispatch(Enlight_Event_EventArgs $args)
+    {
+        $view = $args->getSubject()->View();
+        $args->getSubject()->View()->addTemplateDir(
+            $this->Path() . 'Views/'
+        );
+
+        if ($args->getRequest()->getActionName() === 'load') {
+            $view->extendsTemplate('backend/category/model/boxalino/attribute.js');
+            $view->extendsTemplate('backend/category/model/boxalino/list.js');
+            $view->extendsTemplate('backend/category/view/main/boxalino/narrative.js');
+        }
     }
 
     private function registerSnippets() {
@@ -288,6 +331,9 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
         $this->subscribeEvent('Shopware_Controllers_Widgets_Listing::listingCountAction::replace', 'onAjaxListingHook');
         $this->subscribeEvent('Shopware_Controllers_Frontend_Listing::getEmotionConfiguration::replace', 'onEmotionConfiguration');
         $this->subscribeEvent('Shopware_Controllers_Frontend_Listing::manufacturerAction::replace', 'onManufacturer');
+
+        //add category attributes
+        $this->subscribeEvent('Enlight_Controller_Action_PostDispatch_Backend_Category', 'onBackendCategoryPostDispatch');
     }
 
     public function alsoBoughtRec(Enlight_Hook_HookArgs $arguments){

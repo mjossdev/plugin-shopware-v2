@@ -1,11 +1,10 @@
 {extends file='parent:frontend/index/index.tpl'}
 {block name="frontend_index_header_javascript"}
     {$smarty.block.parent}
-    {* from listing/facets.tpl*}
     <script>
         document.asyncReady(function() {
             $(document).ready(function() {
-                var facetOptions = {$facetOptions|json_encode};
+                var facetOptions = {$narrativeData.filter_panel.facetOptions|json_encode};
                 if($('.panel--paging').length) {
                     $('.panel--paging').addClass('listing--paging');
                 }
@@ -221,88 +220,25 @@
             });
         });
     </script>
-    {**}
+    {*from banner/jssor.tpl*}
     <script type="text/javascript">
         document.asyncReady(function() {
             initialJssorScale = 0;
-            console.log({banner})
-            {$banner.id}_slider_init = function() {
-                var {$banner.id}_SlideoTransitions = {$banner.transition};
-                var {$banner.id}_SlideoBreaks = {$banner.break};
-                var {$banner.id}_SlideoControls = {$banner.control};
-                var {$banner.id}_options = {$banner.options};
-                var {$banner.id}_slider = new $JssorSlider$({$banner.id}, {$banner.id}_options);
-                var MAX_WIDTH = {$banner.max_width};
-                function ScaleSlider() {$banner.function}
+            {$narrativeData.banner.id}_slider_init = function() {
+                var {$narrativeData.banner.id}_SlideoTransitions = {$narrativeData.banner.transition};
+                var {$narrativeData.banner.id}_SlideoBreaks = {$narrativeData.banner.break};
+                var {$narrativeData.banner.id}_SlideoControls = {$narrativeData.banner.control};
+                var {$narrativeData.banner.id}_options = {$narrativeData.banner.options};
+                var {$narrativeData.banner.id}_slider = new $JssorSlider$({$narrativeData.banner.id}, {$narrativeData.banner.id}_options);
+                var MAX_WIDTH = {$narrativeData.banner.max_width};
+                function ScaleSlider() {$narrativeData.banner.function}
                 ScaleSlider();
                 $Jssor$.$AddEvent(window, "load", ScaleSlider);
                 $Jssor$.$AddEvent(window, "resize", ScaleSlider);
                 $Jssor$.$AddEvent(window, "orientationchange", ScaleSlider);
 
             }
+            {$narrativeData.banner.id}_slider_init();
         });
-    </script>
-    <script type="text/javascript">
-        document.asyncReady(function() {
-            {$banner.id}_slider_init();
-        });
-    </script>
-{/block}
-
-{block name="frontend_product_finder_script"}
-    <script>
-        var json =  {$json_facets},
-            lang  = '{$locale}',
-            facets = new bxFacets(),
-            selectedValues = {};
-        facets.init(json);
-
-        // Get the field name of the expert facet
-        var expertFieldName =  facets.getDataOwnerFacet();
-
-        // Returns all the experts
-        var expertFacetValues = facets.getFacetValues(expertFieldName)[expertFieldName];
-
-        // default expert
-        var defaultExpert = null;
-        expertFacetValues.forEach(function(value) {
-            //checks each sommelier if set to default
-            if(facets.getFacetValueExtraInfo(expertFieldName, value, 'is-initial')) {
-                defaultExpert = value;
-            }
-        });
-
-        // image for default expert & Intro
-        var defaultExpertFirstName = facets.getFacetValueExtraInfo(expertFieldName, defaultExpert, 'first-name');
-        var defaultExpertLastName  = facets.getFacetValueExtraInfo(expertFieldName, defaultExpert, 'last-name');
-        var persona                = facets.getFacetValueExtraInfo(expertFieldName, defaultExpert, 'persona');
-        var defaultExpertQuestionImage = facets.getFacetValueExtraInfo(expertFieldName, defaultExpert, 'question-img');
-        var quickFinderIntro = facets.getFacetExtraInfo(expertFieldName, 'quickFinderIntro');
-
-        // append default expert to template
-
-        jQuery('.quickFinderContent').append('<img src="https://' + defaultExpertQuestionImage + '" alt="" style="width:90%;border-radius: 50%;right:0;left:0;margin-left:auto;margin-right:auto;"><div class="text"><p style="font-size: 1.2rem;text-align:center;">' + quickFinderIntro + '</p></div>');
-        createButton();
-        function createButton() {
-            $('.quickFinderButton').append($('<button id="b-find" style="background-color: #993366; border:none; color:white; text-align:center;width:100%;font-size:1.2rem;">ZUM PRODUKTEFINDER</button>'));
-            $('#b-find').on('click', function (e) {
-                var urlString = '{url controller=cat sCategory=$Data.cpo_finder_link}',
-                    params = facets.getFacetParameters();
-                params.forEach(function(param, index) {
-
-                    if(index > 0) {
-                        urlString += '&';
-                    } else {
-                        urlString += '?'
-                    }
-                    if(param.indexOf('=') === -1){
-                        urlString += param + '=100';
-                    } else {
-                        urlString += param;
-                    }
-                });
-                window.location = urlString;
-            });
-        }
     </script>
 {/block}
