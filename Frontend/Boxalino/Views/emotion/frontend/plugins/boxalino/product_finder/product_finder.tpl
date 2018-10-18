@@ -66,6 +66,16 @@
                                             data-maxZoom="{$theme.lightboxZoomFactor}"
                                             data-thumbnails=".image--thumbnails"
                                                 {/if}>
+                                                <h2 class="cpo-finder-listing-score bxScore" style="text-align:center;">Score: {$sArticle.bx_score}</h2>
+                                                {if !empty($sArticle.comment)}
+                                                <button class="cpo-finder-listing-comment-button bxCommentButton_{$sArticle.articleID}">comment</button>
+                                                <div class="cpo-finder-listing-comment" style="display:none">
+                                                  <div class="cpo-finder-listing-comment-text bxComment_{$sArticle.articleID}" style="">{$sArticle.comment}</div>
+                                                    {if !empty({$sArticle.description})}
+                                                    <div class="cpo-finder-listing-comment-description bxComment_{$sArticle.articleID}" style="">{$sArticle.description}</div>
+                                                    {/if}
+                                                </div>
+                                                {/if}
                                             {include file="frontend/detail/image.tpl"}
                                         </div>
                                     {/block}

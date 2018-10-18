@@ -34,8 +34,7 @@ if (highlighted == false) {
 
 // Show comment
 jQuery('.cpo-finder-listing-comment-button').on('click', function() {
- jQuery(this).hide();
- jQuery(this).next().show();
+jQuery('.cpo-finder-listing-comment').show();
 });
 
 // selected facets
