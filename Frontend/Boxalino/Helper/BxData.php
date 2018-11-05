@@ -314,16 +314,14 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxData {
 
     }
 
+    /**
+     * get products for the product finder result
+     */
     public function getLocalArticles($ids) {
         if (empty($ids)) {
             return array();
         }
-        $unsortedArticles = $this->container->get('legacy_struct_converter')->convertListProductStructList(
-            $this->container->get('shopware_storefront.list_product_service')->getList(
-                $ids,
-                $this->container->get('shopware_storefront.context_service')->getProductContext()
-            )
-        );
+        $unsortedArticles = $this->getAllProductsProperties($ids);
         $articles = array();
         foreach ($ids as $id) {
             if(isset($unsortedArticles[$id])){
@@ -331,6 +329,45 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxData {
             }
         }
         return $articles;
+    }
+
+    /**
+     * adds product configuration to the list
+     *
+     * @param $ids
+     * @return mixed
+     */
+    public function getAllProductsProperties($ids)
+    {
+        $context = $this->container->get('shopware_storefront.context_service')->getProductContext();
+        $resultedProducts = $this->container->get('shopware_storefront.product_service')->getList($ids, $context);
+        $configuratorService = $this->container->get('shopware_storefront.configurator_service');
+        $legacyStructConverter = $this->container->get('legacy_struct_converter');
+        $configurators = array();
+        foreach ($resultedProducts as $number => $product) {
+            if ($product->hasConfigurator()) {
+                $selection = array();
+                $selection = $product->getSelectedOptions();
+                $configurator = $configuratorService->getProductConfigurator(
+                    $product,
+                    $context,
+                    $selection
+                );
+                $convertedConfigurator = $legacyStructConverter->convertConfiguratorStruct($product, $configurator);
+                $configurators[$number] = $convertedConfigurator;
+            }
+        }
+
+        $convertedProductsToArray = $legacyStructConverter->convertListProductStructList($resultedProducts);
+        foreach ($convertedProductsToArray as $number => &$data)
+        {
+            if(isset($configurators[$number]))
+            {
+                $data = array_merge($data, $configurators[$number]);
+            }
+        }
+
+        return $convertedProductsToArray;
     }
 
     public function useValuesAsKeys($array){
