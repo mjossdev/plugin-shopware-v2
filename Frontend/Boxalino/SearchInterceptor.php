@@ -323,6 +323,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             $scores = $this->Helper()->getHitFieldValues('finalScore');
             $highlightedValues = $this->Helper()->getHitFieldValues('highlighted');
             $comment = $this->Helper()->getHitFieldValues('products_bxi_expert_sentence');
+            $description = $this->Helper()->getHitFieldValues('products_bxi_expert_description');
             $maxScore = 0;
             foreach($scores as $score) {
               if($score > $maxScore) {
@@ -336,8 +337,9 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             $c=0;
             foreach($articles as $index => $article) {
                 $id = $article['articleID'];
-                $article['bx_score'] = $scores[$c];
+                $article['bx_score'] = number_format($scores[$c]);
                 $article['comment'] = $comment[$c];
+                $article['description'] = $description[$c];
                 $highlighted =  $highlightedValues[$c++] == 'true';
                 if($highlighted){
                     if($index == 0 && $type == 'present'){

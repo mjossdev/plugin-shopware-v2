@@ -113,15 +113,15 @@
                 if(bxFacets.hasOwnProperty(fieldName)) {
                     var facetValues = getCheckedValues(fieldName);
                     if(infoKey) {
-                       var t = [];
-                       facetValues.forEach(function (val) {
-                           if(getFacetValueExtraInfo(fieldName, val, infoKey)) {
-                               t.push(val);
-                           }
-                       });
-                       if(t.length) {
-                           facetValues = t;
-                       }
+                        var t = [];
+                        facetValues.forEach(function (val) {
+                            if(getFacetValueExtraInfo(fieldName, val, infoKey)) {
+                                t.push(val);
+                            }
+                        });
+                        if(t.length) {
+                            facetValues = t;
+                        }
                     }
                     values[fieldName] = facetValues;
                 }
@@ -168,12 +168,16 @@
         function sortValues(array, dependencyValues, position) {
             var matchedValues = [];
             dependencyValues.forEach(function(value) {
+                if (typeof array[0] == 'number') {
+                    value = Number(value); //in case of data-owners the facetvalue is returned as a number (e.g. 82), but the dependancyValue is returned as a string(e.g. "82").
+                }
                 var index = array.indexOf(value);
                 if(index > -1) {
                     array.splice(index, 1);
                     matchedValues.push(value);
                 }
             });
+
             matchedValues.reverse().forEach(function(value) {
                 array.splice(position, 0, value);
             });

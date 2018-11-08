@@ -19,27 +19,50 @@
             <div class="listingBlock cpo-finder-listing-container">
                 <div class="cpo-finder-listing-wrapper">
                     {block name="frontend_cpo_finder_listing_present"}
-                        <div class="cpo-finder-listing bx-present">
+                        <div class="cpo-finder-listing bx-present product--details" data-ajax-wishlist="true" data-compare-ajax="true"{if $theme.ajaxVariantSwitch} data-ajax-variants-container="true"{/if}>
                             {foreach $Data.highlighted_articles as $sArticle}
                                 {include file="frontend/detail/content/header.tpl"}
+                                {* Variable for tracking active user variant selection *}
+                                {$activeConfiguratorSelection = true}
+                                {if $sArticle.sConfigurator && ($sArticle.sConfiguratorSettings.type == 1 || $sArticle.sConfiguratorSettings.type == 2)}
+                                    {* If user has no selection in this group set it to false *}
+                                    {foreach $sArticle.sConfigurator as $configuratorGroup}
+                                            {if !$configuratorGroup.selected_value}
+                                                    {$activeConfiguratorSelection = false}
+                                                {/if}
+                                        {/foreach}
+                                {/if}
+
                                 <div class="product--detail-upper block-group">
                                     {* Product image *}
                                     {block name='frontend_detail_index_image_container'}
                                         <div class="product--image-container image-slider{if $sArticle.image && {config name=sUSEZOOMPLUS}} product--image-zoom{/if}"
-                                                {if $sArticle.image}
-                                            data-image-slider="true"
-                                            data-image-gallery="true"
-                                            data-maxZoom="{$theme.lightboxZoomFactor}"
-                                            data-thumbnails=".image--thumbnails"
-                                                {/if}>
+                                            {if $sArticle.image}
+                                                data-image-slider="true"
+                                                data-image-gallery="true"
+                                                data-maxZoom="{$theme.lightboxZoomFactor}"
+                                                data-thumbnails=".image--thumbnails"
+                                            {/if}>
+
+                                            <span class="cpo-finder-listing-score">Score: {$sArticle.bx_score}%</span>
+                                            <progress class="cpo-finder-listing-score-progress" value="{$sArticle.bx_score}" max="100"></progress>
+                                            {if !empty($sArticle.comment)}
+                                                <button class="cpo-finder-listing-comment-button bxCommentButton_{$sArticle.articleID}" articleid="{$sArticle.articleID}"><i class="icon--info"></i></button>
+                                                <div class="cpo-finder-listing-comment cpo-finder-listing-comment-{$sArticle.articleID}" style="display:none">
+                                                    <div class="cpo-finder-listing-comment-text bxComment_{$sArticle.articleID}" style="">{$sArticle.comment}</div>
+                                                    {if !empty({$sArticle.description})}
+                                                        <div class="cpo-finder-listing-comment-description bxComment_{$sArticle.articleID}" style="">{$sArticle.description}</div>
+                                                    {/if}
+                                                </div>
+                                            {/if}
+
                                             {include file="frontend/detail/image.tpl"}
                                         </div>
                                     {/block}
 
+                                    {* "Buy now" box container *}
+                                    {include file="frontend/detail/content/buy_container.tpl" Shop = $Data.shop}
                                 </div>
-
-                                {* "Buy now" box container *}
-                                {include file="frontend/detail/content/buy_container.tpl" Shop = $Data.shop}
                             {/foreach}
                         </div>
                     {/block}
