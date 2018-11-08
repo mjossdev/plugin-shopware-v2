@@ -61,7 +61,7 @@
                                     {/block}
 
                                     {* "Buy now" box container *}
-                                    {include file="frontend/detail/content/buy_container.tpl" Shop = $Data.shop}
+                                    {include file="frontend/detail/content/buy_container.tpl" Shop = $Data.shop isFinder='true'}
                                 </div>
                             {/foreach}
                         </div>
