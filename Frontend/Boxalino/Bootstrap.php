@@ -35,7 +35,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
     }
 
     public function getVersion() {
-        return '1.6.18';
+        return '1.6.19';
     }
 
     public function getInfo() {
@@ -779,6 +779,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
         $view = $arguments->getSubject()->View();
         $view->addTemplateDir($this->Path() . 'Views/emotion/');
         $view->extendsTemplate('frontend/plugins/boxalino/listing/product-box/box-emotion.tpl');
+        $view->extendsTemplate('frontend/plugins/boxalino/detail/config_upprice.tpl');
     }
 
     public function onLandingPage(Enlight_Event_EventArgs $arguments) {
