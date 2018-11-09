@@ -350,7 +350,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             }
             $data['sArticles'] = $articles;
             $data['highlighted_articles'] = $highlighted_articles;
-            $data['highlighted'] = (bool) (sizeof($highlighted_articles)>0);
+            $data['highlighted'] = (sizeof($highlighted_articles)>0) ? "true" : "false";
             $data['top_match'] = $top_match;
             $data['max_score'] = max(array_values($scores));
             $data['finderMode'] = $type;// $finderMode = ($highlight_count == 0 ? 'question' : ($highlight_count == 1 ? 'present' : 'listing'));
