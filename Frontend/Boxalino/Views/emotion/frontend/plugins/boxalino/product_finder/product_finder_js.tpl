@@ -480,7 +480,7 @@ if (currentFacet == expertFieldName) {
                     }
                 }
             }
-            if (max_score >= 90) { //if highlighted == true
+            if (highlighted == true) {
                 jQuery('.cpo-finder-center-content-header').append(expertResultSentence10[lang]);
                 $('.bx-present').show();
                 $('.bx-listing-emotion').show();
@@ -582,7 +582,7 @@ $('#cpo-finder-show-products').on('click', function() {
             }
         }
     }
-    if (max_score >= 90) {
+    if (highlighted == true) {
         $('.bx-present').show();
         $('.bx-listing-emotion').show();
     } else {
