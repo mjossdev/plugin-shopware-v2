@@ -60,6 +60,8 @@
                                         </div>
                                     {/block}
 
+                                    {include file="frontend/listing/product-box/button-detail.tpl" Shop = $Data.shop isFinder='true'}
+
                                     {* "Buy now" box container *}
                                     {include file="frontend/detail/content/buy_container.tpl" Shop = $Data.shop isFinder='true'}
                                 </div>

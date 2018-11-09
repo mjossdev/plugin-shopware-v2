@@ -393,11 +393,17 @@ if (currentFacet == expertFieldName) {
         var type = facets.getFacetExtraInfo(field, 'visualisation');
         $("." + field + "_check").on('change', function() {
             if (type == 'radio') {
-                facets.removeSelect(field);
-                if ($(this).is(':checked')) {
-                    facets.addSelect(field, $(this).attr('value'));
-                } else {
+                if (currentFacet == questions[0]){
                     facets.removeSelect(field);
+                    if ($(this).is(':checked')) {
+                        facets.addSelect(field, $(this).attr('value'));
+
+                    } else {
+                        facets.removeSelect(field);
+                    }
+                } else {
+                    facets.addSelect(field, $(this).attr('value'));
+                    goToNextQuestion();
                 }
             } else if (type == 'multiselect') {
                 if ($(this).is(':checked')) {
@@ -486,8 +492,7 @@ if (currentFacet == expertFieldName) {
     }
 }
 
-// find button logic
-$('#cpo-finder-results').on('click', function(e) {
+function goToNextQuestion(){
     params = facets.getFacetParameters(),
         paramString = '',
         prefix = facets.getParameterPrefix();
@@ -511,6 +516,11 @@ $('#cpo-finder-results').on('click', function(e) {
         }
     });
     window.location = window.location.origin + window.location.pathname + paramString;
+}
+
+// find button logic
+$('#cpo-finder-results').on('click', function (e) {
+    goToNextQuestion();
 });
 
 // show more/less button logic
