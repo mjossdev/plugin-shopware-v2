@@ -252,7 +252,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         $data = $this->prepareVoucherTemplate($data);
         $data['show'] = false;
         if (!is_null($data)) {
-          $data['show'] = true;
+            $data['show'] = true;
         }
         return $data;
     }
@@ -319,17 +319,12 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         $this->Helper()->addFinder($hitCount, $choice_id, $filter, 'product', $return['widget_type']);
         $data['json_facets'] = $this->convertFacetsToJson();
         if($return['widget_type'] == '2'){
-            $articles = $this->BxData()->getLocalArticles($this->Helper()->getHitFieldValues('products_ordernumber'));
+            $articleIds = $this->Helper()->getHitFieldValues('products_ordernumber');
             $scores = $this->Helper()->getHitFieldValues('finalScore');
             $highlightedValues = $this->Helper()->getHitFieldValues('highlighted');
             $comment = $this->Helper()->getHitFieldValues('products_bxi_expert_sentence');
             $description = $this->Helper()->getHitFieldValues('products_bxi_expert_description');
-            $maxScore = 0;
-            foreach($scores as $score) {
-              if($score > $maxScore) {
-                $maxScore = $score;
-              }
-            }
+            $articles = $this->BxData()->getLocalArticles($articleIds, $highlightedValues);
             $type = $this->checkParams();
             $highlighted_articles =  null;
             $top_match = null;
@@ -355,19 +350,15 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             }
             $data['sArticles'] = $articles;
             $data['highlighted_articles'] = $highlighted_articles;
-            $data['highlighted'] = 'false';
-            if(sizeof($highlighted_articles)>0) {
-              $data['highlighted'] = 'true';
-            }
+            $data['highlighted'] = (bool) (sizeof($highlighted_articles)>0);
             $data['top_match'] = $top_match;
-            $data['max_score'] = $maxScore;
+            $data['max_score'] = max(array_values($scores));
             $data['finderMode'] = $type;// $finderMode = ($highlight_count == 0 ? 'question' : ($highlight_count == 1 ? 'present' : 'listing'));
             $data['slider_data'] = ['no_border' => true, 'article_slider_arrows' => 1, 'article_slider_type' => 'selected_article',
                 'article_slider_max_number' => count($highlighted_articles), 'values' => $highlighted_articles, 'article_slider_title' => 'Zu Ihnen passende Produkte'];
-          $data['shop'] = Shopware()->Shop(); //$this->get('shopware_storefront.context_service')->getShopContext();
-          $data['maxScore'] = $maxScore;
-
+            $data['shop'] = Shopware()->Shop(); //$this->get('shopware_storefront.context_service')->getShopContext();
         }
+
         return $data;
     }
 
@@ -659,13 +650,13 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
      */
     private function categoryShowFilter($category_id) {
         $show = true;
-		if($category_id) {
-			$db = Shopware()->Db();
-			$sql = $db->select()->from(array('c' => 's_categories'))
-			->where('c.id = ?', $category_id);
-			$result = $db->fetchRow($sql);
-			$show = !$result['hidefilter'];
-		}
+        if($category_id) {
+            $db = Shopware()->Db();
+            $sql = $db->select()->from(array('c' => 's_categories'))
+                ->where('c.id = ?', $category_id);
+            $result = $db->fetchRow($sql);
+            $show = !$result['hidefilter'];
+        }
         return $show;
     }
 
