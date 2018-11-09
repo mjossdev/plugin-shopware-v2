@@ -1558,23 +1558,23 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
                 (SELECT count(*) FROM s_emarketing_voucher_codes WHERE voucherID =v.id AND cashed=1))")))
                 ->where('(v.subshopID IS NULL OR v.subshopID = ?)', $shop_id)
                 ->where('((CURDATE() BETWEEN v.valid_from AND v.valid_to) OR (v.valid_from IS NULL AND v.valid_to IS NULL) OR (DATE(NOW())<DATE(v.valid_to) AND v.valid_from IS NULL) OR (DATE(NOW())>DATE(v.valid_from) AND v.valid_to IS NULL))');
-            $stmt = $db->query($sql);
-            if($stmt->rowCount()) {
-                while($row = $stmt->fetch()){
-                    if($header) {
-                        $headers = array_keys($row);
-                        $data[] = $headers;
-                        $header = false;
-                    }
-                    if(isset($doneCases[$row['id']])) continue;
-                    $doneCases[$row['id']] = true;
-                    $row['id'] = 'voucher_' . $row['id'];
-                    $data[] = $row;
+            $vouchers = $db->fetchAll($sql);
+            foreach($vouchers as $row)
+            {
+                if($header) {
+                    $headers = array_keys($row);
+                    $data[] = $headers;
+                    $header = false;
                 }
+                if(isset($doneCases[$row['id']])) continue;
+                $doneCases[$row['id']] = true;
+                $row['id'] = 'voucher_' . $row['id'];
+                $data[] = $row;
             }
             if(sizeof($data)) {
                 $files->savePartToCsv('voucher.csv', $data);
             }
+            $vouchers = null;
         }
 
         if($header) {
@@ -1591,17 +1591,16 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
         $data = array();
         $header = true;
         $sql = $db->select()->from(array('v_c' => 's_emarketing_voucher_codes'));
-        $stmt = $db->query($sql);
-        if($stmt->rowCount()) {
-            while($row = $stmt->fetch()){
-                if(isset($doneCases[$row['voucherID']])){
-                    if($header){
-                        $data[] = array_keys($row);
-                        $header = false;
-                    }
-                    $row['voucherID'] = 'voucher_' . $row['voucherID'];
-                    $data[] = $row;
+        $voucherCodes = $db->fetchAll($sql);
+        foreach($voucherCodes as $row)
+        {
+            if(isset($doneCases[$row['voucherID']])){
+                if($header){
+                    $data[] = array_keys($row);
+                    $header = false;
                 }
+                $row['voucherID'] = 'voucher_' . $row['voucherID'];
+                $data[] = $row;
             }
         }
         $doneCases = array();
