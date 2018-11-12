@@ -314,14 +314,17 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxData {
 
     }
 
-    /**
-     * get products for the product finder result
-     */
-    public function getLocalArticles($ids) {
+    public function getLocalArticles($ids, $highlightedProducts=array()) {
         if (empty($ids)) {
             return array();
         }
-        $unsortedArticles = $this->getAllProductsProperties($ids);
+        if(empty($highlightedProducts))
+        {
+            $unsortedArticles = $this->getUnsortedArticlesByIds($ids);
+        } else {
+            $unsortedArticles = $this->getUnsortedArticlesForFinder($ids, $highlightedProducts);
+        }
+
         $articles = array();
         foreach ($ids as $id) {
             if(isset($unsortedArticles[$id])){
@@ -331,21 +334,40 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxData {
         return $articles;
     }
 
+    protected function getUnsortedArticlesByIds($ids)
+    {
+        $context = $this->container->get('shopware_storefront.context_service')->getProductContext();
+        $listProductService = $this->container->get('shopware_storefront.list_product_service');
+        $resultedProducts = $listProductService->getList($ids, $context);
+        $legacyStructConverter = $this->container->get('legacy_struct_converter');
+
+        return $legacyStructConverter->convertListProductStructList($resultedProducts);
+    }
+
     /**
      * adds product configuration to the list
+     * upate the displayed price based on the default option
      *
      * @param $ids
      * @return mixed
      */
-    public function getAllProductsProperties($ids)
+    protected function getUnsortedArticlesForFinder($ids, $highlightedProducts)
     {
+        $scoredProducts = array_keys(array_filter(array_combine($ids, $highlightedProducts)));
         $context = $this->container->get('shopware_storefront.context_service')->getProductContext();
-        $resultedProducts = $this->container->get('shopware_storefront.product_service')->getList($ids, $context);
+        $productService = $this->container->get('shopware_storefront.product_service');
+        $resultedProducts = $productService->getList($ids, $context);
+        $productNumberService = $this->container->get('shopware_storefront.product_number_service');
         $configuratorService = $this->container->get('shopware_storefront.configurator_service');
         $legacyStructConverter = $this->container->get('legacy_struct_converter');
         $configurators = array();
-        foreach ($resultedProducts as $number => $product) {
-            if ($product->hasConfigurator()) {
+        foreach ($resultedProducts as $number => &$product) {
+            if ($product->hasConfigurator() && in_array($number, $scoredProducts)) {
+                $mainNumber = $productNumberService->getMainProductNumberById($product->getId());
+                if (!$mainNumber) {
+                    $productNumber=$product->getId();
+                }
+                $product = $productService->get($mainNumber, $context);
                 $selection = array();
                 $selection = $product->getSelectedOptions();
                 $configurator = $configuratorService->getProductConfigurator(
@@ -355,6 +377,9 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxData {
                 );
                 $convertedConfigurator = $legacyStructConverter->convertConfiguratorStruct($product, $configurator);
                 $configurators[$number] = $convertedConfigurator;
+
+                $product->setListingPrice($product->getPrices()[0]);
+                $product->setAllowBuyInListing(true);
             }
         }
 
