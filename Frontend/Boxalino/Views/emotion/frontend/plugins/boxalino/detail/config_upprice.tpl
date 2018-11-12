@@ -1,4 +1,4 @@
-{extends file='parent:frontend/detail/config_upprice.tpl'}
+{extends name='parent:frontend/detail/config_upprice.tpl'}
 <form method="post" action="{url sArticle=$sArticle.articleID sCategory=$sArticle.categoryID}" class="configurator--form upprice--form" {if $isFinder == 'true'} style="display:none"{/if}>
     {foreach $sArticle.sConfigurator as $sConfigurator}
 
