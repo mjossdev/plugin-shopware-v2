@@ -780,6 +780,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
         $view->addTemplateDir($this->Path() . 'Views/emotion/');
         $view->extendsTemplate('frontend/plugins/boxalino/listing/product-box/box-emotion.tpl');
         $view->extendsTemplate('frontend/plugins/boxalino/detail/config_upprice.tpl');
+        $view->extendsTemplate('frontend/plugins/boxalino/detail/actions.tpl');
     }
 
     public function onLandingPage(Enlight_Event_EventArgs $arguments) {
