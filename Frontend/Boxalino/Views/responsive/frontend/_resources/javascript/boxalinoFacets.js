@@ -37,6 +37,7 @@
             if(data.hasOwnProperty('level')){
                 level = data['level'];
             }
+            $('[data-add-article="true"]').swAddArticle();
             checkParams();
         }
 
