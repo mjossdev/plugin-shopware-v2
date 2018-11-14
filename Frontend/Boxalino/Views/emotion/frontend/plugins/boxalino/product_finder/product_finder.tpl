@@ -47,7 +47,7 @@
                                             <span class="cpo-finder-listing-score">Score: {$sArticle.bx_score}%</span>
                                             <progress class="cpo-finder-listing-score-progress" value="{$sArticle.bx_score}" max="100"></progress>
                                             {if !empty($sArticle.comment)}
-                                                <button class="cpo-finder-listing-comment-button bxCommentButton_{$sArticle.articleID}" articleid="{$sArticle.articleID}">{s namespace="boxalino/intelligence" name="productfinder/commenticon"}{/s}<i class="icon--info"></i></button>
+                                                <button class="cpo-finder-listing-comment-button bxCommentButton_{$sArticle.articleID}" articleid="{$sArticle.articleID}">{s namespace="boxalino/intelligence" name="productfinder/commenticon"}{/s}</button>
                                                 <div class="cpo-finder-listing-comment cpo-finder-listing-comment-{$sArticle.articleID}" style="display:none">
                                                     <div class="cpo-finder-listing-comment-text bxComment_{$sArticle.articleID}" style="">{$sArticle.comment}</div>
                                                     {if !empty({$sArticle.description})}
