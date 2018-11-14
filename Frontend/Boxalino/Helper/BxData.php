@@ -388,6 +388,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxData {
         {
             if(isset($configurators[$number]))
             {
+                $data['priceStartingFrom'] = null;
                 $data = array_merge($data, $configurators[$number]);
             }
         }

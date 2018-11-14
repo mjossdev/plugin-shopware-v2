@@ -33,7 +33,7 @@
                                         {/foreach}
                                 {/if}
 
-                                <div class="product--detail-upper block-group">
+                                <div class="content product--details product--detail-upper block-group" data-ajax-wishlist="true" data-compare-ajax="true"{if $theme.ajaxVariantSwitch} data-ajax-variants-container="true"  data-ajax-bx-product-finder={$sArticle.articleID}{/if}>
                                     {* Product image *}
                                     {block name='frontend_detail_index_image_container'}
                                         <div class="product--image-container image-slider{if $sArticle.image && {config name=sUSEZOOMPLUS}} product--image-zoom{/if}"
@@ -47,7 +47,7 @@
                                             <span class="cpo-finder-listing-score">Score: {$sArticle.bx_score}%</span>
                                             <progress class="cpo-finder-listing-score-progress" value="{$sArticle.bx_score}" max="100"></progress>
                                             {if !empty($sArticle.comment)}
-                                                <button class="cpo-finder-listing-comment-button bxCommentButton_{$sArticle.articleID}" articleid="{$sArticle.articleID}"><i class="icon--info"></i></button>
+                                                <button class="cpo-finder-listing-comment-button bxCommentButton_{$sArticle.articleID}" articleid="{$sArticle.articleID}">{s namespace="boxalino/intelligence" name="productfinder/commenticon"}{/s}<i class="icon--info"></i></button>
                                                 <div class="cpo-finder-listing-comment cpo-finder-listing-comment-{$sArticle.articleID}" style="display:none">
                                                     <div class="cpo-finder-listing-comment-text bxComment_{$sArticle.articleID}" style="">{$sArticle.comment}</div>
                                                     {if !empty({$sArticle.description})}
@@ -60,10 +60,9 @@
                                         </div>
                                     {/block}
 
-                                    {include file="frontend/listing/product-box/button-detail.tpl" Shop = $Data.shop isFinder='true'}
-
                                     {* "Buy now" box container *}
-                                    {include file="frontend/detail/content/buy_container.tpl" Shop = $Data.shop isFinder='true'}
+                                    {include file="frontend/detail/content/buy_container.tpl" Shop = $Data.shop}
+                                    {block name='frontend_detail_actions'}{/block}
                                 </div>
                             {/foreach}
                         </div>

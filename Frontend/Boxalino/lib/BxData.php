@@ -93,12 +93,25 @@ class BxData
     public function addResourceFile($filePath, $categoryIdColumn, $labelColumns, $encoding = 'UTF-8', $delimiter = ',', $enclosure = "\&", $escape = "\\\\", $lineSeparator = "\\n", $sourceId = null, $container = 'products', $validate=true, $maxLength=23) {
         $params = array('referenceIdColumn'=>$categoryIdColumn, 'labelColumns'=>$labelColumns, 'encoding'=>$encoding, 'delimiter'=>$delimiter, 'enclosure'=>$enclosure, 'escape'=>$escape, 'lineSeparator'=>$lineSeparator);
         if($sourceId == null) {
-            $sourceId = 'resource_' . $this->getSourceIdFromFileNameFromPath($filePath, $container, $maxLength, true);
+            $sourceId = 'resource_' . $this->getSourceIdFromFileNameFromPath($filePath, $container, $maxLength-9, true);
         }
         return $this->addSourceFile($filePath, $sourceId, $container, 'resource', 'CSV', $params, $validate);
     }
 
+    /**
+     * Adding an additional table file with the content as it has it
+     *
+     * @param $filePath
+     * @return string
+     * @throws \Exception
+     */
+    public function addExtraTableToEntity($filePath, $container, $column, $columns, $maxLength = 23)
+    {
+        $params = ['referenceIdColumn'=>$column, 'labelColumns'=>$columns, 'encoding' => 'UTF-8', 'delimiter'=>',', 'enclosure'=>'"', 'escape'=>"\\\\", 'lineSeparator'=>"\\n"];
+        $sourceId = $this->getSourceIdFromFileNameFromPath($filePath, $container, $maxLength, true);
 
+        return $this->addSourceFile($filePath, $sourceId, $container, 'resource', 'CSV', $params);
+    }
 
     public function setCSVTransactionFile($filePath, $orderIdColumn, $productIdColumn, $customerIdColumn, $orderDateIdColumn, $totalOrderValueColumn, $productListPriceColumn, $productDiscountedPriceColumn, $productIdField='bx_item_id', $customerIdField='bx_customer_id', $productsContainer = 'products', $customersContainer = 'customers', $format = 'CSV', $encoding = 'UTF-8', $delimiter = ',', $enclosure = '"', $escape = "\\\\", $lineSeparator = "\\n",$container = 'transactions', $sourceId = 'transactions', $validate=true) {
 
@@ -657,18 +670,11 @@ class BxData
 
     public function getSourceIdFromFileNameFromPath($filePath, $container, $maxLength=23, $withoutExtension=false) {
         $sourceId = $this->getFileNameFromPath($filePath, $withoutExtension);
-        $shortened = false;
         if(strlen($sourceId) > $maxLength) {
             $sourceId = substr($sourceId, 0, $maxLength);
-            $shortened = true;
         }
+
         if($this->alreadyExistingSourceId($sourceId, $container)) {
-            if(!$shortened) {
-                throw new \Exception(
-                    'Synchronization failure: Same source id requested twice "' .
-                    $filePath . '". Please correct that only created once.'
-                );
-            }
             $postFix = $this->getUnusedSourceIdPostFix($sourceId, $container);
             $sourceId .= $postFix;
         }

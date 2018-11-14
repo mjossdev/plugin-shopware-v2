@@ -349,6 +349,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                 }
             }
             $data['sArticles'] = $articles;
+            $data['isFinder'] = true;
             $data['highlighted_articles'] = $highlighted_articles;
             $data['highlighted'] = (sizeof($highlighted_articles)>0) ? "true" : "false";
             $data['top_match'] = $top_match;

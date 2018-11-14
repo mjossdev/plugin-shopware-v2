@@ -1,39 +1,24 @@
-{extends name='parent:frontend/detail/config_upprice.tpl'}
-<form method="post" action="{url sArticle=$sArticle.articleID sCategory=$sArticle.categoryID}" class="configurator--form upprice--form" {if $isFinder == 'true'} style="display:none"{/if}>
-    {foreach $sArticle.sConfigurator as $sConfigurator}
-
-        {* Group name *}
+{extends file='parent:frontend/detail/config_upprice.tpl'}
+{if $Data.isFinder}
+    <div class="bx-finder-configurator">
         {block name='frontend_detail_group_name'}
-            <p class="configurator--label">{$sConfigurator.groupname}:</p>
+            {$selectedOptionLabel=null}
+            {foreach $sArticle.sConfigurator as $sConfigurator}
+                {foreach $sConfigurator.values as $configValue}
+                    {if !{config name=hideNoInstock} || ({config name=hideNoInstock} && $configValue.selectable)}
+                        {if $configValue.selected}{$selectedOptionLabel=$configValue.optionname}{/if}
+                    {/if}
+                {/foreach}
+            {/foreach}
+            {if ($sArticle.isSelectionSpecified || $sArticle.additionaltext)}
+                <p>{s namespace="boxalino/intelligence" name="productfinder/specifiedSelection"}{/s}{$sArticle.additionaltext}</p>
+            {/if}
+            <a href="{$sArticle.linkDetails}" class="buybox--button block btn is--icon-right is--center is--large" title="{$label} - {$title}">
+                {s namespace="boxalino/intelligence" name="productfinder/gotodetail"}{/s}<i class="icon--arrow-right"></i>
+            </a>
         {/block}
-
-        {* Group description *}
-        {if $sConfigurator.groupdescription}
-            {block name='frontend_detail_group_description'}
-                <p class="configurator--description">{$sConfigurator.groupdescription}</p>
-            {/block}
-        {/if}
-
-        {* Configurator drop down *}
-        {block name='frontend_detail_group_selection'}
-            <div class="select-field">
-                <select name="group[{$sConfigurator.groupID}]"{if $theme.ajaxVariantSwitch} data-ajax-select-variants="true"{else} data-auto-submit="true"{/if}>
-                    {foreach $sConfigurator.values as $configValue}
-                        {if !{config name=hideNoInstock} || ({config name=hideNoInstock} && $configValue.selectable)}
-                            <option{if $configValue.selected} selected="selected"{/if} value="{$configValue.optionID}">
-                                {$configValue.optionname}{if $configValue.upprice} {if $configValue.upprice > 0}{/if}{/if}
-                            </option>
-                        {/if}
-                    {/foreach}
-                </select>
-            </div>
-
-        {/block}
-    {/foreach}
-
-    {block name='frontend_detail_configurator_noscript_action'}
-        <noscript>
-            <input name="recalc" type="submit" value="{s name='DetailConfigActionSubmit'}{/s}" />
-        </noscript>
-    {/block}
-</form>
+        {block name='frontend_detail_group_description'}{/block}
+        {block name='frontend_detail_group_selection'}{/block}
+        {block name='frontend_detail_configurator_noscript_action'}{/block}
+    </div>
+{/if}
