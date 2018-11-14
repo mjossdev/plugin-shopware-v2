@@ -2,6 +2,9 @@
 
 namespace com\boxalino\bxclient\v1;
 
+use com\boxalino\p13n\api\thrift\AutocompleteRequestBundle;
+use com\boxalino\p13n\api\thrift\ChoiceRequestBundle;
+
 class BxClient
 {
     private $account;
@@ -738,8 +741,23 @@ class BxClient
 
     protected function excludeCredentials($request)
     {
+        if(strpos(strtolower(get_class($request)), 'bundle') == false)
+        {
+            return $this->_excludeCredentialsByRequest($request);
+        }
+
+        foreach($request->requests as &$bundleRequest)
+        {
+            $bundleRequest = $this->_excludeCredentialsByRequest($bundleRequest);
+        }
+
+        return $request;
+    }
+
+    protected function _excludeCredentialsByRequest($request)
+    {
         $userRecord = $request->userRecord;
-        $userRecord->apiKey = $userRecord->apiSecret = "secured";
+        $userRecord->apiKey = $userRecord->apiSecret = "**********************";
         $request->userRecord = $userRecord;
 
         return $request;
