@@ -1,9 +1,5 @@
 <?php
-
 namespace com\boxalino\bxclient\v1;
-
-use com\boxalino\p13n\api\thrift\AutocompleteRequestBundle;
-use com\boxalino\p13n\api\thrift\ChoiceRequestBundle;
 
 class BxClient
 {
