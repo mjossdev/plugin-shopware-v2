@@ -11,7 +11,7 @@
                 {/foreach}
             {/foreach}
             {if ($sArticle.isSelectionSpecified || $sArticle.additionaltext)}
-                <p>{s namespace="boxalino/intelligence" name="productfinder/specifiedSelection"}{/s}{$sArticle.additionaltext}</p>
+                <div class="cpo-finder-listing-selected-option"><p>{s namespace="boxalino/intelligence" name="productfinder/specifiedSelection"}{/s}{$sArticle.additionaltext}</p></div>
             {/if}
             <a href="{$sArticle.linkDetails}" class="buybox--button block btn is--icon-right is--center is--large" title="{$label} - {$title}">
                 {s namespace="boxalino/intelligence" name="productfinder/gotodetail"}{/s}<i class="icon--arrow-right"></i>
