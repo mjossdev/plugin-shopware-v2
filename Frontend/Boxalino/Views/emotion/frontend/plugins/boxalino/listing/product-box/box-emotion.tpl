@@ -53,6 +53,9 @@
 {/block}
 
 {if $isFinder == 'true'}
-  {block name="frontend_listing_product_box_button_detail_container"}
-  {/block}
+    {block name="frontend_listing_product_box_button_detail_container"}
+    {/block}
+
+    {block name="frontend_listing_box_article_actions_compare"}
+    {/block}
 {/if}
