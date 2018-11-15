@@ -11,7 +11,6 @@ facets.init(json);
 var currentFacet = null;
 var questions = facets.getAdditionalFacets();
 if (highlighted == false) {
-
 // remove questions with no options
     questions.forEach(function(question){
         if (facets.getFacetValues(question)[question].length === 0) {
@@ -25,6 +24,9 @@ if (highlighted == false) {
     for (var i = 0; i < questions.length; i++) {
         var fieldName = questions[i];
         if (facets.getCurrentSelects(fieldName) === null) {
+            if(facets.getFacetValues(fieldName)[fieldName].length < 2){
+                continue;
+            }
             currentFacet = fieldName;
             break;
         }
