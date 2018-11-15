@@ -57,8 +57,7 @@ if (selects) {
         if (key != 'bxi_data_owner_expert' && selects[key] != '*') {
             bxUrlParams.forEach(function(param) {
                 if (param.includes(key)) {
-                    bxNewUrl = bxUrl.replace(param, '');
-                    bxNewUrl = bxNewUrl.replace('&&', '&');
+                    bxNewUrl = bxUrl.substring(0, bxUrl.indexOf(param));
                 }
             });
             prefix = window.location.protocol + '//' + window.location.hostname + '/';
