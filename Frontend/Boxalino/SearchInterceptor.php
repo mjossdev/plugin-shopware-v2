@@ -354,6 +354,10 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             $data['highlighted'] = (sizeof($highlighted_articles)>0) ? "true" : "false";
             $data['top_match'] = $top_match;
             $data['max_score'] = max(array_values($scores));
+            if(empty($data['max_score']))
+            {
+                $data['max_score'] = 0;
+            }
             $data['finderMode'] = $type;// $finderMode = ($highlight_count == 0 ? 'question' : ($highlight_count == 1 ? 'present' : 'listing'));
             $data['slider_data'] = ['no_border' => true, 'article_slider_arrows' => 1, 'article_slider_type' => 'selected_article',
                 'article_slider_max_number' => count($highlighted_articles), 'values' => $highlighted_articles, 'article_slider_title' => 'Zu Ihnen passende Produkte'];
