@@ -44,7 +44,7 @@
                                                 data-thumbnails=".image--thumbnails"
                                             {/if}>
 
-                                            <span class="cpo-finder-listing-score">Score: {$sArticle.bx_score}%</span>
+                                            <span class="cpo-finder-listing-score">{s namespace="boxalino/intelligence" name="productfinder/score"}{/s} {$sArticle.bx_score}%</span>
                                             <progress class="cpo-finder-listing-score-progress" value="{$sArticle.bx_score}" max="100"></progress>
                                             {if !empty($sArticle.comment)}
                                                 <button class="cpo-finder-listing-comment-button bxCommentButton_{$sArticle.articleID}" articleid="{$sArticle.articleID}">{s namespace="boxalino/intelligence" name="productfinder/commenticon"}{/s}</button>

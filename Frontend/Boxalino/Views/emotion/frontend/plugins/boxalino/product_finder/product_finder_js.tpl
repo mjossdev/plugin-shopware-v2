@@ -5,6 +5,7 @@ lang  = '{$Data.locale}',
     max_score = {$Data.max_score},
 highlighted = {$Data.highlighted},
 selectedValues = {};
+var alertString = "'" + {s namespace="boxalino/intelligence" name="productfinder/alertString" default="Bitte beide Fragen beantworten"}{/s} + "'";
 facets.init(json);
 
 // Get the current facet
@@ -262,13 +263,28 @@ if (currentFacet == expertFieldName) {
             });
 
             // only show as many as defined
-
             var displaySize = facets.getFacetExtraInfo(combinedQuestions[1], 'enumDisplayMaxSize');
+            var secondDisplaySize = facets.getFacetExtraInfo(combinedQuestions[0], 'enumDisplayMaxSize');
+            if(secondDisplaySize == null){
+                secondDisplaySize = facets.getFacetValues(currentFacet)[currentFacet].length;
+            }
+            var combinedDisplaySize = parseInt(secondDisplaySize) + parseInt(displaySize);
 
             if (displaySize) {
                 $('.cpo-finder-answer:gt(' + (displaySize - 1) + ')').hide();
             }
-
+            jQuery('.cpo-finder-center-show-more-less').append(additionalButton);
+            jQuery('.cpo-finder-center-show-more-less').append(fewerButton);
+            $('#cpo-finder-additional').on('click', function(e) {
+                $('.cpo-finder-answers-container-second cpo-finder-answer').show();
+                $('#cpo-finder-additional').hide();
+                $('#cpo-finder-fewer').show();
+            });
+            $('#cpo-finder-fewer').on('click', function(e) {
+                $('.cpo-finder-answer:gt(' + (combinedDisplaySize - 1) + ')').hide();
+                $('#cpo-finder-fewer').hide();
+                $('#cpo-finder-additional').show();
+            });
         }
 
         container = jQuery('.cpo-finder-center-current-question-options');
@@ -456,10 +472,13 @@ if (currentFacet == expertFieldName) {
             })
 
             // create other buttons
-            if (questions[0] != currentFacet) {
+            if (questions[0] != currentFacet && combinedQuestions != null) {
                 jQuery('.cpo-finder-button-container').append(backButton);
             }
-            jQuery('.cpo-finder-button-container').append(resultsButton);
+            var visualisation = facets.getFacetExtraInfo(currentFacet, 'visualisation');
+            if(visualisation != 'radio'){
+                jQuery('.cpo-finder-button-container').append(resultsButton);
+            }
             jQuery('.cpo-finder-button-container').append(skipButton);
             jQuery('.cpo-finder-button-container-below').append(showProductsButton.replace('%%CurrentScore%%', max_score));
 
@@ -521,7 +540,23 @@ function goToNextQuestion(){
 
 // find button logic
 $('#cpo-finder-results').on('click', function (e) {
-    goToNextQuestion();
+    var proceedToNextQuestion;
+    if (combinedQuestions != null){
+        combinedQuestions.forEach(function (question) {
+            if(facets.getCurrentSelects(question) == null){
+                proceedToNextQuestion = false;
+            } else {
+                proceedToNextQuestion = true;
+            }
+        })
+    } else {
+        proceedToNextQuestion = true;
+    }
+    if (proceedToNextQuestion == false){
+        window.alert(alertString);
+    } else {
+        goToNextQuestion();
+    }
 });
 
 // show more/less button logic
