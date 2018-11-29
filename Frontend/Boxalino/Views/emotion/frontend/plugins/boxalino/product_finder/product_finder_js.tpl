@@ -512,6 +512,12 @@ if (currentFacet == expertFieldName) {
     }
 }
 
+function skipQuestion(){
+    facets.removeSelect(currentFacet);
+    facets.addSelect(currentFacet, '*');
+    goToNextQuestion();
+}
+
 function goToNextQuestion(){
     params = facets.getFacetParameters(),
         paramString = '',
@@ -555,6 +561,9 @@ $('#cpo-finder-results').on('click', function (e) {
     if (proceedToNextQuestion == false){
         window.alert(alertString);
     } else {
+        if(facets.getCurrentSelects(currentFacet) == null){
+            skipQuestion();
+        }
         goToNextQuestion();
     }
 });
@@ -575,31 +584,7 @@ $('#cpo-finder-fewer').on('click', function(e) {
 
 // skip button logic
 $('#cpo-finder-skip').on('click', function(e) {
-    facets.removeSelect(currentFacet);
-    facets.addSelect(currentFacet, '*');
-    var params = facets.getFacetParameters(),
-        paramString = '',
-        prefix = facets.getParameterPrefix();
-    contextPrefix = facets.getContextParameterPrefix();
-    params.forEach(function(param, index) {
-        if (index > 0) {
-            paramString += '&';
-        } else {
-            paramString += '?'
-        }
-        if (param.indexOf('=') === -1) {
-            paramString += param + '=100';
-        } else {
-            paramString += param;
-        }
-    });
-    window.location.search.substr(1).split("&").forEach(function(param, index) {
-        if (param.indexOf(prefix) !== 0 && param.indexOf(contextPrefix) !== 0) {
-            bind = ((paramString === '') ? (index > 0 ? '&' : '?') : '&');
-            paramString += bind + param;
-        }
-    });
-    window.location = url + paramString;
+    skipQuestion();
 });
 
 // back button logic
