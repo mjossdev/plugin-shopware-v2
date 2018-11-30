@@ -151,7 +151,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
                     }
                     $this->log->info('BxIndexLog: pushing to DI for account: ' . $account);
                     try {
-                        $this->bxData->pushData();
+                        $this->bxData->pushData($this->_config->getExportTemporaryArchivePath($account));
                     } catch (\Throwable $e){
                         $this->log->info("BxIndexLog: pushData failed with exception for : " . $e->getMessage());
                     }

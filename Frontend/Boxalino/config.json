@@ -736,6 +736,11 @@
     "value": "http://di1.bx-cloud.com"
   },
   {
+    "name": "export_local_tmp",
+    "label": "Exporter - Export - Temporary Archive Path",
+    "description": "If set, the exported archive will be temporary stored in that path; If empty, the archive will be created in the directory PHP stores temporary files by default. You can find out which one is it via sys_get_temp_dir()."
+  },
+  {
     "name": "export_publish_config",
     "label": "Exporter - Export - Publish Configuration",
     "type": "select",
