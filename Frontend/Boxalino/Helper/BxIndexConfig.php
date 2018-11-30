@@ -311,7 +311,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxIndexConfig{
     public function getExportTemporaryArchivePath($account)
     {
         $config = $this->getAccountConfig($account);
-        return return empty($config['export_local_tmp']) ? null : $config['export_local_tmp'];
+        return empty($config['export_local_tmp']) ? null : $config['export_local_tmp'];
     }
 
     /**
@@ -324,7 +324,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxIndexConfig{
     public function getExporterTimeout($account)
     {
         $config = $this->getAccountConfig($account);
-        return return empty($config['export_timeout']) ? null : $config['export_timeout'];
+        return empty($config['export_timeout']) ? null : $config['export_timeout'];
     }
 
     /**
