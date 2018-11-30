@@ -315,6 +315,19 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxIndexConfig{
     }
 
     /**
+     * Exporter timeout for the callApi
+     *
+     * @param $account
+     * @return null|void
+     * @throws Exception
+     */
+    public function getExporterTimeout($account)
+    {
+        $config = $this->getAccountConfig($account);
+        return return empty($config['export_timeout']) ? null : $config['export_timeout'];
+    }
+
+    /**
      * @param $account
      * @param $allProperties
      * @param array $requiredProperties
