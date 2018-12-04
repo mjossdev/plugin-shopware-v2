@@ -573,7 +573,7 @@ class BxData
         {
             if(strpos(curl_error($s), 'Operation timed out after') !== false)
             {
-                throw new \RuntimeException("The connection closed due to the timeout reach. Contact us at support@boxalino.com if you want updates on the exporter status."));
+                throw new \RuntimeException("The connection closed due to the timeout reach. Contact us at support@boxalino.com if you want updates on the exporter status.");
             }
 
             if(strpos(curl_error($s), "couldn't open file") !== false) {
