@@ -548,6 +548,14 @@ class BxData
         return $dom->saveXML();
     }
 
+    /**
+     * @param $fields
+     * @param $url
+     * @param null $temporaryFilePath
+     * @param int $timeout
+     * @return mixed
+     * @throws \Exception
+     */
     protected function callAPI($fields, $url, $temporaryFilePath=null, $timeout=60)
     {
         $s = curl_init();
@@ -563,6 +571,11 @@ class BxData
 
         if($responseBody === false)
         {
+            if(strpos(curl_error($s), 'Operation timed out after') !== false)
+            {
+                throw new \RuntimeException("The connection closed due to the timeout reach. Contact us at support@boxalino.com if you want updates on the exporter status.");
+            }
+
             if(strpos(curl_error($s), "couldn't open file") !== false) {
                 if($temporaryFilePath !== null) {
                     throw new \Exception('There seems to be a problem with the folder BxData uses to temporarily store a zip file with all your files before sending it. As you are currently provided a path, this is most likely the problem. Please make sure it is a valid path, or leave it to null (default value), then BxData will use sys_get_temp_dir() + "/bxclient" which typically works fine.');
