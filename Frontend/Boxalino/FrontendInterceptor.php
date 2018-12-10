@@ -342,7 +342,11 @@ class Shopware_Plugins_Frontend_Boxalino_FrontendInterceptor
      */
     protected function addScript($script) {
         $this->View()->addTemplateDir($this->Bootstrap()->Path() . 'Views/emotion/');
-        $this->View()->extendsTemplate('frontend/plugins/boxalino/index.tpl');
+        if(version_compare(Shopware::VERSION, '5.3.0', '<')) {
+            $this->View()->extendsTemplate('frontend/plugins/boxalino/index.tpl');
+        } else {
+            $this->View()->extendsTemplate('frontend/plugins/boxalino/index_5_3.tpl');
+        }
         if ($script != null && $this->Config()->get('boxalino_tracking_enabled')) {
             $this->View()->assign('report_script', $script);
         }

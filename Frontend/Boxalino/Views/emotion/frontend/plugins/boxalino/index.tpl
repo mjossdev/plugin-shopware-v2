@@ -13,23 +13,20 @@
 {block name="frontend_index_header_javascript_jquery_lib"}
     {$smarty.block.parent}
     <script>
-        document.asyncReady(function() {
-            $(document).ready(function () {
-
-                $.subscribe('plugin/swProductSlider/onLoadItemsSuccess', function(e,o,r) {
-                    if(r.length === 0) {
-                        if ($(o.$el).closest('.emotion--element').length > 0) {
-                            $(o.$el).closest('.emotion--element').remove();
-                        } else {
-                            $(o.$el).parent().parent().remove();
-                        }
+        $(document).ready(function () {
+            $.subscribe('plugin/swProductSlider/onLoadItemsSuccess', function(e,o,r) {
+                if(r.length === 0) {
+                    if ($(o.$el).closest('.emotion--element').length > 0) {
+                        $(o.$el).closest('.emotion--element').remove();
+                    } else {
+                        $(o.$el).parent().parent().remove();
                     }
-                    var replace = $(o.$el).find('.bx_replace');
-                    if(replace.length > 0) {
-                        $(o.$el).prev('.panel--title.is--underline.product-slider--title').text(replace.text());
-                        replace.remove();
-                    }
-                });
+                }
+                var replace = $(o.$el).find('.bx_replace');
+                if(replace.length > 0) {
+                    $(o.$el).prev('.panel--title.is--underline.product-slider--title').text(replace.text());
+                    replace.remove();
+                }
             });
         });
     </script>
