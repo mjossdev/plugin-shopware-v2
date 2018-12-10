@@ -476,7 +476,7 @@ if (currentFacet == expertFieldName) {
                 jQuery('.cpo-finder-button-container').append(backButton);
             }
             var visualisation = facets.getFacetExtraInfo(currentFacet, 'visualisation');
-            if(visualisation != 'radio'){
+            if(visualisation != 'radio' || combinedQuestions != null){
                 jQuery('.cpo-finder-button-container').append(resultsButton);
             }
             jQuery('.cpo-finder-button-container').append(skipButton);
