@@ -960,9 +960,8 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
      * @param Enlight_Event_EventArgs $arguments
      * @return bool
      */
-    public function search(Enlight_Event_EventArgs $arguments) {
-
-
+    public function search(Enlight_Event_EventArgs $arguments)
+    {
         if($_REQUEST['dev_bx_debug'] == 'true'){
             $start = microtime(true);
             $this->Helper()->addNotification("Search start: " . $start);

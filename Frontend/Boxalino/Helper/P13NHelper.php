@@ -1266,9 +1266,9 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
      * @return mixed
      */
     public function getTotalHitCount($type = "product", $choiceId = '') {
-
+        $count = array_search($type, self::$choiceContexts[$this->currentSearchChoice]);
         $choiceId = $choiceId == '' ? $this->currentSearchChoice : $choiceId;
-        return $this->getResponse()->getTotalHitCount($choiceId);
+        return $this->getResponse()->getTotalHitCount($choiceId, true, $count);
     }
 
     /**
