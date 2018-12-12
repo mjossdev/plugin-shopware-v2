@@ -556,8 +556,10 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             $this->Controller()->Response()->setHeader('Content-type', 'application/json', true);
         } else {
             if ($listingCount) {
+                $this->Controller()->Front()->Plugins()->ViewRenderer()->setNoRender();
                 $this->Controller()->Response()->setBody('{"totalCount":' . $this->Helper()->getTotalHitCount() . '}');
-                return true;
+                $this->Controller()->Response()->setHeader('Content-type', 'application/json', true);
+                return false;
             }
             $articles = $this->BxData()->getLocalArticles($this->Helper()->getHitFieldValues('products_ordernumber'));
             $viewData['sArticles'] = $articles;
@@ -958,9 +960,8 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
      * @param Enlight_Event_EventArgs $arguments
      * @return bool
      */
-    public function search(Enlight_Event_EventArgs $arguments) {
-
-
+    public function search(Enlight_Event_EventArgs $arguments)
+    {
         if($_REQUEST['dev_bx_debug'] == 'true'){
             $start = microtime(true);
             $this->Helper()->addNotification("Search start: " . $start);
@@ -1771,6 +1772,11 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             $values[] = $this->createTreeItem($categories, $item, $selectedCategoryId, $showCount, $bxFacets);
         }
 
+        if(empty($values))
+        {
+            return array();
+        }
+
         return new TreeFacetResult(
             $facet->getName(),
             $categoryFieldName,
@@ -1997,7 +2003,12 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                     $categories = $this->get('shopware_storefront.category_service')->getList($ids, $context);
                     $treeResult = $this->generateTreeResult($facet, $selectedCategoryId, $categories, $label, $bxFacets, $categoryFieldName);
 
-                    $filters[] = $treeResult;
+                    if(empty($treeResult))
+                    {
+                        unset($facets['categories']);
+                    } else {
+                        $filters[] = $treeResult;
+                    }
 
                     $this->facetOptions[$label] = [
                         'fieldName' => $fieldName,
