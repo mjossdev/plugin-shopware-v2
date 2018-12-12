@@ -5,7 +5,7 @@ lang  = '{$Data.locale}',
     max_score = {$Data.max_score},
 highlighted = {$Data.highlighted},
 selectedValues = {};
-var alertString = "'" + {s namespace="boxalino/intelligence" name="productfinder/alertString" default="Bitte beide Fragen beantworten"}{/s} + "'";
+var alertString = "{s namespace="boxalino/intelligence" name="productfinder/alertString" default="Bitte beide Fragen beantworten"}{/s}";
 facets.init(json);
 
 // Get the current facet
