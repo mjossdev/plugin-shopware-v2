@@ -139,12 +139,20 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
       }
       $rowParams = explode('&', substr ($address,strpos($address, '?')+1, strlen($address)));
       foreach ($rowParams as $index => $param){
+          $acceptsArray=false;
           $keyValue = explode("=", $param);
+          if(strpos($param,'[]'))
+          {
+              $acceptsArray = true;
+          }
           $keyValue = str_replace('[]', '', $keyValue);
           if(!isset($params[$keyValue[0]])) {
             $params[$keyValue[0]] = array();
           }
-          $params[$keyValue[0]][] = urldecode($keyValue[1]);
+          if($acceptsArray)
+          {
+              $params[$keyValue[0]][] = urldecode($keyValue[1]);
+          }
       }
       return $params;
     }

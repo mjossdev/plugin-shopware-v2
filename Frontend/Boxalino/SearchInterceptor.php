@@ -821,11 +821,61 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
     }
 
     /**
+     * Processing narrative request;
+     * If finder, a divided logic to be applied
+     *
+     * @param $choiceId
+     * @param null $additionalChoiceId
+     * @param Enlight_Event_EventArgs $arguments
+     * @return bool
+     */
+    public function processNarrativeRequest($choiceId, $additionalChoiceId = null, Enlight_Event_EventArgs $arguments)
+    {
+        if($choiceId === "productfinder")
+        {
+            return $this->processCPOFinderRequest($choiceId, $additionalChoiceId, $arguments);
+        }
+
+        return $this->processNarrative($choiceId, $additionalChoiceId, $arguments);
+    }
+
+    /**
+     * Used for rendering narrative when it is not rendered via emotion
+     *
+     * @param $choiceId
+     * @param $hitCount
+     * @param Enlight_Event_EventArgs $arguments
+     * @return bool
+     */
+    public function processCPOFinderRequest($choiceId, $hitCount, Enlight_Event_EventArgs $arguments)
+    {
+        try {
+            $data = $this->View()->getAssign();
+            $cpodata['category_id'] = $data['sCategoryContent']['id'];
+            $cpodata['locale'] = substr(Shopware()->Shop()->getLocale()->toString(), 0, 2);
+            $cpodata['widget_type'] = 2;
+            $cpodata['choice_id_productfinder'] = $choiceId;
+            $cpodata['cpo_finder_hitcount'] = $hitCount;
+            $cpodata['cpo_finder_link'] = $cpodata['category_id'];
+            $cpodata['cpo_is_narrative'] = true;
+            $data = $this->CPOFinder($cpodata);
+            $this->View()->addTemplateDir($this->Bootstrap()->Path() . 'Views/emotion/');
+            $this->View()->extendsTemplate("frontend/plugins/boxalino/product_finder/main.tpl");
+            $this->View()->assign('data', $data);
+
+            return true;
+        }  catch (\Exception $e) {
+            var_dump($e->getMessage());
+            exit;
+        }
+    }
+
+    /**
      * catching a narrative request
      * checking for the choice id and for the additional choice ids to render the requested narrative
      *
      */
-    public function processNarrativeRequest($choiceId, $additionalChoiceId = null, Enlight_Event_EventArgs $arguments)
+    public function processNarrative($choiceId, $additionalChoiceId = null, Enlight_Event_EventArgs $arguments)
     {
         try {
             $data = $this->View()->getAssign();

@@ -196,6 +196,8 @@
         var skipButton = '<button id="cpo-finder-skip"  type="button" name="backButton">{s namespace='boxalino/intelligence' name='productfinder/skip'}skip{/s}</button>';
         var showProductsButton = '<button id="cpo-finder-show-products" style="">{s namespace='boxalino/intelligence' name='productfinder/showresultsuntil'}Show results until %%CurrentScore%% %{/s}</button>';
 
-        {include file="frontend/plugins/boxalino/product_finder/product_finder_js.tpl" Data = $Data}
+        {if !$Data.cpo_is_narrative}
+            {include file="frontend/plugins/boxalino/product_finder/product_finder_js.tpl" Data = $Data}
+        {/if}
     </script>
 {/block}

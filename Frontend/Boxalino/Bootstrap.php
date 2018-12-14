@@ -107,13 +107,13 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
     {
         $service = $this->get('shopware_attribute.crud_service');
         $service->update('s_categories_attributes', 'narrative_choice', 'string', [
-            'label' => 'Narrative Choice',
+            'label' => 'Boxalino Widget Choice',
             'displayInBackend' => true,
             'position' => 400,
         ], null, true);
 
         $service->update('s_categories_attributes', 'narrative_additional_choice', 'string', [
-            'label' => 'Narrative Additional Choice',
+            'label' => 'Boxalino Additional Choice Data (additional choices for narrative, hit count for productfinder)',
             'displayInBackend' => true,
             'position' => 410,
         ], null, true);
