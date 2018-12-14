@@ -1,6 +1,6 @@
 {*
  * main class for displaying product-finder without the use of emotion
- * @see SearchInterceptor::processNarrativeRequest()
+ * @see SearchInterceptor::processCPOFinderRequest()
 *}
 {extends file='parent:frontend/listing/index.tpl'}
 {block name='frontend_index_content_left'}{/block}
