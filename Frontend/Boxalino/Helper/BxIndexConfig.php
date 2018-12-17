@@ -303,6 +303,32 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxIndexConfig{
     }
 
     /**
+     * Temporary store path for the exported archive to the boxalino DI
+     *
+     * @return mixed
+     * @throws Exception
+     */
+    public function getExportTemporaryArchivePath($account)
+    {
+        $config = $this->getAccountConfig($account);
+        return empty($config['export_local_tmp']) ? null : $config['export_local_tmp'];
+    }
+
+    /**
+     * Exporter timeout for the callApi
+     *
+     * @param $account
+     * @return null|void
+     * @throws Exception
+     */
+    public function getExporterTimeout($account)
+    {
+        $config = $this->getAccountConfig($account);
+        return empty($config['export_timeout']) ? null : $config['export_timeout'];
+    }
+
+
+    /**
      * @param $account
      * @param $allProperties
      * @param array $requiredProperties

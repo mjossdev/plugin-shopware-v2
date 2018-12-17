@@ -151,7 +151,9 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
                     }
                     $this->log->info('BxIndexLog: pushing to DI for account: ' . $account);
                     try {
-                        $this->bxData->pushData();
+                        $this->bxData->pushData($this->_config->getExportTemporaryArchivePath($account), $this->getTimeoutForExporter($account));
+                    } catch(RuntimeException $e){
+                        $this->log->warning($e->getMessage());
                     } catch (\Throwable $e){
                         $this->log->info("BxIndexLog: pushData failed with exception for : " . $e->getMessage());
                     }
@@ -165,6 +167,24 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
         $this->log->info("BxIndexLog: End of boxalino $type data sync ");
         $this->updateExportTable();
         return var_export($data, true);
+    }
+
+    /**
+     * Get timeout for exporter
+     * @return bool|int
+     */
+    protected function getTimeoutForExporter($account)
+    {
+        if($this->delta)
+        {
+            return 120;
+        }
+        $customTimeout = $this->_config->getExporterTimeout($account);
+        if($customTimeout)
+        {
+            return (int)$customTimeout;
+        }
+        return 3000;
     }
 
     /**
