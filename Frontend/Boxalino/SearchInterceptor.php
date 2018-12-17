@@ -855,7 +855,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             $cpodata['locale'] = substr(Shopware()->Shop()->getLocale()->toString(), 0, 2);
             $cpodata['widget_type'] = 2;
             $cpodata['choice_id_productfinder'] = $choiceId;
-            $cpodata['cpo_finder_hitcount'] = $hitCount;
+            $cpodata['cpo_finder_page_size'] = $hitCount;
             $cpodata['cpo_finder_link'] = $cpodata['category_id'];
             $cpodata['cpo_is_narrative'] = true;
             $data = $this->CPOFinder($cpodata);
