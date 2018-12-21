@@ -472,7 +472,7 @@ if (currentFacet == expertFieldName) {
             })
 
             // create other buttons
-            if (questions[0] != currentFacet && combinedQuestions != null) {
+            if (questions[0] != currentFacet) {
                 jQuery('.cpo-finder-button-container').append(backButton);
             }
             var visualisation = facets.getFacetExtraInfo(currentFacet, 'visualisation');
