@@ -35,7 +35,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
     }
 
     public function getVersion() {
-        return '1.6.20';
+        return '1.6.21';
     }
 
     public function getInfo() {
@@ -43,7 +43,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
             'version' => $this->getVersion(),
             'label' => $this->getLabel(),
             'author' => 'Boxalino AG',
-            'copyright' => 'Copyright © 2014, Boxalino AG',
+            'copyright' => 'Copyright © 2018, Boxalino AG',
             'description' => 'Integrates Boxalino search & recommendation into Shopware.',
             'support' => 'support@boxalino.com',
             'link' => 'http://www.boxalino.com/',
@@ -210,14 +210,14 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
     }
 
     private function updateCronExport() {
-        Shopware()->Db()->query('TRUNCATE `cron_exports`');
-        Shopware()->Db()->query('INSERT INTO `cron_exports` values(NOW())');
+        Shopware()->Db()->query('TRUNCATE `boxalino_cronexports`');
+        Shopware()->Db()->query('INSERT INTO `boxalino_cronexports` values(NOW())');
     }
 
     private function canRunDelta() {
         $db = Shopware()->Db();
         $sql = $db->select()
-            ->from('cron_exports', array('export_date'))
+            ->from('boxalino_cronexports', array('export_date'))
             ->limit(1);
         $stmt = $db->query($sql);
         if ($stmt->rowCount()) {
@@ -249,11 +249,11 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
     private function createDatabase() {
         $db = Shopware()->Db();
         $db->query(
-            'CREATE TABLE IF NOT EXISTS ' . $db->quoteIdentifier('exports') .
+            'CREATE TABLE IF NOT EXISTS ' . $db->quoteIdentifier('boxalino_exports') .
             ' ( ' . $db->quoteIdentifier('export_date') . ' DATETIME)'
         );
         $db->query(
-            'CREATE TABLE IF NOT EXISTS ' . $db->quoteIdentifier('cron_exports') .
+            'CREATE TABLE IF NOT EXISTS ' . $db->quoteIdentifier('boxalino_cronexports') .
             ' ( ' . $db->quoteIdentifier('export_date') . ' DATETIME)'
         );
     }
@@ -261,10 +261,10 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
     private function removeDatabase() {
         $db = Shopware()->Db();
         $db->query(
-            'DROP TABLE IF EXISTS ' . $db->quoteIdentifier('exports')
+            'DROP TABLE IF EXISTS ' . $db->quoteIdentifier('boxalino_exports')
         );
         $db->query(
-            'DROP TABLE IF EXISTS ' . $db->quoteIdentifier('cron_exports')
+            'DROP TABLE IF EXISTS ' . $db->quoteIdentifier('boxalino_cronexports')
         );
     }
 
@@ -833,7 +833,9 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
 
     public function onSearch(Enlight_Event_EventArgs $arguments) {
         try {
-            return $this->searchInterceptor->search($arguments);
+            if ($this->Config()->get('boxalino_search_enabled')) {
+                return $this->searchInterceptor->search($arguments);
+            }
         } catch (\Exception $e) {
             $this->logException($e, __FUNCTION__, $arguments->getSubject()->Request()->getRequestUri());
         }

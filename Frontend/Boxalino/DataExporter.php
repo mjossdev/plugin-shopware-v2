@@ -1529,7 +1529,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
             $this->deltaLast = date("Y-m-d H:i:s", strtotime("-30 minutes"));
             $db = $this->db;
             $sql = $db->select()
-                ->from('exports', array('export_date'))
+                ->from('boxalino_exports', array('export_date'))
                 ->limit(1);
             $stmt = $db->query($sql);
             if ($stmt->rowCount() > 0) {
@@ -1554,8 +1554,8 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
      *
      */
     private function updateExportTable() {
-        $this->db->query('TRUNCATE `exports`');
-        $this->db->query('INSERT INTO `exports` values(NOW())');
+        $this->db->query('TRUNCATE `boxalino_exports`');
+        $this->db->query('INSERT INTO `boxalino_exports` values(NOW())');
     }
 
     /**
