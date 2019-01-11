@@ -71,12 +71,12 @@ if (selects) {
             // if there is additional info, use that
             facetExtraInfo = facets.getFacetExtraInfo(key, 'facetValueExtraInfo');
             if (facetExtraInfo && facetExtraInfo[selects[key]]) {
-                jQuery('.cpo-finder-right-criteria').append('<a href="' + bxNewUrl + '" class="' + key + '"><p id="' + selects[key] + '" style="margin: 0;">- ' + facetExtraInfo[selects[key]]['additional_text'] + '</p></a>');
+                jQuery('.cpo-finder-right-criteria').append('<a href="' + bxNewUrl + '" class="' + key + ' bx-finder-filter-selected"><p id="' + selects[key] + '" style="margin: 0;">- ' + facetExtraInfo[selects[key]]['additional_text'] + '</p></a>');
             }
             // otherwise use value from DI
             else {
                 selects[key].forEach(function(key) {
-                    jQuery('.cpo-finder-right-criteria').append('<a href="' + bxNewUrl + '" class="' + key + '"><p id="' + key + '" style="margin: 0;">- ' + key + '</p></a>');
+                    jQuery('.cpo-finder-right-criteria').append('<a href="' + bxNewUrl + '" class="' + key + ' bx-finder-filter-selected"><p id="' + key + '" style="margin: 0;">- ' + key + '</p></a>');
                 });
             }
         }
