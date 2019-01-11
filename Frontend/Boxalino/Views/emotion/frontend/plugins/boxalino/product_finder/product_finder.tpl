@@ -126,7 +126,7 @@
             '</li>' +
             '</ul>' +
             '<div class="cpo-finder-expert-button">' +
-            '<button type="button" name="button">ausw&auml;hlen</button>' +
+            '<button type="button" name="button">{s namespace='boxalino/intelligence' name='productfinder/choose'}choose{/s}</button>' +
             '</div>' +
             '</div>';
 
