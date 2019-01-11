@@ -67,7 +67,7 @@ if (selects) {
             bxNewUrl = bxNewUrl.replace(prefix, '');
             // facet Label
             facetLabel = facets.getFacetLabel(key, lang);
-            jQuery('.cpo-finder-right-criteria').append('<b>' + facetLabel + '</b><br>');
+            jQuery('.cpo-finder-right-criteria').append('<b class="bx-finder-filter-label">' + facetLabel + '</b><br>');
             // if there is additional info, use that
             facetExtraInfo = facets.getFacetExtraInfo(key, 'facetValueExtraInfo');
             if (facetExtraInfo && facetExtraInfo[selects[key]]) {
