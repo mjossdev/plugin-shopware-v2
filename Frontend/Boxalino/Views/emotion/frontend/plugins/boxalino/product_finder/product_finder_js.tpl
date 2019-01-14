@@ -141,6 +141,26 @@ if (currentFacet == expertFieldName) {
         }
 
         createFieldListener(value);
+
+        var displaySize = facets.getFacetExtraInfo(currentFacet, 'enumDisplayMaxSize');
+        if (displaySize && displaySize < facetValues.length) {
+            jQuery('.cpo-finder-center-show-more-less').append(additionalButton);
+            jQuery('.cpo-finder-center-show-more-less').append(fewerButton);
+        }
+
+        jQuery('.cpo-finder-additional').on('click', function() {
+            jQuery('.cpo-finder-fewer').show()
+            jQuery('.cpo-finder-additional').hide()
+        })
+
+        jQuery('.cpo-finder-fewer').on('click', function() {
+            jQuery('.cpo-finder-additional').show()
+            jQuery('.cpo-finder-fewer').hide()
+        })
+
+        if (displaySize) {
+            $('.cpo-finder-answer:gt(' + (displaySize - 1) + ')').hide();
+        }
     });
 
     // get dataOwnerHeader

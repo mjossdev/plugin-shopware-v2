@@ -79,12 +79,12 @@ class Shopware_Plugins_Frontend_Boxalino_FrontendInterceptor
                         $min = $this->Config()->get('boxalino_detail_blog_recommendation_min');
                         $max = $this->Config()->get('boxalino_detail_blog_recommendation_max');
                         $id = trim(strip_tags(htmlspecialchars_decode(stripslashes($this->Request()->sArticle))));
-                        $relatedBlogs = $this->BxHelper()->getRelatedBlogs($id);
+                        $relatedBlogs = $this->BxData()->getRelatedBlogs($id);
                         $contextParams = ["bx_{$choiceId}_$id" => $relatedBlogs];
                         $this->Helper()->getRecommendation($choiceId, $max, $min, 0, $id, 'product', false, array(), true, $contextParams);
                         $fields = ['products_blog_title', 'products_blog_id', 'products_blog_category_id', 'products_blog_short_description', 'products_blog_media_id'];
                         $blogs = $this->Helper()->getRecommendationHitFieldValues($choiceId, $fields);
-                        $blogArticles = $this->BxHelper()->transformBlog($blogs);
+                        $blogArticles = $this->BxData()->transformBlog($blogs);
                         $this->View()->extendsTemplate('frontend/plugins/boxalino/detail/content.tpl');
                         $this->View()->extendsTemplate('frontend/plugins/boxalino/_includes/product_slider_item.tpl');
                         $this->View()->assign('sBlogArticles', $blogArticles);
