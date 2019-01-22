@@ -1,20 +1,23 @@
 <?php
-class Shopware_Plugins_Frontend_Boxalino_DataExporter {
 
+/**
+ * Class Shopware_Plugins_Frontend_Boxalino_DataExporter
+ * Data exporter
+ */
+class Shopware_Plugins_Frontend_Boxalino_DataExporter
+{
     protected $request;
     protected $manager;
 
     private static $instance = null;
 
     protected $propertyDescriptions = array();
-
     protected $dirPath;
     protected $db;
     protected $log;
     protected $delta;
     protected $deltaLast;
     protected $fileHandle;
-
     protected $deltaIds = array();
     protected $_config;
     protected $bxData;
@@ -59,32 +62,47 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
      * @param bool $delta
      * @return null|Shopware_Plugins_Frontend_Boxalino_DataExporter
      */
-    public static function instance($dir, $delta = false) {
-
+    public static function instance($dir, $delta = false)
+    {
         if (self::$instance == null){
             self::$instance = new Shopware_Plugins_Frontend_Boxalino_DataExporter($dir, $delta);
         }
+
         return self::$instance;
     }
 
     /**
      * run the exporter
-     *
      * iterates over all shops and exports them according to their settings
+     * the exporter will run only if there is not another exported in progress
      *
      * @return array
      */
     public function run()
     {
-        set_time_limit(7200);
         $data = array();
         $type = $this->delta ? 'delta' : 'full';
         try {
+            if(!$this->canStartExport())
+            {
+                $message = "BxIndexLog: Cancelled boxalino {$type} data sync. A different process is currently running.";
+                $this->log->info($message);
+                return var_export(array($message), true);
+            }
+
             $this->log->info("BxIndexLog: Start of boxalino {$type} data sync.");
+            if($this->delta)
+            {
+                $this->getLastDelta();
+                $this->log->info("BxIndexLog: Exporting products updated since {$this->deltaLast} data sync.");
+            }
+
+            $this->updateExportTable(true);
             $this->_config = new Shopware_Plugins_Frontend_Boxalino_Helper_BxIndexConfig();
 
             $this->log->info("BxIndexLog: Exporting for accounts: " . implode(', ', $this->_config->getAccounts()));
             foreach ($this->_config->getAccounts() as $account) {
+                set_time_limit(10500);
 
                 $this->log->info("BxIndexLog: Exporting store ID : {$this->_config->getAccountStoreId($account)}");
                 $this->log->info("BxIndexLog: Initialize files on account: {$account}");
@@ -163,6 +181,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
         } catch(\Throwable $e) {
             error_log("BxIndexLog: failed with exception: " .$e->getMessage());
             $this->log->info("BxIndexLog: failed with exception: " . $e->getMessage());
+            $this->updateExportTable();
         }
         $this->log->info("BxIndexLog: End of boxalino $type data sync ");
         $this->updateExportTable();
@@ -465,29 +484,6 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
         $mapped_option_values = array();
         $option_values = array();
         $languages = $this->_config->getAccountLanguages($account);
-        $log = true;
-//        Exclude options from shop which are not used
-//        $sql = $db->select()->from(array('f_o' => 's_filter_options'))
-//            ->join(array('f_v' => 's_filter_values'), 'f_v.optionID = f_o.id', array())
-//            ->join(array('f_a' => 's_filter_articles'), 'f_v.id = f_a.valueID', array())
-//            ->join(array('a_d' => 's_articles_details'), 'a_d.articleID = f_a.articleID', array('product_id'=>'a_d.id'));
-//        $start = microtime(true);
-//        $stmt = $db->query($sql);
-//        $facets = [];
-//        while($row = $stmt->fetch()){
-//            if($log) {
-//                $end = (microtime(true) -$start) * 1000;
-//                $this->log->info("Facets option exclude query time: " . $end . "ms, memory: " . memory_get_usage(true));
-//                $log = false;
-//            }
-//            if(isset($this->shopProductIds[$row['product_id']])){
-//                if(!isset($facets[$row['id']])){
-//                    $facets[$row['id']] = array('id'=> $row['id']);
-//                }
-//            }
-//        }
-//        $end = (microtime(true) -$start) * 1000;
-//        $this->log->info("Facets option exclude data process time: " . $end . "ms, memory: " . memory_get_usage(true));
         $sql = $db->select()->from(array('f_o' => 's_filter_options'));
         $facets = $db->fetchAll($sql);
         foreach ($facets as $facet) {
@@ -913,26 +909,6 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
         $files->savepartToCsv('product_brands.csv', $data);
         $attributeSourceKey = $this->bxData->addCSVItemFile($files->getPath('product_brands.csv'), 'id');
         $this->bxData->addSourceStringField($attributeSourceKey, "brand", "brand");
-    }
-
-    /**
-     * @param $name
-     * @return mixed
-     */
-    private function getTableNameForTranslationColumn($name) {
-
-        $tables = ['s_articles', 's_articles_attributes'];
-        $db = $this->db;
-        $db_name = $db->getConfig()['dbname'];
-        $sql = $db->select()
-            ->from(array('col' => 'information_schema.columns'), array('COLUMN_NAME', 'TABLE_NAME'))
-            ->where('col.TABLE_SCHEMA = ?', $db_name)
-            ->where('col.COLUMN_NAME = ?', $name)
-            ->where('col.TABLE_NAME IN(?)', $tables)
-            ->where('col.TABLE_NAME <> ?', 's_articles_translations');
-
-        $stmt = $db->query($sql);
-        return $stmt->fetch()['TABLE_NAME'];
     }
 
     /**
@@ -1529,13 +1505,10 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
             $this->deltaLast = date("Y-m-d H:i:s", strtotime("-30 minutes"));
             $db = $this->db;
             $sql = $db->select()
-                ->from('boxalino_exports', array('export_date'))
+                ->from('exports', array('export_date'))
+                ->order('export_date', "DESC")
                 ->limit(1);
-            $stmt = $db->query($sql);
-            if ($stmt->rowCount() > 0) {
-                $row = $stmt->fetch();
-                $this->deltaLast = $row['export_date'];
-            }
+            $this->deltaLast = $db->fetchOne($sql);
         }
         return $this->deltaLast;
     }
@@ -1551,11 +1524,33 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter {
     }
 
     /**
-     *
+     * The export table is to be updated based on the flow (start or failed)
      */
-    private function updateExportTable() {
-        $this->db->query('TRUNCATE `boxalino_exports`');
+    private function updateExportTable($start = false) {
+        if ($start)
+        {
+            $this->db->query('TRUNCATE `boxalino_exports`');
+        }
+
         $this->db->query('INSERT INTO `boxalino_exports` values(NOW())');
+    }
+
+    /**
+     * If there is an actively running process
+     * For a prior successfull export, there must be 2 logged in dates - start and end
+     * If there is only 1 - the prior export crashed
+     */
+    protected function canStartExport()
+    {
+        $existingRecordsSql =  $this->db->select()
+            ->from('boxalino_exports', array('export_date'));
+
+        if(count($this->db->fetchCol($existingRecordsSql)) == 1)
+        {
+            return false;
+        }
+
+        return true;
     }
 
     /**
