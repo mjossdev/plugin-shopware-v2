@@ -51,7 +51,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
         $this->delta = $delta;
         $this->dirPath = $dirPath;
         $this->db = Shopware()->Db();
-        $this->log = Shopware()->PluginLogger();
+        $this->log = Shopware()->Container()->get('pluginlogger');
         $libPath = __DIR__ . '/lib';
         require_once($libPath . '/BxClient.php');
         \com\boxalino\bxclient\v1\BxClient::LOAD_CLASSES($libPath);

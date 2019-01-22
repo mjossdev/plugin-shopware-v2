@@ -21,7 +21,7 @@ class Shopware_Plugins_Frontend_Boxalino_Benchmark {
     }
 
     public function __construct() {
-        $this->logger = Shopware()->PluginLogger();
+        $this->logger = Shopware()->Container()->get('pluginlogger');
     }
 
     public function startRecording($context) {

@@ -234,7 +234,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
     private function runBoxalinoExportCronJob($delta = false) {
 
         if($delta && !$this->canRunDelta()) {
-            Shopware()->PluginLogger()->info("BxLog: Delta Export Cron is not allowed to run yet.");
+            Shopware()->Container()->get('pluginlogger')->info("BxLog: Delta Export Cron is not allowed to run yet.");
             return true;
         }
         $tmpPath = Shopware()->DocPath('media_temp_boxalinoexport');
@@ -646,13 +646,13 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
 
         if ($args['element']['component']['template'] == "boxalino_product_finder") {
             $this->disableHttpCache();
-            Shopware()->PluginLogger()->info("bootstrap HTTP_REFERER: " . json_encode($_SERVER['HTTP_REFERER']));
+            Shopware()->Container()->get('pluginlogger')->info("bootstrap HTTP_REFERER: " . json_encode($_SERVER['HTTP_REFERER']));
             $data['category_id'] = $this->getEmotionCategoryId($args['element']['emotionId']);
             $locale = substr(Shopware()->Shop()->getLocale()->toString(), 0, 2);
             $data['locale'] = $locale;
             $data = array_merge($data, $this->onCPOFinder($data));
 
-            Shopware()->PluginLogger()->info("=============================================================");
+            Shopware()->Container()->get('pluginlogger')->info("=============================================================");
             return $data;
         }
 
@@ -1082,7 +1082,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
      * @param $exception
      */
     public function logException(\Exception $exception, $context, $uri = null) {
-        Shopware()->PluginLogger()->error("BxExceptionLog: Exception on \"{$context}\" [uri: {$uri} line: {$exception->getLine()}, file: {$exception->getFile()}] with message : " . $exception->getMessage() . ', stack trace: ' . $exception->getTraceAsString());
+        Shopware()->Container()->get('pluginlogger')->error("BxExceptionLog: Exception on \"{$context}\" [uri: {$uri} line: {$exception->getLine()}, file: {$exception->getFile()}] with message : " . $exception->getMessage() . ', stack trace: ' . $exception->getTraceAsString());
     }
 
     /**
@@ -1101,7 +1101,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
                     'controller' => 'BoxalinoConfig', 'action' => 'index', 'parent' => $parent));
             }
         } catch (Exception $e) {
-            Shopware()->PluginLogger()->error('can\'t create menu entry: ' . $e->getMessage());
+            Shopware()->Container()->get('pluginlogger')->error('can\'t create menu entry: ' . $e->getMessage());
             throw new Exception('can\'t create menu entry: ' . $e->getMessage());
         }
     }

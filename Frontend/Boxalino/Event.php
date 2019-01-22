@@ -8,7 +8,7 @@ class Shopware_Plugins_Frontend_Boxalino_Event
     protected $referer;
     public function __construct($event, $params) {
         if (empty($event)) {
-            Shopware()->PluginLogger()->debug("event must be set, received: '$event', event could not be tracked");
+            Shopware()->Container()->get('pluginlogger')->debug("event must be set, received: '$event', event could not be tracked");
             return;
         }
         if(!array_key_exists('_a', $params)) {
