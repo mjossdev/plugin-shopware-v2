@@ -1,5 +1,4 @@
 <?php
-
 namespace com\boxalino\bxclient\v1;
 
 class BxData
@@ -42,20 +41,24 @@ class BxData
         $this->delimiter = $delimiter;
     }
 
-    public function addMainXmlItemFile($filePath, $itemIdColumn, $xPath='', $encoding = 'UTF-8', $sourceId = 'item_vals', $container = 'products', $validate=true) {
+    public function addMainXmlItemFile($filePath, $itemIdColumn, $xPath='', $encoding = 'UTF-8', $sourceId = 'item_vals', $container = 'products', $validate=true)
+    {
         $sourceKey = $this->addXMLItemFile($filePath, $itemIdColumn, $xPath, $encoding, $sourceId, $container, $validate);
         $this->addSourceIdField($sourceKey, $itemIdColumn, 'XML', null, $validate) ;
         $this->addSourceStringField($sourceKey, "bx_item_id", $itemIdColumn, null, $validate) ;
         return $sourceKey;
     }
-    public function addMainCSVItemFile($filePath, $itemIdColumn, $encoding = 'UTF-8', $delimiter = ',', $enclosure = "\"", $escape = "\\\\", $lineSeparator = "\\n", $sourceId = 'item_vals', $container = 'products', $validate=true) {
+
+    public function addMainCSVItemFile($filePath, $itemIdColumn, $encoding = 'UTF-8', $delimiter = ',', $enclosure = "\"", $escape = "\\\\", $lineSeparator = "\\n", $sourceId = 'item_vals', $container = 'products', $validate=true)
+    {
         $sourceKey = $this->addCSVItemFile($filePath, $itemIdColumn, $encoding, $delimiter, $enclosure, $escape, $lineSeparator, $sourceId, $container, $validate);
         $this->addSourceIdField($sourceKey, $itemIdColumn, 'CSV', null, $validate) ;
         $this->addSourceStringField($sourceKey, "bx_item_id", $itemIdColumn, null, $validate) ;
         return $sourceKey;
     }
 
-    public function addMainCSVCustomerFile($filePath, $itemIdColumn, $encoding = 'UTF-8', $delimiter = ',', $enclosure = "\&", $escape = "\\\\", $lineSeparator = "\\n", $sourceId = 'customers', $container = 'customers', $validate=true) {
+    public function addMainCSVCustomerFile($filePath, $itemIdColumn, $encoding = 'UTF-8', $delimiter = ',', $enclosure = "\&", $escape = "\\\\", $lineSeparator = "\\n", $sourceId = 'customers', $container = 'customers', $validate=true)
+    {
         $sourceKey = $this->addCSVItemFile($filePath, $itemIdColumn, $encoding, $delimiter, $enclosure, $escape, $lineSeparator, $sourceId, $container, $validate);
         $this->addSourceIdField($sourceKey, $itemIdColumn, 'CSV', null, $validate) ;
         $this->addSourceStringField($sourceKey, "bx_customer_id", $itemIdColumn, null, $validate) ;
@@ -98,6 +101,26 @@ class BxData
         return $this->addSourceFile($filePath, $sourceId, $container, 'resource', 'CSV', $params, $validate);
     }
 
+    public function setCSVTransactionFile($filePath, $orderIdColumn, $productIdColumn, $customerIdColumn, $orderDateIdColumn, $totalOrderValueColumn, $productListPriceColumn, $productDiscountedPriceColumn, $currencyColumn, $emailColumn, $productIdField='bx_item_id', $customerIdField='bx_customer_id', $productsContainer = 'products', $customersContainer = 'customers', $format = 'CSV', $encoding = 'UTF-8', $delimiter = ',', $enclosure = '"', $escape = "\\\\", $lineSeparator = "\\n",$container = 'transactions', $sourceId = 'transactions', $validate=true)
+    {
+        $params = array('encoding'=>$encoding, 'delimiter'=>$delimiter, 'enclosure'=>$enclosure, 'escape'=>$escape, 'lineSeparator'=>$lineSeparator);
+
+        $params['file'] = $this->getFileNameFromPath($filePath);
+        $params['orderIdColumn'] = $orderIdColumn;
+        $params['productIdColumn'] = $productIdColumn;
+        $params['product_property_id'] = $productIdField;
+        $params['customerIdColumn'] = $customerIdColumn;
+        $params['customer_property_id'] = $customerIdField;
+        $params['productListPriceColumn'] = $productListPriceColumn;
+        $params['productDiscountedPriceColumn'] = $productDiscountedPriceColumn;
+        $params['totalOrderValueColumn'] = $totalOrderValueColumn;
+        $params['orderReceptionDateColumn'] = $orderDateIdColumn;
+        $params['currencyColumn'] = $currencyColumn;
+        $params['emailColumn'] = $emailColumn;
+
+        return $this->addSourceFile($filePath, $sourceId, $container, 'transactions', $format, $params, $validate);
+    }
+
     /**
      * Adding an additional table file with the content as it has it
      *
@@ -111,24 +134,6 @@ class BxData
         $sourceId = $this->getSourceIdFromFileNameFromPath($filePath, $container, $maxLength, true);
 
         return $this->addSourceFile($filePath, $sourceId, $container, 'resource', 'CSV', $params);
-    }
-
-    public function setCSVTransactionFile($filePath, $orderIdColumn, $productIdColumn, $customerIdColumn, $orderDateIdColumn, $totalOrderValueColumn, $productListPriceColumn, $productDiscountedPriceColumn, $productIdField='bx_item_id', $customerIdField='bx_customer_id', $productsContainer = 'products', $customersContainer = 'customers', $format = 'CSV', $encoding = 'UTF-8', $delimiter = ',', $enclosure = '"', $escape = "\\\\", $lineSeparator = "\\n",$container = 'transactions', $sourceId = 'transactions', $validate=true) {
-
-        $params = array('encoding'=>$encoding, 'delimiter'=>$delimiter, 'enclosure'=>$enclosure, 'escape'=>$escape, 'lineSeparator'=>$lineSeparator);
-
-        $params['file'] = $this->getFileNameFromPath($filePath);
-        $params['orderIdColumn'] = $orderIdColumn;
-        $params['productIdColumn'] = $productIdColumn;
-        $params['product_property_id'] = $productIdField;
-        $params['customerIdColumn'] = $customerIdColumn;
-        $params['customer_property_id'] = $customerIdField;
-        $params['productListPriceColumn'] = $productListPriceColumn;
-        $params['productDiscountedPriceColumn'] = $productDiscountedPriceColumn;
-        $params['totalOrderValueColumn'] = $totalOrderValueColumn;
-        $params['orderReceptionDateColumn'] = $orderDateIdColumn;
-
-        return $this->addSourceFile($filePath, $sourceId, $container, 'transactions', $format, $params, $validate);
     }
 
     public function addSourceFile($filePath, $sourceId, $container, $type, $format='CSV', $params=array(), $validate=true) {
@@ -176,16 +181,16 @@ class BxData
         }
         return null;
     }
-	
-	private $globalValidate = true;
-	public function setGlobalValidate($globalValidate) {
-		$this->globalValidate = $globalValidate;
-	}
+
+    private $globalValidate = true;
+    public function setGlobalValidate($globalValidate) {
+        $this->globalValidate = $globalValidate;
+    }
 
     public function validateSource($container, $sourceId) {
-		if(!$this->globalValidate) {
-			return;
-		}
+        if(!$this->globalValidate) {
+            return;
+        }
         $source = $this->sources[$container][$sourceId];
         if($source['format'] == 'CSV') {
             if(isset($source['itemIdColumn'])) {
@@ -195,9 +200,9 @@ class BxData
     }
 
     public function validateColumnExistance($container, $sourceId, $col) {
-		if(!$this->globalValidate) {
-			return;
-		}
+        if(!$this->globalValidate) {
+            return;
+        }
         $row = $this->getSourceCSVRow($container, $sourceId, 0);
         if($row !== null && !in_array($col, $row)) {
             throw new \Exception("the source '$sourceId' in the container '$container' declares an column '$col' which is not present in the header row of the provided CSV file: " . implode(',', $row));
@@ -286,6 +291,16 @@ class BxData
         $this->addSourceParameter($sourceKey, "guest_property_id", $parameterValue);
     }
 
+    public function addSourceEmailProperty($sourceKey, $parameterValue)
+    {
+        $this->addSourceParameter($sourceKey, 'emailColumn', $parameterValue);
+    }
+
+    public function addSourceCurrencyProperty($sourceKey, $parameterValue)
+    {
+        $this->addSourceParameter($sourceKey, 'currencyColumn', $parameterValue);
+    }
+
     public function addSourceParameter($sourceKey, $parameterName, $parameterValue) {
         list($container, $sourceId) = $this->decodeSourceKey($sourceKey);
         if(!isset($this->sources[$container][$sourceId])) {
@@ -307,7 +322,8 @@ class BxData
 
     private $ftpSources = array();
     public function setFtpSource($sourceKey, $host="di1.bx-cloud.com", $port=21, $user=null, $password=null, $remoteDir = '/sources/production', $protocol=0, $type=0, $logontype=1,
-                                 $timezoneoffset=0, $pasvMode='MODE_DEFAULT', $maximumMultipeConnections=0, $encodingType='Auto', $bypassProxy=0, $syncBrowsing=0) {
+                                 $timezoneoffset=0, $pasvMode='MODE_DEFAULT', $maximumMultipeConnections=0, $encodingType='Auto', $bypassProxy=0, $syncBrowsing=0)
+    {
 
         if($user==null){
             $user = $this->bxClient->getAccount(false);
@@ -336,7 +352,7 @@ class BxData
         list($container, $sourceId) = $this->decodeSourceKey($sourceKey);
         $this->ftpSources[$sourceId] = $params;
     }
-	
+
     private $httpSources = array();
     public function setHttpSource($sourceKey, $webDirectory, $user=null, $password=null, $header='User-Agent: Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:41.0) Gecko/20100101 Firefox/41.0') {
 
@@ -357,8 +373,8 @@ class BxData
         $this->httpSources[$sourceId] = $params;
     }
 
-    public function getXML() {
-
+    public function getXML()
+    {
         $xml = new \SimpleXMLElement('<root/>');
 
         //languages

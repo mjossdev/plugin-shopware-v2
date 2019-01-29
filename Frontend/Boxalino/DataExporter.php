@@ -1452,6 +1452,11 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
                         $transaction_properties
                     )
                     ->joinLeft(
+                        array('s_user'),
+                        $this->qi('s_order.userId') . ' = ' . $this->qi('s_user.id'),
+                        array('email')
+                    )
+                    ->joinLeft(
                         array('s_order_details'),
                         $this->qi('s_order_details.orderID') . ' = ' . $this->qi('s_order.id'),
                         array()
@@ -1474,6 +1479,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
                     while ($row = $stmt->fetch()) {
                         // @note list price at the time of the order is not stored, only the final price
                         $row['discounted_price'] = $row['price'];
+                        $row['guest_id']="";
                         $data[] = $row;
                         $totalCount++;
                     }
@@ -1493,7 +1499,9 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
             }
             $firstShop = false;
         }
-        $this->bxData->setCSVTransactionFile($files->getPath('transactions.csv'), 'id', 'articledetailsID', 'userID', 'ordertime', 'total_order_value', 'price', 'discounted_price');
+
+        $sourceKey =  $this->bxData->setCSVTransactionFile($files->getPath('transactions.csv'), 'id', 'articledetailsID', 'userID', 'ordertime', 'total_order_value', 'price', 'discounted_price', 'currency', 'email');
+        $this->bxData->addSourceCustomerGuestProperty($sourceKey,'guest_id');
     }
 
 
