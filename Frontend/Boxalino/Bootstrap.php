@@ -35,7 +35,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
     }
 
     public function getVersion() {
-        return '1.6.21';
+        return '1.6.22';
     }
 
     public function getInfo() {
@@ -62,6 +62,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
             $this->registerEvents();
             $this->createConfiguration();
             $this->addNarrativeAttributesOnCategory();
+            $this->addNarrativeAttributesOnDetail();
             $this->applyBackendViewModifications();
             $this->createDatabase();
             $this->registerCronJobs();
@@ -80,6 +81,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
             $this->registerEvents();
             $this->createConfiguration();
             $this->addNarrativeAttributesOnCategory();
+            $this->addNarrativeAttributesOnDetail();
             $this->applyBackendViewModifications();
             $this->createDatabase();
             $this->registerEmotions();
@@ -116,6 +118,25 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
             'label' => 'Boxalino Additional Choice Data (additional choices for narrative, hit count for productfinder)',
             'displayInBackend' => true,
             'position' => 410,
+        ], null, true);
+    }
+
+    public function addNarrativeAttributesOnDetail()
+    {
+        $service = $this->get('shopware_attribute.crud_service');
+        $service->update('s_articles_attributes', 'narrative_choice', 'string', [
+            'label' => 'Boxalino Widget Choice',
+            'displayInBackend' => true,
+            'position' => 400,
+            'custom' => true,
+        ], null, true);
+
+        $service->update('s_articles_attributes', 'narrative_additional_choice', 'string', [
+            'label' => 'Boxalino Additional Choices',
+            'supportText' => 'Additional choices for narrative, divided by comma',
+            'displayInBackend' => true,
+            'position' => 410,
+            'custom' => true,
         ], null, true);
     }
 

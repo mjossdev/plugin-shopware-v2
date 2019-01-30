@@ -1,4 +1,15 @@
 <?php
+/**
+ * Class Shopware_Controllers_Frontend_BxNarrative
+ *
+ * Narratives are constructs designed to provide dynamic content from the boxalino servers
+ * The content is provided by the engines and it is rendered using the templates that they are asking for
+ * A narrative content can be anything: product finder, profiler, notifications, category listing, custom elements based on context/etc
+ *
+ *
+ * Notifications have been designed with the purpose of establishing a context-based communication with the customer
+ * For non-registered users, the notifications appear as global; For registered users - they appear as badges
+ */
 class Shopware_Controllers_Frontend_BxNarrative extends Enlight_Controller_Action
 {
     /**
