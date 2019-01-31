@@ -1,5 +1,5 @@
 {block name="frontend_product_finder_content"}
-    <div class="cpo-finder-wrapper">
+    <div class="cpo-finder-wrapper loaded" style="display:none">
         <div class="cpo-finder-left">
             <div class="cpo-finder-left-content">
             </div>
@@ -199,5 +199,6 @@
         {if !$Data.cpo_is_narrative}
             {include file="frontend/plugins/boxalino/product_finder/product_finder_js.tpl" Data = $Data}
         {/if}
+
     </script>
 {/block}

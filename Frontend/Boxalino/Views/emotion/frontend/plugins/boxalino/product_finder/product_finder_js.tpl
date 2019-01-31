@@ -71,12 +71,12 @@ if (selects) {
             // if there is additional info, use that
             facetExtraInfo = facets.getFacetExtraInfo(key, 'facetValueExtraInfo');
             if (facetExtraInfo && facetExtraInfo[selects[key]]) {
-                jQuery('.cpo-finder-right-criteria').append('<a href="' + bxNewUrl + '" class="' + key + ' bx-finder-filter-selected"><p id="' + selects[key] + '" style="margin: 0;">- ' + facetExtraInfo[selects[key]]['additional_text'] + '</p></a>');
+                jQuery('.cpo-finder-right-criteria').append('<a href="' + bxNewUrl + '" class="' + key + ' bx-finder-filter-selected"><p id="' + selects[key] + '" class="bx-finder-filter-selected-value">- ' + facetExtraInfo[selects[key]]['additional_text'] + '</p></a>');
             }
             // otherwise use value from DI
             else {
                 selects[key].forEach(function(key) {
-                    jQuery('.cpo-finder-right-criteria').append('<a href="' + bxNewUrl + '" class="' + key + ' bx-finder-filter-selected"><p id="' + key + '" style="margin: 0;">- ' + key + '</p></a>');
+                    jQuery('.cpo-finder-right-criteria').append('<a href="' + bxNewUrl + '" class="' + key + ' bx-finder-filter-selected"><p id="' + key + '" class="bx-finder-filter-selected-value">- ' + key + '</p></a>');
                 });
             }
         }
@@ -414,7 +414,6 @@ if (currentFacet == expertFieldName) {
                     facets.removeSelect(field);
                     if ($(this).is(':checked')) {
                         facets.addSelect(field, $(this).attr('value'));
-
                     } else {
                         facets.removeSelect(field);
                     }
@@ -612,3 +611,7 @@ $('#cpo-finder-show-products').on('click', function() {
         $('.bx-listing-emotion').show();
     }
 });
+
+if(document.readyState==='interactive') {
+    $(".cpo-finder-wrapper").fadeIn(100);
+}
