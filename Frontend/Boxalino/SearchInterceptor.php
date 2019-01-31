@@ -837,10 +837,6 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             return $this->Controller()->redirect($location);
         }
 
-        /* @var ProductContextInterface $context */
-        $context  = $this->get('shopware_storefront.context_service')->getShopContext();
-        /* @var Shopware\Bundle\SearchBundle\Criteria $criteria */
-
         if(is_null($this->Request()->getParam('sSort'))) {
             if($this->Config()->get('boxalino_navigation_sorting')){
                 $this->Request()->setParam('sSort', 7);
@@ -849,8 +845,12 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                 $this->Request()->setParam('sSort', $default);
             }
         }
-        $criteria = $this->get('shopware_search.store_front_criteria_factory')->createSearchCriteria($this->Request(), $context);
 
+        /* @var ProductContextInterface $context */
+        $context  = $this->get('shopware_storefront.context_service')->getShopContext();
+
+        /* @var Shopware\Bundle\SearchBundle\Criteria $criteria */
+        $criteria = $this->get('shopware_search.store_front_criteria_factory')->createSearchCriteria($this->Request(), $context);
         // discard search / term conditions from criteria, such that _all_ facets are properly requested
         $criteria->removeCondition("term");
         $criteria->removeBaseCondition("search");
@@ -860,20 +860,20 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             $this->Helper()->addNotification("Search before createFacets took in total: " . $t1 . "ms.");
         }
         $facets = $criteria->getFacets();
-        $options = $this->BxData()->getFacetConfig($facets, $this->Request());
+        $options = $this->BxData()->getFacetConfig($facets, $this->Request(), "products_bx_purchasable");
         $sort =  $this->BxData()->getSortOrder($criteria);
         $config = $this->get('config');
         $pageCounts = array_values(explode('|', $config->get('fuzzySearchSelectPerPage')));
 
         $hitCount = $criteria->getLimit();
         $pageOffset = $criteria->getOffset();
-        $bxHasOtherItems = false;
         $this->Helper()->addSearch($term, $pageOffset, $hitCount, 'product', $sort, $options);
+        $templateBlogSearchProperties = array();
 
         if($config->get('boxalino_blog_search_enabled')){
             $blogOffset = ($this->Request()->getParam('sBlogPage', 1) -1)*($hitCount);
             $this->Helper()->addSearch($term, $blogOffset, $hitCount, 'blog');
-            $bxHasOtherItems = $this->Helper()->getTotalHitCount('blog') > 0;
+            $templateBlogSearchProperties = $this->getSearchTemplateProperties($hitCount);
         }
 
         if($_REQUEST['dev_bx_debug'] == 'true'){
@@ -965,7 +965,6 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         $this->View()->addTemplateDir($this->Bootstrap()->Path() . 'Views/emotion/');
         $this->View()->extendsTemplate('frontend/plugins/boxalino/listing/actions/action-pagination.tpl');
         $this->View()->extendsTemplate('frontend/plugins/boxalino/search/fuzzy.tpl');
-
         if(version_compare(Shopware::VERSION, '5.3.0', '<')) {
             $this->View()->extendsTemplate('frontend/plugins/boxalino/listing/filter/facet-value-list.tpl');
             $this->View()->extendsTemplate('frontend/plugins/boxalino/listing/index.tpl');
@@ -973,7 +972,6 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                 $this->View()->extendsTemplate('frontend/plugins/boxalino/blog/listing_actions.tpl');
             }
         } else {
-
             $this->View()->extendsTemplate('frontend/plugins/boxalino/listing/filter/_includes/filter-multi-selection.tpl');
             $this->View()->extendsTemplate('frontend/plugins/boxalino/listing/index_5_3.tpl');
             if($this->Helper()->getTotalHitCount('blog')) {
@@ -1015,11 +1013,11 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                 'sArticlesCount' => $totalHitCount
             ),
             'productBoxLayout' => $config->get('searchProductBoxLayout'),
-            'bxHasOtherItemTypes' => $bxHasOtherItems,
-            'bxActiveTab' => $request->getParam('bxActiveTab', 'article'),
+            'bxHasOtherItemTypes' => false,
+            'bxActiveTab' => (count($no_result_articles) > 0) ? $request->getParam('bxActiveTab', 'blog'): $request->getParam('bxActiveTab', 'article'),
             'bxSubPhraseResults' => $sub_phrases,
             'facetOptions' => $this->facetOptions
-        ), $this->getSearchTemplateProperties($hitCount));
+        ), $templateBlogSearchProperties);
         $this->View()->assign($templateProperties);
         if($_REQUEST['dev_bx_debug'] == 'true'){
             $this->Helper()->addNotification("Search afterUpdateFacets took: " . (microtime(true) - $afterUpdate) * 1000 . "ms");
@@ -1054,6 +1052,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         $numberPages = ceil($count > 0 ? $total / $hitCount : 0);
         $props['bxBlogCount'] = $total;
         $props['sNumberPages'] = $numberPages;
+        $props['bxHasOtherItemTypes'] = true;
 
         $pages = array();
         if ($numberPages > 1) {
@@ -1079,6 +1078,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         $props['sPages'] = $pages;
         $blogArticles = $this->enhanceBlogArticles($this->Helper()->getBlogs($ids));
         $props['sBlogArticles'] = $blogArticles;
+
         return $props;
     }
 
