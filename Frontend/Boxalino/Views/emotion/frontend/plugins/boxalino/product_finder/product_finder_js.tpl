@@ -480,7 +480,9 @@ if (currentFacet == expertFieldName) {
                 jQuery('.cpo-finder-button-container').append(resultsButton);
             }
             jQuery('.cpo-finder-button-container').append(skipButton);
-            jQuery('.cpo-finder-button-container-below').append(showProductsButton.replace('%%CurrentScore%%', max_score));
+            if(max_score>0) {
+                jQuery('.cpo-finder-button-container-below').append(showProductsButton.replace('%%CurrentScore%%', max_score));
+            }
 
             // otherwise only show back button and show the products
         } else {
