@@ -806,7 +806,6 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
      * @return array
      */
     public function getBlogs($ids) {
-
         if(empty($ids)) {
             return $ids;
         }
@@ -838,6 +837,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         } else {
             $ids = $response->getHitIds($this->currentSearchChoice, true, 0, 10);
         }
+
         return $ids;
     }
 
@@ -848,8 +848,8 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
      * @param bool $no_result
      * @return array
      */
-    protected function createAjaxData($autocompleteResponse, $queryText, $type = 'product', $no_result = false) {
-
+    protected function createAjaxData($autocompleteResponse, $queryText, $type = 'product', $no_result = false)
+    {
         if ($no_result === true) {
             $ids = $this->getHitIdsFromAutocompleteResponse($autocompleteResponse->getBxSearchResponse(), $type, 'products_ordernumber', 'noresults');
             $sResults = $this->getLocalArticles($ids);
@@ -1114,7 +1114,6 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
      * @return mixed
      */
     public function getHitFieldsValues($hitId, $field = 'id', $type = "product") {
-
         $count = array_search($type, self::$choiceContexts[$this->currentSearchChoice]);
         return self::$bxClient->getResponse()->getHitFieldValue($this->currentSearchChoice, $hitId, $field, $count);
     }
@@ -1127,7 +1126,6 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
      * @return mixed
      */
     public function getHitExtraInfo($hitId, $info_key, $default_value = '',  $type = "product") {
-
         $count = array_search($type, self::$choiceContexts[$this->currentSearchChoice]);
         return self::$bxClient->getResponse()->getHitExtraInfo($this->currentSearchChoice, $hitId, $info_key, $default_value, $count);
     }
@@ -1139,7 +1137,6 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
      * @return mixed
      */
     public function getHitVariable($hitId, $field, $type = "product") {
-
         $count = array_search($type, self::$choiceContexts[$this->currentSearchChoice]);
         return self::$bxClient->getResponse()->getHitVariable($this->currentSearchChoice, $hitId, $field, $count);
     }
@@ -1149,7 +1146,6 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
      * @return mixed
      */
     public function getEntitiesIds($type = "product") {
-
         $count = array_search($type, self::$choiceContexts[$this->currentSearchChoice]);
         return $this->getResponse()->getHitIds($this->currentSearchChoice, true, $count, 10, $this->getEntityIdFieldName($type));
     }
@@ -1189,7 +1185,6 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
      * @return mixed
      */
     public function getSubPhraseEntitiesIds($queryText, $type = "product") {
-
         $count = array_search($type, self::$choiceContexts[$this->currentSearchChoice]);
         return $this->getResponse()->getSubPhraseHitIds($queryText, $this->currentSearchChoice, $count, 'products_ordernumber');
     }
@@ -1223,7 +1218,6 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
      * @return mixed
      */
     public function getCorrectedQuery($type = "product") {
-
         $count = array_search($type, self::$choiceContexts[$this->currentSearchChoice]);
         return $this->getResponse()->getCorrectedQuery($this->currentSearchChoice, $count);
     }
@@ -1233,7 +1227,6 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
      * @return mixed
      */
     public function areResultsCorrected($type = "product") {
-
         $count = array_search($type, self::$choiceContexts[$this->currentSearchChoice]);
         return $this->getResponse()->areResultsCorrected($this->currentSearchChoice, $count);
     }
@@ -1243,7 +1236,6 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
      * @return mixed
      */
     public function getSubPhrasesQueries($type = "product") {
-
         $count = array_search($type, self::$choiceContexts[$this->currentSearchChoice]);
         return $this->getResponse()->getSubPhrasesQueries($this->currentSearchChoice, $count);
     }
@@ -1253,7 +1245,6 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
      * @return mixed
      */
     public function areThereSubPhrases($type = "product") {
-
         $count = array_search($type, self::$choiceContexts[$this->currentSearchChoice]);
         return $this->getResponse()->areThereSubPhrases($this->currentSearchChoice, $count);
     }
@@ -1264,7 +1255,6 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
      * @return mixed
      */
     public function getSubPhraseTotalHitCount($queryText, $type = "product") {
-
         $count = array_search($type, self::$choiceContexts[$this->currentSearchChoice]);
         return $this->getResponse()->getSubPhraseTotalHitCount($queryText, $this->currentSearchChoice, $count);
     }
@@ -1287,7 +1277,6 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
      */
     public function getSearchResultTitle($choice_id, $default = '', $count = 0) {
         return $this->getResponse()->getResultTitle($choice_id, $count, $default);
-
     }
 
     /**

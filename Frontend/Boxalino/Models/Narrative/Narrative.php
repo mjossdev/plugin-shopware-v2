@@ -66,8 +66,7 @@ class Shopware_Plugins_Frontend_Boxalino_Models_Narrative_Narrative
      */
     public function getRenderer()
     {
-        $bxData = Shopware_Plugins_Frontend_Boxalino_Helper_BxData::instance();
-        return new Shopware_Plugins_Frontend_Boxalino_Helper_BxRender($this->helper, $bxData, $this->interceptor, $this->request);
+        return new Shopware_Plugins_Frontend_Boxalino_Helper_BxRender($this->helper, $this->interceptor, $this->request);
     }
 
     public function getAjaxEmotionTemplateDirectory()
@@ -102,9 +101,9 @@ class Shopware_Plugins_Frontend_Boxalino_Models_Narrative_Narrative
         $hitCount = $criteria->getLimit();
         $pageOffset = $criteria->getOffset();
 
-        $sort =  $this->interceptor->getSortOrder($criteria, null, true);
+        $sort =  $this->interceptor->BxData()->getSortOrder($criteria, null, true);
         $facets = $criteria->getFacets();
-        $options = $this->interceptor->getFacetConfig($facets, $this->request);
+        $options = $this->interceptor->BxData()->getFacetConfig($facets, $this->request);
 
         $this->addOrderParamToRequest();
 

@@ -1,6 +1,11 @@
 <?php
 
-class Shopware_Plugins_Frontend_Boxalino_Helper_BxRender{
+/**
+ * Class Shopware_Plugins_Frontend_Boxalino_Helper_BxRender
+ * Content rendering helper
+ */
+class Shopware_Plugins_Frontend_Boxalino_Helper_BxRender
+{
 
     CONST RENDER_NARRATIVE_TYPE_BLOG = 'blog';
     CONST RENDER_NARRATIVE_TYPE_FACETS ='filter_panel';
@@ -21,10 +26,10 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxRender{
 
     protected $renderingData = array();
 
-    public function __construct($p13Helper, $dataHelper, $searchInterceptor, $request)
+    public function __construct($p13Helper, $searchInterceptor, $request)
     {
         $this->p13Helper = $p13Helper;
-        $this->dataHelper = $dataHelper;
+        $this->dataHelper = Shopware_Plugins_Frontend_Boxalino_Helper_BxData::instance();;
         $this->searchInterceptor = $searchInterceptor;
         $this->request = $request;
         $this->resourceManager = Shopware_Plugins_Frontend_Boxalino_Helper_BxResourceManager::instance();

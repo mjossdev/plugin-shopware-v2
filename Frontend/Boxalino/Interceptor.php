@@ -87,7 +87,7 @@ abstract class Shopware_Plugins_Frontend_Boxalino_Interceptor
      *
      * @return Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper
      */
-    protected function Helper()
+    public function Helper()
     {
         return $this->helper;
     }
@@ -107,7 +107,7 @@ abstract class Shopware_Plugins_Frontend_Boxalino_Interceptor
      *
      * @return Enlight_Controller_Request_Request
      */
-    protected function Request()
+    public function Request()
     {
         return $this->request;
     }
@@ -130,7 +130,7 @@ abstract class Shopware_Plugins_Frontend_Boxalino_Interceptor
         return $this->benchmark;
     }
 
-    protected function BxData() {
+    public function BxData() {
         return $this->bxData;
     }
     

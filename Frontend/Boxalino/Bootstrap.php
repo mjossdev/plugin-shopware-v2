@@ -659,7 +659,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
 
         if ($args['element']['component']['template'] == "boxalino_narrative") {
             if($data['render_option'] == 1) {
-                $narrativeData = $this->onNarrative($data);
+                $narrativeData = $this->onNarrativeEmotion($data);
                 $data = array_merge($data, $narrativeData);
             }
             return $data;
@@ -764,9 +764,9 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
 
     }
 
-    public function onNarrative($data) {
+    public function onNarrativeEmotion($data) {
         try{
-            return $this->searchInterceptor->narrative($data);
+            return $this->searchInterceptor->onNarrativeEmotion($data);
         }catch (\Exception $e) {
             $this->logException($e, __FUNCTION__);
         }
@@ -926,7 +926,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
                 $request = $arguments->getSubject()->Request();
                 $id = $request->getParam('sCategory', null);
                 $this->showListing = $return['showListing'];
-                if($this->searchInterceptor->findStreamIdByCategoryId($id)) {
+                if($this->searchInterceptor->BxData()->findStreamIdByCategoryId($id)) {
                     $this->showListing = true;
                 }
                 $return['showListing'] = false;

@@ -20,12 +20,18 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxData {
     protected $config;
 
     /**
+     * @var
+     */
+    protected $db;
+
+    /**
      * Shopware_Plugins_Frontend_Boxalino_Helper_BxData constructor.
      */
     public function __construct()
     {
         $this->container = Shopware()->Container();
         $this->config = Shopware()->Config();
+        $this->db = Shopware()->Db();
     }
 
     /**
@@ -40,7 +46,8 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxData {
     /**
      * @return Shopware_Components_Config
      */
-    public function Config() {
+    public function Config()
+    {
         return $this->config;
     }
 
@@ -48,17 +55,23 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxData {
      * @param $name
      * @return mixed
      */
-    public function get($name) {
+    public function get($name)
+    {
         return $this->container->get($name);
     }
 
-    public function getFacetConfig($facets, $request) {
+    /**
+     * @param $facets
+     * @param null $request
+     * @param string $immediateDeliveryField
+     * @return array
+     */
+    public function getFacetConfig($facets, $request, $immediateDeliveryField = 'products_immediate_delivery') {
         $snippetManager = Shopware()->Snippets()->getNamespace('frontend/listing/facet_labels');
         $options = [];
         $mapper = $this->get('query_alias_mapper');
         $params = $request->getParams();
         foreach ($facets as $fieldName => $facet) {
-
             switch ($fieldName) {
                 case 'price':
                     $min = isset($params[$mapper->getShortAlias('priceMin')]) ? $params[$mapper->getShortAlias('priceMin')] : "*";
@@ -142,9 +155,9 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxData {
                     break;
                 case 'immediate_delivery':
                     $immediate_delivery = isset($params[$mapper->getShortAlias('immediateDelivery')]) ? $params[$mapper->getShortAlias('immediateDelivery')] : null;
-                    $options['products_bx_purchasable']['label'] = $snippetManager->get('immediate_delivery', 'Sofort lieferbar');
+                    $options[$immediateDeliveryField]['label'] = $snippetManager->get('immediate_delivery', 'Sofort lieferbar');
                     if($immediate_delivery) {
-                        $options['products_bx_purchasable']['value'] = [1];
+                        $options[$immediateDeliveryField]['value'] = [1];
                     }
                     break;
                 case 'vote_average':
@@ -162,85 +175,85 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxData {
         return $options;
     }
 
-    protected function getSupplierName($supplier) {
-        $supplier = $this->get('dbal_connection')->fetchColumn(
-            'SELECT name FROM s_articles_supplier WHERE id = :id',
-            ['id' => $supplier]
-        );
+    public function getSupplierName($supplier) {
+        $sql = $this->db->select()->from(array("ss"=>"s_articles_supplier"), array("name"))
+            ->where("ss.id = ?", $supplier);
 
-        if ($supplier) {
-            return $supplier;
-        }
-
-        return null;
+        return $this->db->fetchOne($sql);
     }
 
-    protected function getOptionFromValueId($id){
-        $option = array();
-        $db = Shopware()->Db();
-        $sql = $db->select()->from(array('f_v' => 's_filter_values'), array('value'))
+    public function getOptionFromValueId($id){
+        $sql = $this->db->select()->from(array('f_v' => 's_filter_values'), array('value'))
             ->join(array('f_o' => 's_filter_options'), 'f_v.optionID = f_o.id', array('id','name'))
             ->where('f_v.id = ?', $id);
-        $stmt = $db->query($sql);
-        if($stmt->rowCount()) {
-            $option = $stmt->fetch();
-        }
-        return $option;
+        return $this->db->fetchRow($sql);
     }
 
-    protected function useTranslation($shop_id, $objectType){
-        $db = Shopware()->Db();
-        $sql = $db->select()->from(array('c_t' => 's_core_translations'))
+    public function useTranslation($objectType){
+        $shop_id = $this->getShopId();
+        $sql = $this->db->select()->from(array('c_t' => 's_core_translations'))
             ->where('c_t.objectlanguage = ?', $shop_id)
             ->where('c_t.objecttype = ?', $objectType);
-        $stmt = $db->query($sql);
-        $use = $stmt->rowCount() == 0 ? false : true;
-        return $use;
+        return (bool) $this->db->query($sql)->rowCount();
     }
 
     public function getShopId(){
-        return $shop_id = $this->Config()->get('boxalino_overwrite_shop') != '' ? (int) $this->Config()->get('boxalino_overwrite_shop') : Shopware()->Shop()->getId();
+        return $this->Config()->get('boxalino_overwrite_shop') != '' ? (int) $this->Config()->get('boxalino_overwrite_shop') : Shopware()->Shop()->getId();
     }
 
     protected function getAllFilterableOptions() {
         $options = array();
-        $db = Shopware()->Db();
-        $sql = $db->select()->from(array('f_o' => 's_filter_options'))
+        $sql = $this->db->select()->from(array('f_o' => 's_filter_options'))
             ->where('f_o.filterable = 1');
         $shop_id = $this->getShopId();
-        $useTranslation = $this->useTranslation($shop_id, 'propertyoption');
 
+        $useTranslation = $this->useTranslation($shop_id, 'propertyoption');
         if($useTranslation) {
             $sql
                 ->joinLeft(array('t' => 's_core_translations'),
-                    'f_o.id = t.objectkey AND t.objecttype = ' . $db->quote('propertyoption') . ' AND t.objectlanguage = ' . $shop_id,
+                    'f_o.id = t.objectkey AND t.objecttype = ' . $this->db->quote('propertyoption') . ' AND t.objectlanguage = ' . $shop_id,
                     array('objectdata'));
         }
-        $stmt = $db->query($sql);
 
-        if($stmt->rowCount()) {
-            while($row = $stmt->fetch()){
-                if($useTranslation && isset($row['objectdata'])) {
-                    $translation = unserialize($row['objectdata']);
-                    $row['name'] = isset($translation['optionName']) && $translation['optionName'] != '' ?
-                        $translation['optionName'] : $row['name'];
-                }
-                $options['products_optionID_mapped_' . $row['id']] = ['label' => trim($row['name'])];
+        $result = $this->db->fetchAll($sql);
+        foreach ($result as $row){
+            if($useTranslation && isset($row['objectdata'])) {
+                $translation = unserialize($row['objectdata']);
+                $row['name'] = isset($translation['optionName']) && $translation['optionName'] != '' ?
+                    $translation['optionName'] : $row['name'];
             }
+            $options['products_optionID_mapped_' . $row['id']] = ['label' => trim($row['name'])];
         }
+
         return $options;
     }
 
-    public function getSortOrder(Shopware\Bundle\SearchBundle\Criteria $criteria, $default_sort = null, $listing = false) {
-
+    /**
+     * @param Shopware\Bundle\SearchBundle\Criteria $criteria
+     * @return array
+     */
+    public function getSortOrder(Shopware\Bundle\SearchBundle\Criteria $criteria, $default_sort = null, $listing = false)
+    {
+        /* @var Shopware\Bundle\SearchBundle\Sorting\Sorting $sort */
         $sort = current($criteria->getSortings());
+        if(empty($sort))
+        {
+            $sort = new \Shopware\Bundle\SearchBundle\Sorting\SearchRankingSorting(Shopware\Bundle\SearchBundle\SortingInterface::SORT_DESC);
+        }
+
         $dir = null;
         $additionalSort = null;
         if($listing && is_null($default_sort) && $this->Config()->get('boxalino_navigation_sorting')){
             return array();
         }
 
-        switch ($sort->getName()) {
+        $name = "default";
+        if($sort instanceof Shopware\Bundle\SearchBundle\Sorting\Sorting)
+        {
+            $name = $name = $sort->getName();
+        }
+
+        switch ($name) {
             case 'popularity':
                 $field = 'products_sales';
                 break;
@@ -304,14 +317,12 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxData {
     }
 
     protected function getDefaultSort(){
-        $db = Shopware()->Db();
-        $sql = $db->select()
+        $sql = $this->db->select()
             ->from(array('c_e' => 's_core_config_elements', array('c_v.value')))
             ->join(array('c_v' => 's_core_config_values'), 'c_v.element_id = c_e.id')
             ->where("name = ?", "defaultListingSorting");
-        $result = $db->fetchRow($sql);
+        $result = $this->db->fetchRow($sql);
         return isset($result) ? unserialize($result['value']) : null;
-
     }
 
     public function getLocalArticles($ids, $highlightedProducts=array()) {
@@ -396,37 +407,27 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxData {
         return $convertedProductsToArray;
     }
 
-    public function useValuesAsKeys($array){
-        return array_combine(array_keys(array_flip($array)),$array);
-    }
     public function getRelatedBlogs($articleId) {
-        $relatedBlogs = array();
         if($articleId != '') {
-            $db = Shopware()->Db();
-            $sql = $db->select()->from(array('a_b' => 's_blog_assigned_articles'))
+            $sql = $this->db->select()->from(array('a_b' => 's_blog_assigned_articles'), array(new Zend_Db_Expr("CONCAT('blog_',a_b.blog_id)")))
                 ->where('a_b.article_id = ?', (int) $articleId);
-            $stmt = $db->query($sql);
-            if($stmt->rowCount()) {
-                while($row = $stmt->fetch()) {
-                    $relatedBlogs[] = "blog_{$row['blog_id']}";
-                }
-            }
+
+            return $this->db->fetchCol($sql);
         }
-        return $relatedBlogs;
+
+        return array();
     }
 
+    /**
+     * @param $categoryId
+     * @return int | null
+     */
     public function findStreamIdByCategoryId($categoryId)
     {
-        $streamId = $this->container->get('dbal_connection')->fetchColumn(
-            'SELECT stream_id FROM s_categories WHERE id = :id',
-            ['id' => $categoryId]
-        );
+        $sql = $this->db->select()->from(array("sc"=>"s_categories"), array("stream_id"))
+            ->where("sc.id = ?", $categoryId);
 
-        if ($streamId) {
-            return (int)$streamId;
-        }
-
-        return null;
+        return $this->db->fetchOne($sql);
     }
 
     public function transformBlog($blogs) {
@@ -459,10 +460,8 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxData {
                 return $blogArticle['media_id'];
             }
         }, $blogArticles);
-
         $context = $this->container->get('shopware_storefront.context_service')->getShopContext();
         $medias = $this->container->get('shopware_storefront.media_service')->getList($mediaIds, $context);
-
 
         foreach ($blogArticles as $key => $blogArticle) {
 
@@ -478,6 +477,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxData {
             $media = $this->container->get('legacy_struct_converter')->convertMediaStruct($media);
             $blogArticles[$key]['media'] = $media;
         }
+
         return $blogArticles;
     }
 
@@ -491,7 +491,6 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxData {
         $context = $this->container->get('shopware_storefront.context_service')->getShopContext();
         $medias = $this->container->get('shopware_storefront.media_service')->getList($mediaIds, $context);
 
-
         foreach ($blogArticles as $key => $blogArticle) {
             //adding number of comments to the blog article
             $blogArticles[$key]["numberOfComments"] = count($blogArticle["comments"]);
@@ -502,7 +501,6 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxData {
             }
 
             $mediaId = $blogArticle["media"][0]['mediaId'];
-
             if (!isset($medias[$mediaId])) {
                 continue;
             }
@@ -510,7 +508,6 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxData {
             /**@var $media \Shopware\Bundle\StoreFrontBundle\Struct\Media*/
             $media = $medias[$mediaId];
             $media = $this->container->get('legacy_struct_converter')->convertMediaStruct($media);
-
             if (Shopware()->Shop()->getTemplate()->getVersion() < 3) {
                 $blogArticles[$key]["preview"]["thumbNails"] = array_column($media['thumbnails'], 'source');
             } else {
@@ -535,6 +532,38 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxData {
             return false;
         }
 
+        return true;
+    }
+
+    public function getStreamById($productStreamId) {
+        $row = $this->db->fetchAssoc(
+            'SELECT streams.*, customSorting.sortings as customSortings
+             FROM s_product_streams streams
+             LEFT JOIN s_search_custom_sorting customSorting
+                 ON customSorting.id = streams.sorting_id
+             WHERE streams.id = :productStreamId
+             LIMIT 1',
+            ['productStreamId' => $productStreamId]
+        );
+
+        return $row;
+    }
+
+    /**
+     * @param $category_id
+     * @return bool
+     */
+    public function categoryShowFilter($category_id) {
+        if($category_id) {
+            $sql = $this->db->select()->from(array('c' => 's_categories'))
+                ->where('c.id = ?', $category_id);
+            $result = $this->db->fetchRow($sql);
+            if(empty($result))
+            {
+                return true;
+            }
+             return !$result['hidefilter'];
+        }
         return true;
     }
 
