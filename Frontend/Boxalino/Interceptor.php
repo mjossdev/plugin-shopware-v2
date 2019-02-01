@@ -77,7 +77,7 @@ abstract class Shopware_Plugins_Frontend_Boxalino_Interceptor
      *
      * @return Shopware_Components_Config
      */
-    protected function Config()
+    public function Config()
     {
         return $this->config;
     }

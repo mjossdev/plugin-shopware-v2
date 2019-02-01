@@ -18,11 +18,6 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
     private $container;
 
     /**
-     * @var Enlight_Event_EventManager
-     */
-    protected $eventManager;
-
-    /**
      * @var FacetHandlerInterface[]
      */
     protected $facetHandlers;
@@ -44,7 +39,6 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
     public function __construct(Shopware_Plugins_Frontend_Boxalino_Bootstrap $bootstrap) {
         parent::__construct($bootstrap);
         $this->container = Shopware()->Container();
-        $this->eventManager = Enlight()->Events();
     }
 
     /**
@@ -68,7 +62,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         if (!$this->Config()->get('boxalino_active')) {
             return null;
         }
-        $view = new Enlight_View_Default(Shopware()->Container()->get('Template'));
+        $view = new Enlight_View_Default($this->get('Template'));
 
         $view = $this->prepareViewConfig($view);
         $context  = $this->get('shopware_storefront.context_service')->getProductContext();
@@ -122,7 +116,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             $view->extendsTemplate('frontend/plugins/boxalino/listing/filter/_includes/filter-multi-selection.tpl');
             $view->extendsTemplate('frontend/plugins/boxalino/listing/index_5_3.tpl');
         }
-        $service = Shopware()->Container()->get('shopware_storefront.custom_sorting_service');
+        $service = $this->get('shopware_storefront.custom_sorting_service');
         $sortingIds = $this->container->get('config')->get('searchSortings');
         $sortingIds = array_filter(explode('|', $sortingIds));
         $sortings = $service->getList($sortingIds, $context);
@@ -597,7 +591,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         } else {
             $this->View()->extendsTemplate('frontend/plugins/boxalino/listing/filter/_includes/filter-multi-selection.tpl');
             $this->View()->extendsTemplate('frontend/plugins/boxalino/listing/index_5_3.tpl');
-            $service = Shopware()->Container()->get('shopware_storefront.custom_sorting_service');
+            $service = $this->get('shopware_storefront.custom_sorting_service');
             $sortingIds = $this->container->get('config')->get('searchSortings');
             $sortingIds = array_filter(explode('|', $sortingIds));
             $sortings = $service->getList($sortingIds, $context);
@@ -977,7 +971,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             if($this->Helper()->getTotalHitCount('blog')) {
                 $this->View()->extendsTemplate('frontend/plugins/boxalino/blog/listing_actions.tpl');
             }
-            $service = Shopware()->Container()->get('shopware_storefront.custom_sorting_service');
+            $service = $this->get('shopware_storefront.custom_sorting_service');
             $sortingIds = $this->container->get('config')->get('searchSortings');
             $sortingIds = array_filter(explode('|', $sortingIds));
             $sortings = $service->getList($sortingIds, $context);
@@ -1541,7 +1535,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
     protected function getCategoryFacet() {
         $snippetManager = Shopware()->Snippets()->getNamespace('frontend/listing/facet_labels');
         $label = $snippetManager->get('category', 'Kategorie');
-        $depth = Shopware()->Config()->get('levels');
+        $depth = $this->Config()->get('levels');
         return new \Shopware\Bundle\SearchBundle\Facet\CategoryFacet($label, $depth);
     }
 
@@ -1557,7 +1551,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         $request = is_null($request) ? $this->Request() : $request;
         $start = microtime(true);
         $lang = substr(Shopware()->Shop()->getLocale()->getLocale(), 0, 2);
-        $this->facetOptions['mode'] = Shopware()->Config()->get('listingMode');
+        $this->facetOptions['mode'] = $this->Config()->get('listingMode');
         $variant_index = $choice == '' ? null : 0;
         $bxFacets = $this->Helper()->getFacets('product', $choice, $variant_index);
         $propertyFacets = [];

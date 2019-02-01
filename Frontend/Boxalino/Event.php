@@ -2,10 +2,13 @@
 
 class Shopware_Plugins_Frontend_Boxalino_Event
 {
-    const TRACKER_URL = 'https://cdn.bx-cloud.com/frontend/analytics/en/track';
+    CONST BXL_INTELLIGENCE_STAGE_TRACKER="https://r-st.bx-cloud.com/track";
+    CONST BXL_INTELLIGENCE_PROD_TRACKER="https://track.bx-cloud.com/track";
+    CONST BXL_INTELLIGENCE_TRACKER = 'https://cdn.bx-cloud.com/frontend/analytics/en/track';
 
     protected $params;
     protected $referer;
+
     public function __construct($event, $params) {
         if (empty($event)) {
             Shopware()->Container()->get('pluginlogger')->debug("event must be set, received: '$event', event could not be tracked");
@@ -38,7 +41,7 @@ class Shopware_Plugins_Frontend_Boxalino_Event
     }
 
     public function track() {
-        $finalUrl = self::TRACKER_URL;
+        $finalUrl = $this->getTrackerServer();
         $encodedParams = array();
         if (is_array($this->params)) {
             foreach ($this->params as $key => $value) {
@@ -95,5 +98,26 @@ class Shopware_Plugins_Frontend_Boxalino_Event
             $ip = $_SERVER['REMOTE_ADDR'];
         }
         return $ip;
+    }
+
+    /**
+     * getting the upgraded script
+     * @return string
+     */
+    private static function getTrackerServer()
+    {
+        $apiKey = Shopware()->Config()->get('boxalino_api_key');
+        $apiSecret = Shopware()->Config()->get('boxalino_api_secret');
+        if(empty($apiKey) || empty($apiSecret))
+        {
+            return self::BXL_INTELLIGENCE_TRACKER;
+        }
+        $isDev = Shopware()->Config()->get('boxalino_dev');
+        if($isDev)
+        {
+            return self::BXL_INTELLIGENCE_STAGE_TRACKER;
+        }
+
+        return self::BXL_INTELLIGENCE_PROD_TRACKER;
     }
 }
