@@ -248,7 +248,6 @@ if (currentFacet == expertFieldName) {
     function createFields() {
 
         if (combinedQuestions) {
-
             container = jQuery('.cpo-finder-center-current-question-options-second');
 
             var fieldContainer = jQuery('<div class="' + combinedQuestions[1] + '_container cpo-finder-answers-container-second"></div>');
@@ -301,14 +300,11 @@ if (currentFacet == expertFieldName) {
         });
 
         // only show as many as defined
-
         var displaySize = facets.getFacetExtraInfo(currentFacet, 'enumDisplayMaxSize');
 
         if (displaySize) {
             $('.cpo-finder-answer:gt(' + (displaySize - 1) + ')').hide();
         }
-
-
     }
 
     // createField
@@ -410,16 +406,11 @@ if (currentFacet == expertFieldName) {
         var type = facets.getFacetExtraInfo(field, 'visualisation');
         $("." + field + "_check").on('change', function() {
             if (type == 'radio') {
-                if (currentFacet == questions[0]){
-                    facets.removeSelect(field);
-                    if ($(this).is(':checked')) {
-                        facets.addSelect(field, $(this).attr('value'));
-                    } else {
-                        facets.removeSelect(field);
-                    }
-                } else {
+                facets.removeSelect(field);
+                if ($(this).is(':checked')) {
                     facets.addSelect(field, $(this).attr('value'));
-                    goToNextQuestion();
+                } else {
+                    facets.removeSelect(field);
                 }
             } else if (type == 'multiselect') {
                 if ($(this).is(':checked')) {
@@ -606,11 +597,19 @@ $('#cpo-finder-show-products').on('click', function() {
     }
     if (highlighted == true) {
         $('.bx-present').show();
-        $('.bx-listing-emotion').show();
+        toggleProducts();
+    } else {
+        toggleProducts();
+    }
+});
+
+function toggleProducts(){
+    if($('.bx-listing-emotion').css('display') == 'block'){
+        $('.bx-listing-emotion').hide();
     } else {
         $('.bx-listing-emotion').show();
     }
-});
+}
 
 if(document.readyState==='interactive') {
     $(".cpo-finder-wrapper").fadeIn(100);
