@@ -466,9 +466,7 @@ if (currentFacet == expertFieldName) {
                 jQuery('.cpo-finder-button-container').append(backButton);
             }
             var visualisation = facets.getFacetExtraInfo(currentFacet, 'visualisation');
-            if(visualisation != 'radio' || combinedQuestions != null){
-                jQuery('.cpo-finder-button-container').append(resultsButton);
-            }
+            jQuery('.cpo-finder-button-container').append(resultsButton);
             jQuery('.cpo-finder-button-container').append(skipButton);
             if(max_score>0) {
                 jQuery('.cpo-finder-button-container-below').append(showProductsButton.replace('%%CurrentScore%%', max_score));
