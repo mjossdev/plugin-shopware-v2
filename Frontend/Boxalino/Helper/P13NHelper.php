@@ -132,29 +132,29 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
     }
 
     public function getHttpRefererParameters() {
-      $address = $_SERVER['HTTP_REFERER'];
-      $params = array();
-      foreach($_REQUEST as $k => $v) {
-          $params[$k] = $v;
-      }
-      $rowParams = explode('&', substr ($address,strpos($address, '?')+1, strlen($address)));
-      foreach ($rowParams as $index => $param){
-          $acceptsArray=false;
-          $keyValue = explode("=", $param);
-          if(strpos($param,'[]'))
-          {
-              $acceptsArray = true;
-          }
-          $keyValue = str_replace('[]', '', $keyValue);
-          if(!isset($params[$keyValue[0]])) {
-            $params[$keyValue[0]] = array();
-          }
-          if($acceptsArray)
-          {
-              $params[$keyValue[0]][] = urldecode($keyValue[1]);
-          }
-      }
-      return $params;
+        $address = $_SERVER['HTTP_REFERER'];
+        $params = array();
+        foreach($_REQUEST as $k => $v) {
+            $params[$k] = $v;
+        }
+        $rowParams = explode('&', substr ($address,strpos($address, '?')+1, strlen($address)));
+        foreach ($rowParams as $index => $param){
+            $acceptsArray=false;
+            $keyValue = explode("=", $param);
+            if(strpos($param,'[]'))
+            {
+                $acceptsArray = true;
+            }
+            $keyValue = str_replace('[]', '', $keyValue);
+            if(!isset($params[$keyValue[0]])) {
+                $params[$keyValue[0]] = array();
+            }
+            if($acceptsArray)
+            {
+                $params[$keyValue[0]][] = urldecode($keyValue[1]);
+            }
+        }
+        return $params;
     }
 
     protected function checkPrefixContextParameter($prefix){
@@ -172,10 +172,10 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         $filters = [];
         foreach ($params as $key => $values) {
             if(!is_array($values)) {
-              $values = [$values];
+                $values = [$values];
             }
             foreach($values as $k => $v) {
-              $values[$k] = rawurldecode($v);
+                $values[$k] = rawurldecode($v);
             }
             if(strpos($key, 'bx_') === 0) {
                 $filters[$key] = new \com\boxalino\bxclient\v1\BxFilter(substr($key, 3), $values);
@@ -248,7 +248,6 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
 
         self::$bxClient->addRequest($bxRequest);
         self::$choiceContexts[$choiceId][] = $type;
-
     }
 
     private function getVoucherData($voucher_id) {
@@ -425,7 +424,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
 
         foreach ($params as $param){
             if(strpos($param, 'dev_bx_log') === 0) {
-               return true;
+                return true;
             }
         }
         return false;
@@ -464,14 +463,26 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         self::$bxClient->addRequest($bxRequest);
     }
 
-    public function getNarrative($choiceId, $additional_choices, $options, $hitCount, $pageOffset, $sort, $params) {
+    public function getNarrative($choiceId, $additional_choices, $options, $hitCount, $pageOffset, $sort, $params, $execute = false)
+    {
+        if(is_null(self::$bxClient->getChoiceIdRecommendationRequest($choiceId)))
+        {
+            $this->addNarrativeRequest($choiceId, $hitCount, $pageOffset, $sort, $options);
+            foreach ($params as $key => $value) {
+                self::$bxClient->addRequestContextParameter($key, $value);
+                if ($key == 'choice_id') {
+                    $choice_ids = explode(',', $value);
+                    if (is_array($choice_ids)) {
+                        foreach ($choice_ids as $choice) {
+                            $this->addNarrativeRequest($choice, $hitCount, $pageOffset, $sort);
+                        }
+                    }
+                }
+            }
 
-        $this->addNarrativeRequest($choiceId, $hitCount, $pageOffset, $sort, $options);
-        foreach ($params as $key => $value) {
-            self::$bxClient->addRequestContextParameter($key, $value);
-            if($key == 'choice_id') {
-                $choice_ids = explode(',', $value);
-                if(is_array($choice_ids)) {
+            if ($additional_choices != '') {
+                $choice_ids = explode(',', $additional_choices);
+                if (is_array($choice_ids)) {
                     foreach ($choice_ids as $choice) {
                         $this->addNarrativeRequest($choice, $hitCount, $pageOffset, $sort);
                     }
@@ -479,17 +490,13 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
             }
         }
 
-        if($additional_choices != '') {
-            $choice_ids = explode(',', $additional_choices);
-            if(is_array($choice_ids)) {
-                foreach ($choice_ids as $choice) {
-                    $this->addNarrativeRequest($choice, $hitCount, $pageOffset, $sort);
-                }
-            }
+        if($execute)
+        {
+            $response = $this->getResponse();
+            $narrative = $response->getNarratives($choiceId);
+            return $narrative;
         }
-        $response = $this->getResponse();
-        $narrative = $response->getNarratives($choiceId);
-        return $narrative;
+
     }
 
     public function getNarrativeDependencies($choice_id) {
@@ -594,7 +601,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         if ($type == 'product') {
             $returnFields = array_merge($returnFields, ['id', 'score', 'products_bx_type', 'title', 'products_ordernumber', 'discountedPrice', 'products_bx_grouped_price', 'products_active', 'products_bx_grouped_active']);
         } elseif ($type == 'bxi_content') {
-          $returnFields = array_merge($returnFields, ['title', 'products_bxi_bxi_jssor_slide', 'products_bxi_bxi_jssor_transition', 'products_bxi_bxi_name', 'products_bxi_bxi_jssor_control', 'products_bxi_bxi_jssor_break']);
+            $returnFields = array_merge($returnFields, ['title', 'products_bxi_bxi_jssor_slide', 'products_bxi_bxi_jssor_transition', 'products_bxi_bxi_name', 'products_bxi_bxi_jssor_control', 'products_bxi_bxi_jssor_break']);
         } else {
             $returnFields = array_merge($returnFields, ['id', 'score', 'products_bx_type', 'products_blog_title', 'products_blog_id', 'products_blog_category_id', 'products_blog_media_id', 'products_blog_short_description']);
         }
@@ -746,8 +753,8 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         $bxRequests = array();
         foreach ($searches as $i => $search){
             if($search == 'blog') {
-               $textual_Limit = $blog_limit;
-               $product_limit = $blog_limit;
+                $textual_Limit = $blog_limit;
+                $product_limit = $blog_limit;
             }
             $bxRequest = new \com\boxalino\bxclient\v1\BxAutocompleteRequest($this->getShortLocale(),
                 $queryText, $textual_Limit, $product_limit, $auto_complete_choice,
@@ -924,7 +931,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
             return $productData;
         } else {
             if($_REQUEST['dev_bx_debug'] == 'true'){
-               $t3 = microtime(true);
+                $t3 = microtime(true);
             }
             if(empty($hitIds)) {
                 return array();
@@ -1387,5 +1394,24 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
 
     public function getRequestId() {
         return $this->getResponse()->getExtraInfo("_bx_request_id");
+    }
+
+    /**
+     * Creating a request with params to boxalino server
+     * Used when the context params contain data needed to be synced
+     *
+     * @param $choice
+     * @param array $params
+     */
+    public function sendRequestWithParams($choice, $params=array(), $final=false, $hitCount = 0)
+    {
+        $bxRequest = new \com\boxalino\bxclient\v1\BxParametrizedRequest($this->getShortLocale(), $choice, $hitCount);
+        $this->prefixContextParameter = $bxRequest->getRequestWeightedParametersPrefix();
+        $this->setPrefixContextParameter($this->prefixContextParameter, $params);
+        self::$bxClient->addRequest($bxRequest);
+        if($final)
+        {
+            self::$bxClient->sendAllChooseRequests();
+        }
     }
 }

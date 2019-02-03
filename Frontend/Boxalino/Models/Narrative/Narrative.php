@@ -15,6 +15,7 @@ class Shopware_Plugins_Frontend_Boxalino_Models_Narrative_Narrative
     CONST BOXALINO_NARRATIVE_SERVER_TEMPLATE_DIR = "Views/emotion/";
     CONST BOXALINO_NARRATIVE_SERVER_TEMPLATE_MAIN = "frontend/plugins/boxalino/narrative/main.tpl";
     CONST BOXALINO_NARRATIVE_SERVER_SCRIPTS_MAIN = "frontend/plugins/boxalino/narrative/script.tpl";
+    CONST BOXALINO_NARRATIVE_TEMPLATE_MAIN_NOREPLACE = "frontend/plugins/boxalino/narrative/category-main.tpl";
 
     protected $helper;
     protected $interceptor;
@@ -23,8 +24,11 @@ class Shopware_Plugins_Frontend_Boxalino_Models_Narrative_Narrative
     protected $choiceId;
     protected $isEmotion;
     protected $additionalChoiceIds;
+    protected $execute;
 
-    public function __construct($choiceId, $request, $isEmotion = false, $additionalChoiceIds = null)
+    protected $customContextValues = array("block", "position", "class", "rewrite");
+
+    public function __construct($choiceId, $request, $isEmotion = false, $additionalChoiceIds = null, $execute = false)
     {
         $this->choiceId = $choiceId;
         if(empty($choiceId))
@@ -34,6 +38,7 @@ class Shopware_Plugins_Frontend_Boxalino_Models_Narrative_Narrative
 
         $this->isEmotion = $isEmotion;
         $this->additionalChoiceIds = $additionalChoiceIds;
+        $this->execute = $execute;
         $this->request = $request;
         $this->helper = Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper::instance();
         $this->interceptor = Shopware()->Plugins()->Frontend()->Boxalino()->getSearchInterceptor();
@@ -47,7 +52,17 @@ class Shopware_Plugins_Frontend_Boxalino_Models_Narrative_Narrative
     public function getNarratives()
     {
         list($options, $hitCount, $pageOffset, $sort) = $this->getPageSetup();
-        return $this->helper->getNarrative($this->choiceId, $this->additionalChoiceIds, $options, $hitCount, $pageOffset, $sort, $this->request);
+        return $this->helper->getNarrative($this->choiceId, $this->additionalChoiceIds, $options, $hitCount, $pageOffset, $sort, $this->request, $this->execute);
+    }
+
+    /**
+     * Get just the response from the server
+     *
+     * @return mixed
+     */
+    public function getNarrativeResponse()
+    {
+        return $this->helper->getNarrative($this->choiceId, null, array(), 1, 0, null, array(), $this->execute);
     }
 
     /**Get dependencies
@@ -89,6 +104,16 @@ class Shopware_Plugins_Frontend_Boxalino_Models_Narrative_Narrative
         return self::BOXALINO_NARRATIVE_SERVER_TEMPLATE_MAIN;
     }
 
+    public function getMainTemplateNoReplace($templateFromNarrative = null)
+    {
+        if(is_null($templateFromNarrative))
+        {
+            return self::BOXALINO_NARRATIVE_TEMPLATE_MAIN_NOREPLACE;
+        }
+
+        return $templateFromNarrative;
+    }
+
     public function getServerSideScriptTemplate()
     {
         return self::BOXALINO_NARRATIVE_SERVER_SCRIPTS_MAIN;
@@ -109,6 +134,23 @@ class Shopware_Plugins_Frontend_Boxalino_Models_Narrative_Narrative
 
         return array($options, $hitCount, $pageOffset, $sort);
 
+    }
+
+    public function processNarrativeParameters($parameters)
+    {
+        $decoder = $this->getRenderer();
+        $values = array();
+        foreach ($parameters as $parameter)
+        {
+            $paramName = $parameter['name'];
+            if(in_array($paramName, $this->customContextValues)){
+                $assignValues = $decoder->getDecodedValues($parameter['values']);
+                $assignValues = sizeof($assignValues) == 1 ? reset($assignValues) : $assignValues;
+                $values['narrative_block_' . $paramName] = $assignValues;
+            }
+        }
+
+        return $values;
     }
 
     public function renderDependencies($choice_id)
@@ -143,6 +185,11 @@ class Shopware_Plugins_Frontend_Boxalino_Models_Narrative_Narrative
 
     protected function getRequestWithReferrerParams()
     {
+        if(empty($this->request))
+        {
+            return $this->request;
+        }
+
         $address = $_SERVER['HTTP_REFERER'];
         $basePath = $this->request->getBasePath();
         $start = strpos($address, $basePath) + strlen($basePath);

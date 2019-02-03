@@ -33,6 +33,16 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
     protected $shopCategorySelect = false;
 
     /**
+     * @var bool
+     */
+    protected $isNarrative = false;
+
+    /**
+     * @var bool
+     */
+    protected $replaceMain = false;
+
+    /**
      * Shopware_Plugins_Frontend_Boxalino_SearchInterceptor constructor.
      * @param Shopware_Plugins_Frontend_Boxalino_Bootstrap $bootstrap
      */
@@ -246,7 +256,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             $t1 = microtime(true);
         }
         $this->init($arguments);
-        Enlight()->Plugins()->Controller()->Json()->setPadding();
+        Shopware()->Plugins()->Controller()->Json()->setPadding();
 
         $term = $this->getSearchTerm();
         if (empty($term) || strlen($term) < $this->Config()->get('MinSearchLenght')) {
@@ -496,10 +506,13 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
 
         $filter = array();
         $viewData = $this->View()->getAssign();
-        if(!empty($viewData['sCategoryContent']['attribute']['narrative_choice']))
+
+        $this->prepareNarrativeCase($viewData);
+        if($this->isNarrative && $this->replaceMain)
         {
-            return $this->processNarrativeRequest($viewData['sCategoryContent']['attribute']['narrative_choice'], $viewData['sCategoryContent']['attribute']['narrative_additional_choice'], $arguments);
+            return $this->processNarrativeRequest($viewData['sCategoryContent']['attribute']['narrative_choice'], $viewData['sCategoryContent']['attribute']['narrative_additional_choice']);
         }
+
         $catId = $this->Request()->getParam('sCategory');
         $streamId = $this->BxData()->findStreamIdByCategoryId($catId);
         if ((!empty($streamId) && !$this->Config()->get('boxalino_navigation_product_stream'))) {
@@ -570,6 +583,9 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             $this->Helper()->addNotification("Navigation before response took in total: " . (microtime(true)- $start) * 1000 . "ms.");
         }
         $this->Helper()->addSearch('', $pageOffset, $hitCount, 'product', $sort, $options, $filter, !is_null($streamId));
+        if($this->isNarrative && !$this->replaceMain){
+            $this->processNarrativeRequest($viewData['sCategoryContent']['attribute']['narrative_choice'], $viewData['sCategoryContent']['attribute']['narrative_additional_choice'], false);
+        }
 
         if($this->Helper()->getResponse()->getRedirectLink() != '') {
             $this->Controller()->redirect($this->Helper()->getResponse()->getRedirectLink());
@@ -614,10 +630,11 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             'shortParameters' => $this->get('query_alias_mapper')->getQueryAliases(),
             'bx_request_id' => $this->Helper()->getRequestId()
         );
+        $narrativeTemplateData = $this->getNarrativeTemplateData($viewData['sCategoryContent']['attribute']['narrative_choice'], $viewData['sCategoryContent']['attribute']['narrative_additional_choice']);
         $categoryTemplateData = new Shopware_Plugins_Frontend_Boxalino_Models_Listing_Template_CategoryData($this->Helper(), $viewData);
         $viewData = $categoryTemplateData->update();
 
-        $templateProperties = array_merge($viewData, $templateProperties);
+        $templateProperties = array_merge($viewData, $templateProperties, $narrativeTemplateData);
         $this->View()->assign($templateProperties);
 
         if($_REQUEST['dev_bx_debug'] == 'true'){
@@ -629,22 +646,70 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
     }
 
     /**
+     * Call for narrative element on category page
+     *
+     * @param $choiceId
+     * @param $additionalChoice
+     * @return array
+     * @throws Exception
+     */
+    public function getNarrativeTemplateData($choiceId, $additionalChoice)
+    {
+        $narrativeLogic = new Shopware_Plugins_Frontend_Boxalino_Models_Narrative_Narrative($choiceId, array(), false, $additionalChoice, true);
+
+        $narratives = $narrativeLogic->getNarrativeResponse();
+        $dependencies = $narrativeLogic->getDependencies();
+        $renderer = $narrativeLogic->getRenderer();
+        $narrativeData = $renderer->getTemplateDataToBeAssigned($narratives);
+
+        $globalParams = $narrativeLogic->processNarrativeParameters($narratives[0]['parameters']);
+
+        $this->View()->extendsTemplate($narrativeLogic->getServerSideScriptTemplate());
+        $this->View()->extendsTemplate($narrativeLogic->getMainTemplateNoReplace($globalParams['narrative_block_block']));
+
+        return array_merge($globalParams, array(
+            'narrativeData'=>$narrativeData,
+            'dependencies' => $dependencies,
+            'narrative' => $narratives,
+            'bxRender' => $renderer->setDataForRendering($narrativeData)
+        ));
+    }
+
+    /**
+     * Set class variable with narrative status for category view
+     *
+     * @param $viewData
+     */
+    protected function prepareNarrativeCase($viewData)
+    {
+        if(!empty($viewData['sCategoryContent']['attribute']['narrative_choice'])) {
+            $this->isNarrative = true;
+        }
+
+        if($viewData['sCategoryContent']['attribute']['narrative_replace_main'])
+        {
+            $this->replaceMain = true;
+        }
+    }
+
+    /**
      * Processing narrative request;
      * If finder, a divided logic to be applied
      *
      * @param $choiceId
      * @param null $additionalChoiceId
+     * @param bool $replaceMain
      * @param Enlight_Event_EventArgs $arguments
      * @return bool
      */
-    public function processNarrativeRequest($choiceId, $additionalChoiceId = null, Enlight_Event_EventArgs $arguments)
+    public function processNarrativeRequest($choiceId, $additionalChoiceId = null, $execute = true)
     {
         if($choiceId === "productfinder")
         {
-            return $this->processCPOFinderRequest($choiceId, $additionalChoiceId, $arguments);
+            return $this->processCPOFinderRequest($choiceId, $additionalChoiceId);
         }
 
-        return $this->processNarrative($choiceId, $additionalChoiceId, $arguments);
+        return $this->processNarrative($choiceId, $additionalChoiceId, $execute);
     }
 
     /**
@@ -655,7 +720,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
      * @param Enlight_Event_EventArgs $arguments
      * @return bool
      */
-    public function processCPOFinderRequest($choiceId, $hitCount, Enlight_Event_EventArgs $arguments)
+    public function processCPOFinderRequest($choiceId, $hitCount)
     {
         try {
             $data = $this->View()->getAssign();
@@ -681,14 +746,22 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
     /**
      * catching a narrative request
      * checking for the choice id and for the additional choice ids to render the requested narrative
+     * @param $choiceId
+     * @param null $additionalChoiceId
+     * @return bool
      */
-    public function processNarrative($choiceId, $additionalChoiceId = null, Enlight_Event_EventArgs $arguments)
+    public function processNarrative($choiceId, $additionalChoiceId = null, $execute = true)
     {
         try {
             $data = $this->View()->getAssign();
-            $narrativeLogic = new Shopware_Plugins_Frontend_Boxalino_Models_Narrative_Narrative($choiceId, $this->Request(), false, $additionalChoiceId);
-
+            $narrativeLogic = new Shopware_Plugins_Frontend_Boxalino_Models_Narrative_Narrative($choiceId, $this->Request(), false, $additionalChoiceId, $this->replaceMain);
             $narratives = $narrativeLogic->getNarratives();
+
+            if(!$execute)
+            {
+                return;
+            }
+
             $dependencies = $narrativeLogic->getDependencies();
             $renderer = $narrativeLogic->getRenderer();
             $narrativeData = $renderer->getTemplateDataToBeAssigned($narratives);
@@ -718,7 +791,6 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             var_dump($e->getMessage());
             exit;
         }
-
     }
 
     protected function prepareManufacturer()

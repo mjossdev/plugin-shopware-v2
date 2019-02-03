@@ -35,13 +35,13 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxRender
         $this->resourceManager = Shopware_Plugins_Frontend_Boxalino_Helper_BxResourceManager::instance();
     }
 
-    protected function isJson($string)
+    public function isJson($string)
     {
         json_decode($string);
         return (json_last_error() == JSON_ERROR_NONE);
     }
 
-    protected function getDecodedValues($values)
+    public function getDecodedValues($values)
     {
         if(is_array($values)) {
             foreach ($values as $i => $value) {

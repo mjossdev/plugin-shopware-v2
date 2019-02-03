@@ -35,7 +35,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
     }
 
     public function getVersion() {
-        return '1.6.22';
+        return '1.6.23';
     }
 
     public function getInfo() {
@@ -119,6 +119,13 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
             'displayInBackend' => true,
             'position' => 410,
         ], null, true);
+
+        $service->update('s_categories_attributes', 'narrative_replace_main', TypeMapping::TYPE_BOOLEAN, [
+            'label' => 'Boxalino Narrative Replace Main',
+            'supportText' => 'If checked - the entire page content is replaced by the narrative; if unchecked - the narrative to extend the default view.',
+            'displayInBackend' => true,
+            'position' => 420,
+        ], null, true);
     }
 
     public function addNarrativeAttributesOnDetail()
@@ -137,6 +144,13 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
             'displayInBackend' => true,
             'position' => 410,
             'custom' => true,
+        ], null, true);
+
+        $service->update('s_articles_attributes', 'narrative_replace_main', TypeMapping::TYPE_BOOLEAN, [
+            'label' => 'Boxalino Narrative Replace Main',
+            'supportText' => 'If checked - the entire page content is replaced by the narrative; if unchecked - the narrative to extend the default view.',
+            'displayInBackend' => true,
+            'position' => 420,
         ], null, true);
     }
 
