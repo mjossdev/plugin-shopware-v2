@@ -286,6 +286,29 @@
     "description": "If active, the cache will not be disabled."
   },
   {
+    "name": "navigation_narrative_enabled",
+    "label": "Navigation - Enable Narrative Call",
+    "type": "select",
+    "store": [
+      [
+        0,
+        "Disable"
+      ],
+      [
+        1,
+        "Enable"
+      ]
+    ],
+    "value": 0,
+    "description": "Is a narrative call added on navigation?"
+  },
+  {
+    "name": "navigation_narrative_widget_name",
+    "label": "Navigation - Narrative - Choice ID",
+    "value": "narrative_category",
+    "description": "Optional: default value is \"narrative_category\" and should normally not be changed."
+  },
+  {
     "name": "autocomplete_enabled",
     "label": "Search - Autocomplete",
     "type": "select",
