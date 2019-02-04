@@ -1,4 +1,9 @@
 <?php
+use Shopware\Bundle\AttributeBundle\Service\TypeMapping;
+
+/**
+ * Class Shopware_Plugins_Frontend_Boxalino_Bootstrap
+ */
 class Shopware_Plugins_Frontend_Boxalino_Bootstrap
     extends Shopware_Components_Plugin_Bootstrap {
 
