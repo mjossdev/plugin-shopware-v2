@@ -88,6 +88,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
             $this->addNarrativeAttributesOnCategory();
             $this->addNarrativeAttributesOnDetail();
             $this->applyBackendViewModifications();
+            $this->removeDatabase();
             $this->createDatabase();
             $this->registerEmotions();
             $this->registerSnippets();
