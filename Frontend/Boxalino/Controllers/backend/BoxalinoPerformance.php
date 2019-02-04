@@ -1,8 +1,17 @@
 <?php
 
 class Shopware_Controllers_Backend_BoxalinoPerformance extends Shopware_Controllers_Backend_ExtJs
+    implements CSRFWhitelistAware
 {
 
+    public function getWhitelistedCSRFActions()
+    {
+        return [
+            'getListingSortings',
+            'getConfigOptions',
+            'getNarrativeOptions'
+        ];
+    }
     public function getListingSortingsAction()
     {
         /**@var $namespace Enlight_Components_Snippet_Namespace*/

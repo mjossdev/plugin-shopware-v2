@@ -1,6 +1,19 @@
 <?php
 class Shopware_Controllers_Backend_BoxalinoConfig extends Shopware_Controllers_Backend_ExtJs
+    implements CSRFWhitelistAware
 {
+
+    public function getWhitelistedCSRFActions()
+    {
+        return [
+            'getStores',
+            'uploadConfig',
+            'applyConfig',
+            'exportConfig',
+            'getStoreConfig',
+            'saveConfig'
+        ];
+    }
 
     protected $header = ['name', 'label', 'value', 'exclude', 'id', 'type'];
 
