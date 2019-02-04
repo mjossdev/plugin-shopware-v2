@@ -630,7 +630,11 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             'shortParameters' => $this->get('query_alias_mapper')->getQueryAliases(),
             'bx_request_id' => $this->Helper()->getRequestId()
         );
-        $narrativeTemplateData = $this->getNarrativeTemplateData($viewData['sCategoryContent']['attribute']['narrative_choice'], $viewData['sCategoryContent']['attribute']['narrative_additional_choice']);
+        $narrativeTemplateData = array();
+        if($this->isNarrative)
+        {
+            $narrativeTemplateData = $this->getNarrativeTemplateData($viewData['sCategoryContent']['attribute']['narrative_choice'], $viewData['sCategoryContent']['attribute']['narrative_additional_choice']);
+        }
         $categoryTemplateData = new Shopware_Plugins_Frontend_Boxalino_Models_Listing_Template_CategoryData($this->Helper(), $viewData);
         $viewData = $categoryTemplateData->update();
 
