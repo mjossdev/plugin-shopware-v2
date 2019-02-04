@@ -1,4 +1,5 @@
 <?php
+use Shopware\Components\CSRFWhitelistAware;
 class Shopware_Controllers_Backend_BoxalinoConfig extends Shopware_Controllers_Backend_ExtJs
     implements CSRFWhitelistAware
 {

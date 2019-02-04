@@ -1,5 +1,20 @@
 <?php
-class Shopware_Controllers_Frontend_RecommendationSlider extends Enlight_Controller_Action {
+use Shopware\Components\CSRFWhitelistAware;
+class Shopware_Controllers_Frontend_RecommendationSlider extends Enlight_Controller_Action
+    implements CSRFWhitelistAware
+{
+    public function getWhitelistedCSRFActions()
+    {
+        return [
+            'index',
+            'detail',
+            'productStreamSliderRecommendations',
+            'portfolioRecommendation',
+            'blogRecommendation',
+            'detailBlogRecommendation'
+
+        ];
+    }
 
     /**
      * @var sMarketing
@@ -144,8 +159,6 @@ class Shopware_Controllers_Frontend_RecommendationSlider extends Enlight_Control
         }
     }
 
-
-
     public function portfolioRecommendationAction() {
 
         try{
@@ -189,7 +202,6 @@ class Shopware_Controllers_Frontend_RecommendationSlider extends Enlight_Control
         }
 
     }
-
 
     public function blogRecommendationAction() {
 
