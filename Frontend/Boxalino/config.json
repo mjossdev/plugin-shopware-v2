@@ -766,6 +766,7 @@
   {
     "name": "export_timeout",
     "label": "Exporter - Export - Server Timeout",
+    "value": 120,
     "description": "Optional: Keeping connection open to DI server in order to wait for processing the archive for any errors. Default set to 60(sec) for delta exports and 3000s for full export."
   },
   {
