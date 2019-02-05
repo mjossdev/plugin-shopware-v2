@@ -26,6 +26,8 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxRender
 
     protected $renderingData = array();
 
+    protected $logger;
+
     public function __construct($p13Helper, $searchInterceptor, $request)
     {
         $this->p13Helper = $p13Helper;
@@ -33,6 +35,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxRender
         $this->searchInterceptor = $searchInterceptor;
         $this->request = $request;
         $this->resourceManager = Shopware_Plugins_Frontend_Boxalino_Helper_BxResourceManager::instance();
+        $this->logger = Shopware()->Container()->get('pluginlogger');
     }
 
     public function isJson($string)
@@ -56,34 +59,43 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxRender
     public function renderElement($viewElement, $additionalParameter = array())
     {
         $html = '';
-        if($viewElement) {
-            $view = $this->createView($viewElement, $additionalParameter);
-            $parameters = $viewElement['parameters'];
-            foreach ($parameters as $parameter) {
-                $paramName = $parameter['name'];
-                $assignValues = $this->getDecodedValues($parameter['values']);
-                $assignValues = sizeof($assignValues) == 1 ? reset($assignValues) : $assignValues;
-                $view->assign($paramName, $assignValues);
-                if (strpos($paramName, 'shopware_smarty_function_') === 0) {
-                    $function = substr($paramName, strlen('shopware_smarty_function_'));
-                    foreach ($parameter['values'] as $value) {
-                        if($function == 'assign') {
-                            $args = [json_decode($value, true)];
-                        } else {
-                            $args = [$value];
-                        }
-                        call_user_func_array(array($view, $function), $args);
+        if(empty($viewElement))
+        {
+            return $html;
+        }
+
+        if($this->missingTemplate($viewElement))
+        {
+            $this->logger->warning("BxNarrative: Template has not been definied on " . $this->request->getRequestUri());
+            return $html;
+        }
+
+        $view = $this->createView($viewElement, $additionalParameter);
+        $parameters = $viewElement['parameters'];
+        foreach ($parameters as $parameter) {
+            $paramName = $parameter['name'];
+            $assignValues = $this->getDecodedValues($parameter['values']);
+            $assignValues = sizeof($assignValues) == 1 ? reset($assignValues) : $assignValues;
+            $view->assign($paramName, $assignValues);
+            if (strpos($paramName, 'shopware_smarty_function_') === 0) {
+                $function = substr($paramName, strlen('shopware_smarty_function_'));
+                foreach ($parameter['values'] as $value) {
+                    if($function == 'assign') {
+                        $args = [json_decode($value, true)];
+                    } else {
+                        $args = [$value];
                     }
+                    call_user_func_array(array($view, $function), $args);
                 }
             }
-            try{
-                $html = $view->render();
-            }catch(\Exception $e) {
-                var_dump($e->getMessage());
-                var_dump($additionalParameter);
-                var_dump($viewElement);exit;
-            }
         }
+
+        try{
+            $html = $view->render();
+        }catch(\Exception $e) {
+            $this->logger->error("BxNarrative: Exception " . $e->getMessage() . "on the element: " . json_encode($viewElement, true));
+        }
+
         return $html;
     }
 
@@ -100,14 +112,8 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxRender
         $format = $this->getFormatOfElement($viewElement);
         switch($format) {
             case self::RENDER_NARRATIVE_TYPE_PRODUCT:
-                if(!empty($additionalParameter)) {
-                    $data = $this->getViewElementProduct($viewElement, $additionalParameter);
-                    $view->assign('sArticle', $data);
-                } else {
-                    $data = $this->getListingData($viewElement);
-                    $view->assign($data);
-                    $this->prepareCollection($viewElement);
-                }
+                $data = $this->getViewElementProduct($viewElement, $additionalParameter);
+                $view->assign('sArticle', $data);
                 break;
             case self::RENDER_NARRATIVE_TYPE_LIST:
                 $data = $this->getListingData($viewElement);
@@ -295,6 +301,19 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxRender
         }
     }
 
+    protected function missingTemplate($element)
+    {
+        $parameters = $element['parameters'];
+        foreach ($parameters as $parameter) {
+            if($parameter['name'] == 'shopware_smarty_function_loadTemplate') {
+                return false;
+                break;
+            }
+        }
+
+        return true;
+    }
+
     protected function getVariant($visualElement)
     {
         $variantIndex = 0;
@@ -356,7 +375,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxRender
     }
 
     /**
-     * Gets data for the narrative ellements
+     * Gets data for the narrative elements
      * @param $type
      * @param $viewElement
      * @return array|bool|mixed|null
@@ -365,9 +384,6 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxRender
     {
         $data = array();
         switch($type) {
-            case self::RENDER_NARRATIVE_TYPE_PRODUCT:
-                $data = $this->getViewElementProduct($viewElement);
-                break;
             case self::RENDER_NARRATIVE_TYPE_LIST:
                 $data = $this->getListingData($viewElement);
                 break;
@@ -377,11 +393,6 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxRender
             case self::RENDER_NARRATIVE_TYPE_BANNER:
                 $data = $this->getBannerData($viewElement);
                 break;
-            case self::RENDER_NARRATIVE_TYPE_BLOG:
-                $data = $this->getBlogArticle($viewElement);
-                break;
-            case self::RENDER_NARRATIVE_TYPE_VOUCHER:
-                $data = $this->getVoucherData($viewElement);
             default:
                 break;
         }
