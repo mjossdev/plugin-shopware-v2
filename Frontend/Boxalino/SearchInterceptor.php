@@ -659,7 +659,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
      */
     public function getNarrativeTemplateData($choiceId, $additionalChoice)
     {
-        $narrativeLogic = new Shopware_Plugins_Frontend_Boxalino_Models_Narrative_Narrative($choiceId, array(), false, $additionalChoice, true);
+        $narrativeLogic = new Shopware_Plugins_Frontend_Boxalino_Models_Narrative_Narrative($choiceId, $this->Request(), false, $additionalChoice, true);
 
         $narratives = $narrativeLogic->getNarrativeResponse();
         $dependencies = $narrativeLogic->getDependencies();

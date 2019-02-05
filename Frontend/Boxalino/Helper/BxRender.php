@@ -8,7 +8,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxRender
 {
 
     CONST RENDER_NARRATIVE_TYPE_BLOG = 'blog';
-    CONST RENDER_NARRATIVE_TYPE_FACETS ='filter_panel';
+    CONST RENDER_NARRATIVE_TYPE_FACETS ='facets';
     CONST RENDER_NARRATIVE_TYPE_PRODUCT='product';
     CONST RENDER_NARRATIVE_TYPE_BANNER='banner';
     CONST RENDER_NARRATIVE_TYPE_VOUCHER='voucher';
