@@ -117,7 +117,7 @@ abstract class Shopware_Plugins_Frontend_Boxalino_Interceptor
      *
      * @return Enlight_View_Default
      */
-    protected function View()
+    public function View()
     {
         return $this->view;
     }

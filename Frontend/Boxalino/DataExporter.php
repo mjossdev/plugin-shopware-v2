@@ -28,6 +28,8 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
     protected $languages = array();
     protected $rootCategories = array();
 
+    protected $account = null;
+
     protected $translationFields = array(
         'name',
         'keywords',
@@ -80,14 +82,27 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
      */
     public function run()
     {
+        set_time_limit(10000);
+
         $data = array();
+        $systemMessages = array();
         $type = $this->delta ? 'delta' : 'full';
         try {
             if(!$this->canStartExport())
             {
                 $message = "BxIndexLog: Cancelled boxalino {$type} data sync. A different process is currently running.";
                 $this->log->info($message);
-                return var_export(array($message), true);
+
+                return $message;
+            }
+
+            $account = $this->getAccount();
+            if(empty($account))
+            {
+                $message = "The account name can not be empty. Try to run the {$type} export again.";
+                $this->log->warning($message);
+
+                return $message;
             }
 
             $this->log->info("BxIndexLog: Start of boxalino {$type} data sync.");
@@ -100,92 +115,97 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
             $this->updateExportTable(true);
             $this->_config = new Shopware_Plugins_Frontend_Boxalino_Helper_BxIndexConfig();
 
-            $this->log->info("BxIndexLog: Exporting for accounts: " . implode(', ', $this->_config->getAccounts()));
-            foreach ($this->_config->getAccounts() as $account) {
-                set_time_limit(10500);
+            $this->log->info("BxIndexLog: Exporting store ID : {$this->_config->getAccountStoreId($account)}");
+            $this->log->info("BxIndexLog: Initialize files on account: {$account}");
 
-                $this->log->info("BxIndexLog: Exporting store ID : {$this->_config->getAccountStoreId($account)}");
-                $this->log->info("BxIndexLog: Initialize files on account: {$account}");
-                $files = new Shopware_Plugins_Frontend_Boxalino_Helper_BxFiles($this->dirPath, $account, $type);
+            $files = new Shopware_Plugins_Frontend_Boxalino_Helper_BxFiles($this->dirPath, $account, $type);
+            $bxClient = new \com\boxalino\bxclient\v1\BxClient($account, $this->_config->getAccountPassword($account), "");
+            $this->bxData = new \com\boxalino\bxclient\v1\BxData($bxClient, $this->_config->getAccountLanguages($account), $this->_config->isAccountDev($account), $this->delta);
+            $this->log->info("BxIndexLog: verify credentials for account: " . $account);
 
-                $bxClient = new \com\boxalino\bxclient\v1\BxClient($account, $this->_config->getAccountPassword($account), "");
-                $this->bxData = new \com\boxalino\bxclient\v1\BxData($bxClient, $this->_config->getAccountLanguages($account), $this->_config->isAccountDev($account), $this->delta);
-                $this->log->info("BxIndexLog: verify credentials for account: " . $account);
-                try {
-                    $this->bxData->verifyCredentials();
-                } catch (\Throwable $e){
-                    $this->log->error("BxIndexLog: verifyCredentials failed with exception: {$e->getMessage()}");
-                    continue;
+            try {
+                $this->bxData->verifyCredentials();
+            } catch (\Throwable $e){
+                $this->log->error("BxIndexLog: verifyCredentials failed with exception: {$e->getMessage()}");
+                throw new \Exception("BxIndexLog: verifyCredentials on account {$account} failed with exception: {$e->getMessage()}");
+            }
+
+            $this->log->info('BxIndexLog: Preparing the attributes and category data for each language of the account: ' . $account);
+            $this->log->info("BxIndexLog: Preparing products.");
+            $exportProducts = $this->exportProducts($account, $files);
+            $this->shopProductIds = null;
+            if ($type == 'full') {
+                if ($this->_config->isCustomersExportEnabled($account)) {
+                    $this->log->info("BxIndexLog: Preparing customers.");
+                    $this->exportCustomers($account, $files);
                 }
 
-                $this->log->info('BxIndexLog: Preparing the attributes and category data for each language of the account: ' . $account);
-
-                $this->log->info("BxIndexLog: Preparing products.");
-                $exportProducts = $this->exportProducts($account, $files);
-                $this->shopProductIds = null;
-                if ($type == 'full') {
-                    if ($this->_config->isCustomersExportEnabled($account)) {
-                        $this->log->info("BxIndexLog: Preparing customers.");
-                        $this->exportCustomers($account, $files);
-                    }
-
-                    if ($this->_config->isTransactionsExportEnabled($account)) {
-                        $this->log->info("BxIndexLog: Preparing transactions.");
-                        $this->exportTransactions($account, $files);
-                    }
-                }
-
-                if (!$exportProducts) {
-                    $this->log->info('BxIndexLog: No Products found for account: ' . $account);
-                    $this->log->info('BxIndexLog: Finished account: ' . $account);
-                } else {
-                    if ($type == 'full') {
-
-                        $this->log->info('BxIndexLog: Prepare the final files: ' . $account);
-                        $this->log->info('BxIndexLog: Prepare XML configuration file: ' . $account);
-
-                        try {
-                            $this->log->info('BxIndexLog: Push the XML configuration file to the Data Indexing server for account: ' . $account);
-                            $this->bxData->pushDataSpecifications();
-                        } catch (\Throwable $e) {
-                            $value = @json_decode($e->getMessage(), true);
-                            if (isset($value['error_type_number']) && $value['error_type_number'] == 3) {
-                                $this->log->info('BxIndexLog: Try to push the XML file a second time, error 3 happens always at the very first time but not after: ' . $account);
-                                $this->bxData->pushDataSpecifications();
-                            } else {
-                                $this->log->info("BxIndexLog: pushDataSpecifications failed with exception: " . $e->getMessage());
-                            }
-                        }
-
-                        $this->log->info('BxIndexLog: Publish the configuration changes from the owner for account: ' . $account);
-                        $publish = $this->_config->publishConfigurationChanges($account);
-                        $changes = $this->bxData->publishChanges($publish);
-                        $data['token'] = $changes['token'];
-                        if (sizeof($changes['changes']) > 0 && !$publish) {
-                            $this->log->info("BxIndexLog: changes in configuration detected but not published as publish configuration automatically option has not been activated for account: " . $account);
-                        }
-                        $this->log->info('BxIndexLog: NORMAL - stop waiting for Data Intelligence processing for account: ' . $account);
-
-                    }
-                    $this->log->info('BxIndexLog: pushing to DI for account: ' . $account);
-                    try {
-                        $this->bxData->pushData($this->_config->getExportTemporaryArchivePath($account), $this->getTimeoutForExporter($account));
-                    } catch(RuntimeException $e){
-                        $this->log->warning($e->getMessage());
-                    } catch (\Throwable $e){
-                        $this->log->info("BxIndexLog: pushData failed with exception for : " . $e->getMessage());
-                    }
-                    $this->log->info('BxIndexLog: Finished account: ' . $account);
+                if ($this->_config->isTransactionsExportEnabled($account)) {
+                    $this->log->info("BxIndexLog: Preparing transactions.");
+                    $this->exportTransactions($account, $files);
                 }
             }
+
+            if (!$exportProducts) {
+                $this->log->info('BxIndexLog: No Products found for account: ' . $account);
+            } else {
+                if ($type == 'full') {
+                    $this->log->info('BxIndexLog: Prepare the final files: ' . $account);
+                    $this->log->info('BxIndexLog: Prepare XML configuration file: ' . $account);
+
+                    try {
+                        $this->log->info('BxIndexLog: Push the XML configuration file to the Data Indexing server for account: ' . $account);
+                        $this->bxData->pushDataSpecifications();
+                    } catch (\Throwable $e) {
+                        $value = @json_decode($e->getMessage(), true);
+                        if (isset($value['error_type_number']) && $value['error_type_number'] == 3) {
+                            $this->log->info('BxIndexLog: Try to push the XML file a second time, error 3 happens always at the very first time but not after: ' . $account);
+                            $this->bxData->pushDataSpecifications();
+                        } else {
+                            $this->log->info("BxIndexLog: pushDataSpecifications failed with exception: " . $e->getMessage());
+                            throw new \Exception("BxIndexLog: pushDataSpecifications failed with exception: " . $e->getMessage());
+                        }
+                    }
+
+                    $this->log->info('BxIndexLog: Publish the configuration changes from the owner for account: ' . $account);
+                    $publish = $this->_config->publishConfigurationChanges($account);
+                    $changes = $this->bxData->publishChanges($publish);
+                    $data['token'] = $changes['token'];
+                    if (sizeof($changes['changes']) > 0 && !$publish) {
+                        $this->log->info("BxIndexLog: changes in configuration detected but not published as publish configuration automatically option has not been activated for account: " . $account);
+                    }
+
+                    $this->log->info('BxIndexLog: NORMAL - stop waiting for Data Intelligence processing for account: ' . $account);
+                }
+
+                $this->log->info('BxIndexLog: pushing to DI for account: ' . $account);
+                try {
+                    $this->bxData->pushData($this->_config->getExportTemporaryArchivePath($account), $this->getTimeoutForExporter($account));
+                } catch(RuntimeException $e){
+                    $this->log->warning($e->getMessage());
+                    $systemMessages[] = $e->getMessage();
+                }
+            }
+
+            $this->log->info("BxIndexLog: End of boxalino $type data sync on account {$account}");
+            $this->updateExportTable();
         } catch(\Throwable $e) {
             error_log("BxIndexLog: failed with exception: " .$e->getMessage());
             $this->log->info("BxIndexLog: failed with exception: " . $e->getMessage());
             $this->updateExportTable();
+
+            $systemMessages[] = "BxIndexLog: failed with exception: ". $e->getMessage();
+            return implode("\n", $systemMessages);
         }
-        $this->log->info("BxIndexLog: End of boxalino $type data sync ");
-        $this->updateExportTable();
-        return var_export($data, true);
+
+        if(isset($data['token']))
+        {
+            $systemMessages[] = "New token for account {$account} - {$data['token']}";
+        }
+        $systemMessages[] = "BxIndexLog: End of boxalino $type data sync on account {$account}";
+
+
+        return implode("\n", $systemMessages);
     }
 
     /**
@@ -316,8 +336,8 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
                 $files->savepartToCsv('product_stream.csv', $data);
                 $data = [];
             }
-
         }
+
         $files->savepartToCsv('product_stream.csv', $data);
         $attributeSourceKey = $this->bxData->addCSVItemFile($files->getPath('product_stream.csv'), 'id');
         $this->bxData->addSourceStringField($attributeSourceKey, "stream_id", "stream_id");
@@ -397,8 +417,8 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
      * @param $account
      * @param $files
      */
-    private function exportItemPrices($account, $files) {
-
+    private function exportItemPrices($account, $files)
+    {
         $customer_group_key = $this->_config->getCustomerGroupKey($account);
         $customer_group_id = $this->_config->getCustomerGroupId($account);
         $header = true;
@@ -478,8 +498,8 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
      * @param $account
      * @param $files
      */
-    private function exportItemFacets($account, $files) {
-
+    private function exportItemFacets($account, $files)
+    {
         $db = $this->db;
         $mapped_option_values = array();
         $option_values = array();
@@ -487,7 +507,6 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
         $sql = $db->select()->from(array('f_o' => 's_filter_options'));
         $facets = $db->fetchAll($sql);
         foreach ($facets as $facet) {
-
             $log = true;
             $facet_id = $facet['id'];
             $facet_name = "option_{$facet_id}";
@@ -1513,7 +1532,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
             $this->deltaLast = date("Y-m-d H:i:s", strtotime("-30 minutes"));
             $db = $this->db;
             $sql = $db->select()
-                ->from('exports', array('export_date'))
+                ->from('boxalino_exports', array('export_date'))
                 ->order('export_date', "DESC")
                 ->limit(1);
             $this->deltaLast = $db->fetchOne($sql);
@@ -1565,8 +1584,8 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
      * @param $account
      * @param $files
      */
-    private function exportVouchers($account, $files){
-
+    private function exportVouchers($account, $files)
+    {
         $db = Shopware()->Db();
         $languages = $this->_config->getAccountLanguages($account);
         $header = true;
@@ -1630,4 +1649,16 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
         $files->savePartToCsv('voucher_codes.csv', $data);
         $this->bxData->addCSVItemFile($files->getPath('voucher_codes.csv'), 'id');
     }
+
+    public function setAccount($account)
+    {
+        $this->account = $account;
+        return $this;
+    }
+
+    public function getAccount()
+    {
+        return $this->account;
+    }
+
 }
