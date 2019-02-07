@@ -3,6 +3,7 @@
 /**
  * Class Shopware_Plugins_Frontend_Boxalino_DataExporter
  * Data exporter
+ * Updated to export the stores serialized instead of in a loop
  */
 class Shopware_Plugins_Frontend_Boxalino_DataExporter
 {
@@ -82,30 +83,30 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
      */
     public function run()
     {
-        set_time_limit(10000);
+        set_time_limit(7000);
 
         $data = array();
         $systemMessages = array();
         $type = $this->delta ? 'delta' : 'full';
         try {
-            if(!$this->canStartExport())
-            {
-                $message = "BxIndexLog: Cancelled boxalino {$type} data sync. A different process is currently running.";
-                $this->log->info($message);
-
-                return $message;
-            }
-
             $account = $this->getAccount();
             if(empty($account))
             {
-                $message = "The account name can not be empty. Try to run the {$type} export again.";
+                $message = "BxIndexLog: Cancelled Boxalino {$type} data sync. The account name can not be empty.";
                 $this->log->warning($message);
 
                 return $message;
             }
 
-            $this->log->info("BxIndexLog: Start of boxalino {$type} data sync.");
+            if(!$this->canStartExport())
+            {
+                $message = "BxIndexLog: Cancelled Boxalino {$type} data sync on {$account}. A different process is currently running.";
+                $this->log->info($message);
+
+                return $message;
+            }
+
+            $this->log->info("BxIndexLog: Start of Boxalino {$type} data sync.");
             if($this->delta)
             {
                 $this->getLastDelta();
@@ -187,7 +188,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
                 }
             }
 
-            $this->log->info("BxIndexLog: End of boxalino $type data sync on account {$account}");
+            $this->log->info("BxIndexLog: End of Boxalino $type data sync on account {$account}");
             $this->updateExportTable();
         } catch(\Throwable $e) {
             error_log("BxIndexLog: failed with exception: " .$e->getMessage());
@@ -202,7 +203,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
         {
             $systemMessages[] = "New token for account {$account} - {$data['token']}";
         }
-        $systemMessages[] = "BxIndexLog: End of boxalino $type data sync on account {$account}";
+        $systemMessages[] = "BxIndexLog: End of Boxalino $type data sync on account {$account}";
 
 
         return implode("\n", $systemMessages);

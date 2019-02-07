@@ -15,7 +15,7 @@ class Shopware_Plugins_Frontend_Boxalino_Models_Narrative_Narrative
     CONST BOXALINO_NARRATIVE_SERVER_TEMPLATE_DIR = "Views/emotion/";
     CONST BOXALINO_NARRATIVE_SERVER_TEMPLATE_MAIN = "frontend/plugins/boxalino/narrative/main.tpl";
     CONST BOXALINO_NARRATIVE_SERVER_SCRIPTS_MAIN = "frontend/plugins/boxalino/narrative/script.tpl";
-    CONST BOXALINO_NARRATIVE_TEMPLATE_MAIN_NOREPLACE = "frontend/plugins/boxalino/narrative/category-main.tpl";
+    CONST BOXALINO_NARRATIVE_TEMPLATE_MAIN_NOREPLACE = "frontend/plugins/boxalino/narrative/listing/index.tpl";
 
     protected $helper;
     protected $interceptor;
@@ -25,10 +25,11 @@ class Shopware_Plugins_Frontend_Boxalino_Models_Narrative_Narrative
     protected $isEmotion;
     protected $additionalChoiceIds;
     protected $execute;
+    protected $filters = [];
 
-    protected $customContextValues = array("block", "position", "class", "rewrite");
+    protected $customContextValues = array("block", "position", "class", "rewrite", "main_template");
 
-    public function __construct($choiceId, $request, $isEmotion = false, $additionalChoiceIds = null, $execute = false)
+    public function __construct($choiceId, $request, $isEmotion = false, $additionalChoiceIds = null, $execute = false, $filters = [])
     {
         $this->choiceId = $choiceId;
         if(empty($choiceId))
@@ -36,6 +37,7 @@ class Shopware_Plugins_Frontend_Boxalino_Models_Narrative_Narrative
             throw new Exception("The narrative can not be instantieted without a choice ID.");
         }
 
+        $this->filters = $filters;
         $this->isEmotion = $isEmotion;
         $this->additionalChoiceIds = $additionalChoiceIds;
         $this->execute = $execute;
@@ -52,7 +54,7 @@ class Shopware_Plugins_Frontend_Boxalino_Models_Narrative_Narrative
     public function getNarratives()
     {
         list($options, $hitCount, $pageOffset, $sort) = $this->getPageSetup();
-        return $this->helper->getNarrative($this->choiceId, $this->additionalChoiceIds, $options, $hitCount, $pageOffset, $sort, $this->request, $this->execute);
+        return $this->helper->getNarrative($this->choiceId, $this->additionalChoiceIds, $options, $hitCount, $pageOffset, $sort, $this->request, $this->filters, $this->execute);
     }
 
     /**
@@ -60,9 +62,14 @@ class Shopware_Plugins_Frontend_Boxalino_Models_Narrative_Narrative
      *
      * @return mixed
      */
-    public function getNarrativeResponse()
+    public function getNarrativeResponse($choiceId = null)
     {
-        return $this->helper->getNarrative($this->choiceId, null, array(), 1, 0, null, array(), $this->execute);
+        if(is_null($choiceId))
+        {
+            $choiceId = $this->choiceId;
+        }
+
+        return $this->helper->getNarrative($choiceId, null, array(), 1, 0, null, array(), array(), $this->execute);
     }
 
     /**Get dependencies
@@ -129,6 +136,10 @@ class Shopware_Plugins_Frontend_Boxalino_Models_Narrative_Narrative
         $sort =  $this->interceptor->BxData()->getSortOrder($criteria, null, true);
         $facets = $criteria->getFacets();
         $options = $this->interceptor->BxData()->getFacetConfig($facets, $this->request);
+
+        if (!$this->request->getParam('sCategory')) {
+            $this->request->setParam('sCategory', $context->getShop()->getCategory()->getId());
+        }
 
         $this->addOrderParamToRequest();
 

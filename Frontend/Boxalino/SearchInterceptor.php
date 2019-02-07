@@ -584,7 +584,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         }
         $this->Helper()->addSearch('', $pageOffset, $hitCount, 'product', $sort, $options, $filter, !is_null($streamId));
         if($this->isNarrative && !$this->replaceMain){
-            $this->processNarrativeRequest($viewData['sCategoryContent']['attribute']['narrative_choice'], $viewData['sCategoryContent']['attribute']['narrative_additional_choice'], false);
+            $this->processNarrativeRequest($viewData['sCategoryContent']['attribute']['narrative_choice'], $viewData['sCategoryContent']['attribute']['narrative_additional_choice'], false, $filter);
         }
 
         if($this->Helper()->getResponse()->getRedirectLink() != '') {
@@ -628,7 +628,8 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             'sSort' => $this->Request()->getParam('sSort'),
             'showListing' => true,
             'shortParameters' => $this->get('query_alias_mapper')->getQueryAliases(),
-            'bx_request_id' => $this->Helper()->getRequestId()
+            'bx_request_id' => $this->Helper()->getRequestId(),
+            'isNarrative' => $this->isNarrative
         );
         $narrativeTemplateData = array();
         if($this->isNarrative)
@@ -667,9 +668,13 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         $narrativeData = $renderer->getTemplateDataToBeAssigned($narratives);
 
         $globalParams = $narrativeLogic->processNarrativeParameters($narratives[0]['parameters']);
+        if(!isset($globalParams['narrative_block_main_template']))
+        {
+            $globalParams['narrative_block_main_template'] = null;
+        }
 
         $this->View()->extendsTemplate($narrativeLogic->getServerSideScriptTemplate());
-        $this->View()->extendsTemplate($narrativeLogic->getMainTemplateNoReplace($globalParams['narrative_block_block']));
+        $this->View()->extendsTemplate($narrativeLogic->getMainTemplateNoReplace($globalParams['narrative_block_main_template']));
 
         return array_merge($globalParams, array(
             'narrativeData'=>$narrativeData,
@@ -706,14 +711,14 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
      * @param Enlight_Event_EventArgs $arguments
      * @return bool
      */
-    public function processNarrativeRequest($choiceId, $additionalChoiceId = null, $execute = true)
+    public function processNarrativeRequest($choiceId, $additionalChoiceId = null, $execute = true, $filters=[])
     {
         if($choiceId === "productfinder")
         {
             return $this->processCPOFinderRequest($choiceId, $additionalChoiceId);
         }
 
-        return $this->processNarrative($choiceId, $additionalChoiceId, $execute);
+        return $this->processNarrative($choiceId, $additionalChoiceId, $execute, $filters);
     }
 
     /**
@@ -758,7 +763,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
     {
         try {
             $data = $this->View()->getAssign();
-            $narrativeLogic = new Shopware_Plugins_Frontend_Boxalino_Models_Narrative_Narrative($choiceId, $this->Request(), false, $additionalChoiceId, $this->replaceMain);
+            $narrativeLogic = new Shopware_Plugins_Frontend_Boxalino_Models_Narrative_Narrative($choiceId, $this->Request(), false, $additionalChoiceId, $this->replaceMain, $filters);
             $narratives = $narrativeLogic->getNarratives();
 
             if(!$execute)

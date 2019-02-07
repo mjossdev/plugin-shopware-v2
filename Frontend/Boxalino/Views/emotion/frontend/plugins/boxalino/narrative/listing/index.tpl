@@ -3,7 +3,7 @@
  * @see SearchInterceptor::getNarrativeTemplateData()
 *}
 {extends file='parent:frontend/listing/index.tpl'}
-{block name="frontend_index_content" nocache}
+{block name="frontend_index_content_top" nocache}
     {if ($narrative_block_position=="before" || empty($narrative_block_position))}
         {include file='frontend/plugins/boxalino/narrative/basic.tpl'}
     {/if}
@@ -14,3 +14,4 @@
         {include file='frontend/plugins/boxalino/narrative/basic.tpl'}
     {/if}
 {/block}
+

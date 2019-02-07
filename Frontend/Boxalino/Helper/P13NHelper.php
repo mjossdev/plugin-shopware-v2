@@ -430,7 +430,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         return false;
     }
 
-    protected function addNarrativeRequest($choice, $hitCount, $pageOffset, $sort, $options = array()) {
+    protected function addNarrativeRequest($choice, $hitCount, $pageOffset, $sort, $options = array(), $filters = array()) {
 
         $lang = $this->getShortLocale();
         if(strpos($choice, 'banner') !== FALSE){
@@ -444,6 +444,9 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
             $bxRequest->setOffset(0);
         } else {
             $bxRequest = new \com\boxalino\bxclient\v1\BxRequest($lang, $choice, $hitCount);
+            $requestFilters = $this->getSystemFilters();
+            $requestFilters = array_merge($requestFilters, $this->extractFilter($filters));
+            $bxRequest->setFilters($requestFilters);
             $bxRequest->setOffset($pageOffset);
             $bxRequest->setReturnFields(['products_ordernumber']);
             $bxRequest->setGroupBy('id');
@@ -460,14 +463,15 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
             }
 
         }
+
         self::$bxClient->addRequest($bxRequest);
     }
 
-    public function getNarrative($choiceId, $additional_choices, $options, $hitCount, $pageOffset, $sort, $params, $execute = false)
+    public function getNarrative($choiceId, $additional_choices, $options, $hitCount, $pageOffset, $sort, $params=[], $filters=[], $execute = false)
     {
         if(is_null(self::$bxClient->getChoiceIdRecommendationRequest($choiceId)))
         {
-            $this->addNarrativeRequest($choiceId, $hitCount, $pageOffset, $sort, $options);
+            $this->addNarrativeRequest($choiceId, $hitCount, $pageOffset, $sort, $options, $filters);
             foreach ($params as $key => $value) {
                 self::$bxClient->addRequestContextParameter($key, $value);
                 if ($key == 'choice_id') {
@@ -484,7 +488,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
                 $choice_ids = explode(',', $additional_choices);
                 if (is_array($choice_ids)) {
                     foreach ($choice_ids as $choice) {
-                        $this->addNarrativeRequest($choice, $hitCount, $pageOffset, $sort);
+                        $this->addNarrativeRequest($choice, $hitCount, $pageOffset, $sort, $options, $filters);
                     }
                 }
             }
