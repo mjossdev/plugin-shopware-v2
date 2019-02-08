@@ -647,6 +647,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             $this->Helper()->addNotification("Search after response took in total: " . (microtime(true) - $afterStart) * 1000 . "ms.");
             $this->Helper()->addNotification("Navigation time took in total: " . (microtime(true) - $start) * 1000 . "ms.");
         }
+
         return true;
     }
 

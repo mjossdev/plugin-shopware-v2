@@ -56,7 +56,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxRender
         return $values;
     }
 
-    public function renderElement($viewElement, $additionalParameter = array())
+    public function renderElement($viewElement, $additionalParameter = array(), $otherTemplateData = array())
     {
         $html = '';
         if(empty($viewElement))
@@ -70,12 +70,16 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxRender
             return $html;
         }
 
-        $view = $this->createView($viewElement, $additionalParameter);
+        $view = $this->createView($viewElement, $additionalParameter, $otherTemplateData);
         $parameters = $viewElement['parameters'];
         foreach ($parameters as $parameter) {
             $paramName = $parameter['name'];
             $assignValues = $this->getDecodedValues($parameter['values']);
             $assignValues = sizeof($assignValues) == 1 ? reset($assignValues) : $assignValues;
+            if(is_array($assignValues))
+            {
+                $assignValues = $this->getLocalizedValue($assignValues);
+            }
             $view->assign($paramName, $assignValues);
             if (strpos($paramName, 'shopware_smarty_function_') === 0) {
                 $function = substr($paramName, strlen('shopware_smarty_function_'));
@@ -99,21 +103,22 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxRender
         return $html;
     }
 
-    protected function createView($viewElement, $additionalParameter) {
+    protected function createView($viewElement, $additionalParameter, $otherTemplateData = array()) {
         $view =  new Enlight_View_Default(Shopware()->Container()->get('Template'));
         $this->applyThemeConfig($view);
         $this->assignSubRenderings($view, $viewElement);
-        $this->assignTemplateData($view, $viewElement, $additionalParameter);
+        $this->assignTemplateData($view, $viewElement, $additionalParameter, $otherTemplateData);
         return $view;
     }
 
-    public function assignTemplateData(&$view, $viewElement, $additionalParameter)
+    public function assignTemplateData(&$view, $viewElement, $additionalParameter, $otherTemplateData = array())
     {
         $format = $this->getFormatOfElement($viewElement);
         switch($format) {
             case self::RENDER_NARRATIVE_TYPE_PRODUCT:
                 $data = $this->getViewElementProduct($viewElement, $additionalParameter);
-                $view->assign('sArticle', $data);
+                $templateData = array_merge($otherTemplateData, array('sArticle'=>$data));
+                $view->assign($templateData);
                 break;
             case self::RENDER_NARRATIVE_TYPE_LIST:
                 $data = $this->getListingData($viewElement);
@@ -130,10 +135,12 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxRender
                 break;
             case self::RENDER_NARRATIVE_TYPE_BLOG:
                 $data = $this->getBlogArticle($viewElement, $additionalParameter);
+                $view->assign($otherTemplateData);
                 $view->assign('sArticle', $data);
                 $view->assign('productBoxLayout', 'minimal');
             case self::RENDER_NARRATIVE_TYPE_VOUCHER:
                 $voucherData = $this->getVoucherData($viewElement);
+                $view->assign($otherTemplateData);
                 $view->assign('voucher', $voucherData);
             default:
                 break;
