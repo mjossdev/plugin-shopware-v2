@@ -1032,16 +1032,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
 
     public function onFrontend(Enlight_Event_EventArgs $arguments) {
         try {
-            $this->onBasket($arguments);
             return $this->frontendInterceptor->intercept($arguments);
-        } catch (\Exception $e) {
-            $this->logException($e, __FUNCTION__, $arguments->getSubject()->Request()->getRequestUri());
-        }
-    }
-
-    public function onBasket(Enlight_Event_EventArgs $arguments) {
-        try {
-            return $this->frontendInterceptor->basket($arguments);
         } catch (\Exception $e) {
             $this->logException($e, __FUNCTION__, $arguments->getSubject()->Request()->getRequestUri());
         }

@@ -5,16 +5,23 @@
  */
 class Shopware_Plugins_Frontend_Boxalino_FrontendInterceptor
     extends Shopware_Plugins_Frontend_Boxalino_Interceptor {
-    
+
     private $_productRecommendations = array(
         'sRelatedArticles' => 'boxalino_accessories_recommendation',
         'sSimilarArticles' => 'boxalino_similar_recommendation'
     );
-    
+
     private $_productRecommendationsGeneric = array(
         'sCrossBoughtToo' => 'boxalino_complementary_recommendation',
         'sCrossSimilarShown' => 'boxalino_related_recommendation'
     );
+
+    protected static $similarReq = false;
+
+    protected static $alsoReq = false;
+
+    protected $ajaxEvents = ["ajaxAmount"];
+
 
     /**
      * add tracking, product recommendations
@@ -22,13 +29,18 @@ class Shopware_Plugins_Frontend_Boxalino_FrontendInterceptor
      * @return boolean
      */
     public function intercept(Enlight_Event_EventArgs $arguments) {
-        
+
         $this->init($arguments);
         if (!$this->Config()->get('boxalino_active')) {
             return null;
         }
 
         $script = null;
+        if(in_array($this->Request()->getActionName(), $this->ajaxEvents))
+        {
+            return $script;
+        }
+
         switch ($this->Request()->getParam('controller')) {
             case 'detail':
                 $sArticle = $this->View()->sArticle;
@@ -103,6 +115,8 @@ class Shopware_Plugins_Frontend_Boxalino_FrontendInterceptor
             case 'recommendation':
                 break;
             case 'checkout':
+                $script = $this->basket($arguments);
+                break;
             case 'account':
                 if ($_SESSION['Shopware']['sUserId'] != null) {
                     $script = Shopware_Plugins_Frontend_Boxalino_EventReporter::reportLogin($_SESSION['Shopware']['sUserId']);
@@ -136,7 +150,6 @@ class Shopware_Plugins_Frontend_Boxalino_FrontendInterceptor
         return $term;
     }
 
-    protected static $similarReq = false;
     /**
      * @param Enlight_Event_EventArgs $arguments
      * @return array
@@ -166,7 +179,6 @@ class Shopware_Plugins_Frontend_Boxalino_FrontendInterceptor
         return $return;
     }
 
-    protected static $alsoReq = false;
     /**
      * @param Enlight_Event_EventArgs $arguments
      * @return array
@@ -201,13 +213,8 @@ class Shopware_Plugins_Frontend_Boxalino_FrontendInterceptor
      * @param Enlight_Event_EventArgs $arguments
      * @return boolean
      */
-    public function basket(Enlight_Event_EventArgs $arguments) {
-
-        if (!$this->Config()->get('boxalino_active')) {
-            return null;
-        }
-
-        $this->init($arguments);
+    public function basket(Enlight_Event_EventArgs $arguments)
+    {
         if ($this->Request()->getControllerName() != 'checkout') {
             return null;
         }
@@ -231,7 +238,7 @@ class Shopware_Plugins_Frontend_Boxalino_FrontendInterceptor
         $basket = $this->Helper()->getBasket($arguments);
         $contextItems = $basket['content'];
         if (empty($contextItems)) return null;
-        
+
         usort($contextItems, function($a, $b) {
             return $b['price'] - $a['price'];
         });
@@ -239,9 +246,7 @@ class Shopware_Plugins_Frontend_Boxalino_FrontendInterceptor
         $contextParams = array();
         $contextItems = array_map(function($contextItem) use (&$contextParams) {
             try{
-                $article = Shopware()->Modules()->Articles()->sGetArticleById(
-                    $contextItem['articleID']
-                );
+                $article = Shopware()->Modules()->Articles()->sGetArticleById($contextItem['articleID']);
             } catch(\Exception $e) {
             }
             if($article) {
@@ -264,14 +269,17 @@ class Shopware_Plugins_Frontend_Boxalino_FrontendInterceptor
         $min = $this->Config()->get('boxalino_cart_recommendation_min');
         $this->Helper()->getRecommendation($choiceId, $max, $min, 0, $contextItems, 'basket', false, array(), false, $contextParams);
         $hitIds = $this->Helper()->getRecommendation($choiceId);
+
         $this->View()->addTemplateDir($this->Bootstrap()->Path() . 'Views/emotion/');
         if($this->Request()->getActionName() == 'ajaxCart') {
             $this->View()->extendsTemplate('frontend/plugins/boxalino/checkout/ajax_cart.tpl');
         } else {
             $this->View()->extendsTemplate('frontend/plugins/boxalino/checkout/cart.tpl');
         }
+
         $this->View()->assign('sRecommendations', $this->Helper()->getLocalArticles($hitIds));
         $this->View()->assign('bxBasket', true);
+
         return null;
     }
 
@@ -280,8 +288,8 @@ class Shopware_Plugins_Frontend_Boxalino_FrontendInterceptor
      * @param Enlight_Event_EventArgs $arguments
      * @return boolean
      */
-    public function addToBasket(Enlight_Event_EventArgs $arguments) {
-
+    public function addToBasket(Enlight_Event_EventArgs $arguments)
+    {
         if (!$this->Config()->get('boxalino_active')) {
             return null;
         }
@@ -357,5 +365,5 @@ class Shopware_Plugins_Frontend_Boxalino_FrontendInterceptor
         $this->View()->assign('bxForce', $force);
         $this->View()->assign('bxHelper', $this->Helper());
     }
-    
+
 }
