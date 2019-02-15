@@ -461,7 +461,6 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
                 $bxRequest->setFacets($facets);
                 $bxRequest->setGroupFacets(true);
             }
-
         }
 
         self::$bxClient->addRequest($bxRequest);
@@ -546,7 +545,6 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
 
 
     protected function createParametrizedPortfolioRequest($returnFields, $requestFilters, $lang, $choice, $max){
-
         $request = new \com\boxalino\bxclient\v1\BxParametrizedRequest($lang, $choice, $max, 10, ['products_ordernumber']);
         $request->setReturnFields($returnFields);
         $request->setGroupBy('products_group_id');

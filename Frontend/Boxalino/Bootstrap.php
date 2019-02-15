@@ -40,7 +40,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
     }
 
     public function getVersion() {
-        return '1.6.23';
+        return '1.6.24';
     }
 
     public function getInfo() {
@@ -88,7 +88,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
             $this->addNarrativeAttributesOnCategory();
             $this->addNarrativeAttributesOnDetail();
             $this->applyBackendViewModifications();
-            $this->removeDatabase();
+            $this->removeDatabase($version);
             $this->createDatabase();
             $this->registerEmotions();
             $this->registerSnippets();
@@ -102,7 +102,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
 
     public function uninstall() {
         try {
-            $this->removeDatabase();
+            $this->removeDatabase($this->getVersion());
             $this->removeSnippets();
         } catch (Exception $e) {
             $this->logException($e, __FUNCTION__);
@@ -307,26 +307,32 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
         throw new \Exception("Boxalino Export failed with messages: %s", implode(",", $errorMessages));
     }
 
-    private function createDatabase() {
+    private function createDatabase()
+    {
+        $tableNames = ["boxalino_exports", "boxalino_cronexports"];
         $db = Shopware()->Db();
-        $db->query(
-            'CREATE TABLE IF NOT EXISTS ' . $db->quoteIdentifier('boxalino_exports') .
-            ' ( ' . $db->quoteIdentifier('export_date') . ' DATETIME)'
-        );
-        $db->query(
-            'CREATE TABLE IF NOT EXISTS ' . $db->quoteIdentifier('boxalino_cronexports') .
-            ' ( ' . $db->quoteIdentifier('export_date') . ' DATETIME)'
-        );
+        foreach($tableNames as $table)
+        {
+            $db->query(
+                'CREATE TABLE IF NOT EXISTS ' . $db->quoteIdentifier($table) .
+                ' ( ' . $db->quoteIdentifier('export_date') . ' DATETIME)'
+            );
+        }
     }
 
-    private function removeDatabase() {
+    private function removeDatabase($version)
+    {
+        $tableNames = ["boxalino_exports", "boxalino_cronexports"];
+        if(version_compare($version, '1.6.23', '<='))
+        {
+            $tableNames = ["exports", "cronexports"];
+        }
+
         $db = Shopware()->Db();
-        $db->query(
-            'DROP TABLE IF EXISTS ' . $db->quoteIdentifier('boxalino_exports')
-        );
-        $db->query(
-            'DROP TABLE IF EXISTS ' . $db->quoteIdentifier('boxalino_cronexports')
-        );
+        foreach($tableNames as $table)
+        {
+            $db->query('DROP TABLE IF EXISTS ' . $db->quoteIdentifier($table));
+        }
     }
 
     private function registerEvents() {
