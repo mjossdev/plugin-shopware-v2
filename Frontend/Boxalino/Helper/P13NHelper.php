@@ -433,7 +433,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
     protected function addNarrativeRequest($choice, $hitCount, $pageOffset, $sort, $options = array(), $filters = array()) {
 
         $lang = $this->getShortLocale();
-        if(strpos($choice, 'banner') !== FALSE){
+        if(strpos($choice, 'banner') !== FALSE) {
             $type = 'bxi_content';
             $returnFields = $this->getReturnFields($type);
             $bxRequest = new \com\boxalino\bxclient\v1\BxParametrizedRequest($lang, $choice, 1, 1);
@@ -442,6 +442,19 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
             $bxRequest->setGroupBy($this->getEntityIdFieldName($type));
             $bxRequest->setReturnFields($returnFields);
             $bxRequest->setOffset(0);
+        }elseif(strpos($choice, 'read') !== FALSE || strpos($choice, 'blog') !== FALSE){
+            $bxRequest = new \com\boxalino\bxclient\v1\BxRequest($lang, $choice, $hitCount);
+            $requestFilters = $this->getSystemFilters("blog");
+            $requestFilters = array_merge($requestFilters, $this->extractFilter($filters));
+            $bxRequest->setFilters($requestFilters);
+            $bxRequest->setGroupBy($this->getEntityIdFieldName("blog"));
+            $bxRequest->setReturnFields($this->getReturnFields("blog"));
+            $bxRequest->setOffset($pageOffset);
+            if(!empty($options)) {
+                $facets = $this->prepareFacets($options);
+                $bxRequest->setFacets($facets);
+                $bxRequest->setGroupFacets(true);
+            }
         } else {
             $bxRequest = new \com\boxalino\bxclient\v1\BxRequest($lang, $choice, $hitCount);
             $requestFilters = $this->getSystemFilters();
