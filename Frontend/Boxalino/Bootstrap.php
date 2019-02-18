@@ -779,7 +779,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
             'category_id' => $categoryId
         );
 
-        $secure = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] != 'off') ? true : false;
+        $secure = $this->getServerIsSecure();
         $url = Shopware()->Front()->Router()->assemble($query);
         if($secure){
             if(strpos($url, 'https:') === false){
@@ -807,7 +807,6 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
     public function boxalinoBackendControllerPerformance() {
         Shopware()->Template()->addTemplateDir(Shopware()->Plugins()->Frontend()->Boxalino()->Path() . 'Views/');
         return Shopware()->Plugins()->Frontend()->Boxalino()->Path() . "/Controllers/backend/BoxalinoPerformance.php";
-
     }
 
     public function onNarrativeEmotion($data) {
@@ -1193,6 +1192,18 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
             $categoryId = Shopware()->Shop()->getCategory()->getId();
         }
         return $categoryId;
+    }
+
+    protected function getServerIsSecure()
+    {
+        $isSecure = false;
+        if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] == 'on') {
+            $isSecure = true;
+        }
+        elseif (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https' || !empty($_SERVER['HTTP_X_FORWARDED_SSL']) && $_SERVER['HTTP_X_FORWARDED_SSL'] == 'on') {
+            $isSecure = true;
+        }
+        return $isSecure;
     }
 
 }
