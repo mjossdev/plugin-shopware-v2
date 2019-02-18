@@ -426,9 +426,13 @@ function createButton() {
         if (questions[0] != currentFacet) {
             jQuery('.cpo-finder-button-container').append(backButton);
         }
-        var visualisation = facets.getFacetExtraInfo(currentFacet, 'visualisation');
+
         jQuery('.cpo-finder-button-container').append(resultsButton);
-        jQuery('.cpo-finder-button-container').append(skipButton);
+
+        var allowSkip = facets.getFacetExtraInfo(currentFacet, 'finderBlockSkip');
+        if(allowSkip==null) {
+            jQuery('.cpo-finder-button-container').append(skipButton);
+        }
         if(max_score > 0 && questions[0]!= currentFacet && questions[1]!= currentFacet && currentFacet != expertFieldName) {
             jQuery('.cpo-finder-button-container-below').append(showProductsButton.replace('%%CurrentScore%%', max_score));
         }
@@ -497,6 +501,7 @@ function isExpertQuestion(element) { return element==expertFieldName;}
 // find button logic
 $('#cpo-finder-results').on('click', function (e) {
     var proceedToNextQuestion;
+    var forceAnswer = facets.getFacetExtraInfo(currentFacet, 'finderForceAnswer');
     if (combinedQuestions != null){
         combinedQuestions.forEach(function (question) {
             if(facets.getCurrentSelects(question) == null){
@@ -505,7 +510,9 @@ $('#cpo-finder-results').on('click', function (e) {
                 proceedToNextQuestion = true;
             }
         })
-    } else {
+    } else if(forceAnswer){
+        proceedToNextQuestion = false;
+    } else{
         proceedToNextQuestion = true;
     }
     if (proceedToNextQuestion == false){
