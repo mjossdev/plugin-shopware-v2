@@ -216,7 +216,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             $data['highlighted_articles'] = $highlighted_articles;
             $data['highlighted'] = (sizeof($highlighted_articles)>0) ? "true" : "false";
             $data['top_match'] = $top_match;
-            $data['max_score'] = max(array_values($scores));
+            $data['max_score'] = round(max(array_values($scores)));
             if(empty($data['max_score']))
             {
                 $data['max_score'] = 0;

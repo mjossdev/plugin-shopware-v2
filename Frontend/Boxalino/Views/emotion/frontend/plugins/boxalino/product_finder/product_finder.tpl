@@ -27,22 +27,22 @@
                                 {if $sArticle.sConfigurator && ($sArticle.sConfiguratorSettings.type == 1 || $sArticle.sConfiguratorSettings.type == 2)}
                                     {* If user has no selection in this group set it to false *}
                                     {foreach $sArticle.sConfigurator as $configuratorGroup}
-                                            {if !$configuratorGroup.selected_value}
-                                                    {$activeConfiguratorSelection = false}
-                                                {/if}
-                                        {/foreach}
+                                        {if !$configuratorGroup.selected_value}
+                                            {$activeConfiguratorSelection = false}
+                                        {/if}
+                                    {/foreach}
                                 {/if}
 
                                 <div class="content product--details product--detail-upper block-group" data-ajax-wishlist="true" data-compare-ajax="true"{if $theme.ajaxVariantSwitch} data-ajax-variants-container="true"  data-ajax-bx-product-finder={$sArticle.articleID}{/if}>
                                     {* Product image *}
                                     {block name='frontend_detail_index_image_container'}
                                         <div class="product--image-container image-slider{if $sArticle.image && {config name=sUSEZOOMPLUS}} product--image-zoom{/if}"
-                                            {if $sArticle.image}
-                                                data-image-slider="true"
-                                                data-image-gallery="true"
-                                                data-maxZoom="{$theme.lightboxZoomFactor}"
-                                                data-thumbnails=".image--thumbnails"
-                                            {/if}>
+                                                {if $sArticle.image}
+                                            data-image-slider="true"
+                                            data-image-gallery="true"
+                                            data-maxZoom="{$theme.lightboxZoomFactor}"
+                                            data-thumbnails=".image--thumbnails"
+                                                {/if}>
 
                                             <span class="cpo-finder-listing-score">{s namespace="boxalino/intelligence" name="productfinder/score"}{/s} {$sArticle.bx_score}%</span>
                                             <progress class="cpo-finder-listing-score-progress" value="{$sArticle.bx_score}" max="100"></progress>
@@ -56,7 +56,7 @@
                                                 </div>
                                             {/if}
 
-                                            {include file="frontend/detail/image.tpl"}
+                                            {include file="frontend/listing/product-box/product-image.tpl"}
                                         </div>
                                     {/block}
 
@@ -106,7 +106,7 @@
             '</div>' +
             '</div>';
 
-        var expertListHtml ='<div class="cpo-finder-expert" id="%%ExpertFirstName%%%%ExpertLastName%%_button">' +
+        var expertListHtml ='<div class="cpo-finder-expert cpo-finder-answer" id="%%ExpertFirstName%%%%ExpertLastName%%_button">' +
             '<div class="cpo-finder-expert-img-list">' +
             '<img src="https://%%ExpertSelectionImage%%">' +
             '</div>' +
@@ -115,6 +115,7 @@
             '</div>' +
             '<div class="cpo-finder-expert-characteristics">' +
             '<ul>' +
+            '<li><p>%%ExpertPersona%%</p></li>' +
             '<li>' +
             '%%Characteristics0%%: %%Characteristics0Value%%' +
             '</li>'+
@@ -197,7 +198,7 @@
         var showProductsButton = '<button id="cpo-finder-show-products" style="">{s namespace='boxalino/intelligence' name='productfinder/showresultsuntil'}Show results until {/s} %%CurrentScore%% %</button>';
 
         {if !$Data.cpo_is_narrative}
-            {include file="frontend/plugins/boxalino/product_finder/product_finder_js.tpl" Data = $Data}
+        {include file="frontend/plugins/boxalino/product_finder/product_finder_js.tpl" Data = $Data}
         {/if}
 
     </script>
