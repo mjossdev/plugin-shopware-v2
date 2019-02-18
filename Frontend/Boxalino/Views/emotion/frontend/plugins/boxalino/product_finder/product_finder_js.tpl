@@ -47,16 +47,17 @@ jQuery('.cpo-finder-listing-comment-button').on('click', function() {
     }
 });
 
-// selected facets
 var selects = facets.getCurrentSelects();
-jQuery('.cpo-finder-right-criteria').append('<br>');
 if (selects) {
+    jQuery('.cpo-finder-right-criteria').append('<br>');
     var bxUrl = window.location.href;
     var bxNewUrl = '';
     var bxUrlParamString = window.location.search.substring(1);
     var bxUrlParams = bxUrlParamString.split('&');
     var s = '';
+    var emptyValues = 0;
     for (var key in selects) {
+        if (selects[key] =='*' || key == 'bxi_data_owner_expert') { emptyValues = emptyValues + 1; }
         if (key != 'bxi_data_owner_expert' && selects[key] != '*') {
             bxUrlParams.forEach(function(param) {
                 if (param.includes(key)) {
@@ -65,7 +66,6 @@ if (selects) {
             });
             prefix = window.location.protocol + '//' + window.location.hostname + '/';
             bxNewUrl = bxNewUrl.replace(prefix, '');
-            // facet Label
             facetLabel = facets.getFacetLabel(key, lang);
             jQuery('.cpo-finder-right-criteria').append('<b class="bx-finder-filter-label">' + facetLabel + '</b><br>');
             // if there is additional info, use that
@@ -73,12 +73,14 @@ if (selects) {
             if (facetExtraInfo && facetExtraInfo[selects[key]]) {
                 jQuery('.cpo-finder-right-criteria').append('<a href="' + bxNewUrl + '" class="' + key + ' bx-finder-filter-selected"><p id="' + selects[key] + '" class="bx-finder-filter-selected-value">- ' + facetExtraInfo[selects[key]]['additional_text'] + '</p></a>');
             }
-            // otherwise use value from DI
             else {
                 selects[key].forEach(function(key) {
                     jQuery('.cpo-finder-right-criteria').append('<a href="' + bxNewUrl + '" class="' + key + ' bx-finder-filter-selected"><p id="' + key + '" class="bx-finder-filter-selected-value">- ' + key + '</p></a>');
                 });
             }
+        }
+        if(emptyValues == Object.keys(selects).length) {
+            jQuery('.cpo-finder-right-content').hide();
         }
     }
 }
@@ -110,7 +112,6 @@ if (currentFacet == expertFieldName) {
     createButton();
 } else {
     if (combinedQuestions) {
-        jQuery('.cpo-finder-right-content').hide();
         combinedQuestions.forEach(function(temp) {
             var tempFacetValues = facets.getFacetValues(temp)[temp];
         });
