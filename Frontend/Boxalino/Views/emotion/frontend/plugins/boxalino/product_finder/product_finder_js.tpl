@@ -173,7 +173,7 @@ function addIntroMessage(selectedExpert) {
 function createExpert(locationClass, templateHtml, selectedExpert="") {
     if(selectedExpert != "") {
         selectedExpert = selectedExpert;
-    } else if(facets.getCurrentSelects(expertFieldName)) {
+    } else if(facets.getCurrentSelects(expertFieldName) && facets.getCurrentSelects(expertFieldName) !='*') {
         selectedExpert = facets.getCurrentSelects(expertFieldName)[0];
     } else {
         selectedExpert = defaultExpert;
@@ -409,19 +409,20 @@ function createButton() {
         if (displaySize && displaySize < facetValues.length) {
             jQuery('.cpo-finder-center-show-more-less').append(additionalButton);
             jQuery('.cpo-finder-center-show-more-less').append(fewerButton);
+            $('.cpo-finder-answer:gt(' + (displaySize - 1) + ')').hide();
         }
 
-        jQuery('.cpo-finder-additional').on('click', function() {
-            jQuery('.cpo-finder-fewer').show()
-            jQuery('.cpo-finder-additional').hide()
-        })
+        $('#cpo-finder-additional').on('click', function(e) {
+            $('.cpo-finder-answer').show();
+            $('#cpo-finder-additional').hide();
+            $('#cpo-finder-fewer').show();
+        });
+        $('#cpo-finder-fewer').on('click', function(e) {
+            $('.cpo-finder-answer:gt(' + (displaySize - 1) + ')').hide();
+            $('#cpo-finder-fewer').hide();
+            $('#cpo-finder-additional').show();
+        });
 
-        jQuery('.cpo-finder-fewer').on('click', function() {
-            jQuery('.cpo-finder-additional').show()
-            jQuery('.cpo-finder-fewer').hide()
-        })
-
-        // create other buttons
         if (questions[0] != currentFacet) {
             jQuery('.cpo-finder-button-container').append(backButton);
         }
@@ -515,18 +516,6 @@ $('#cpo-finder-results').on('click', function (e) {
         }
         goToNextQuestion();
     }
-});
-
-//show more action
-$('#cpo-finder-additional').on('click', function(e) {
-    $('.cpo-finder-answer').show();
-    $('#cpo-finder-additional').hide();
-    $('#cpo-finder-fewer').show();
-});
-$('#cpo-finder-fewer').on('click', function(e) {
-    $('.cpo-finder-answer:gt(' + (displaySize - 1) + ')').hide();
-    $('#cpo-finder-fewer').hide();
-    $('#cpo-finder-additional').show();
 });
 
 // skip button logic
