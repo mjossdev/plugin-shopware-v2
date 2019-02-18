@@ -48,7 +48,7 @@ jQuery('.cpo-finder-listing-comment-button').on('click', function() {
 });
 
 var selects = facets.getCurrentSelects();
-if (selects) {
+if (Object.keys(selects).length>0) {
     jQuery('.cpo-finder-right-criteria').append('<br>');
     var bxUrl = window.location.href;
     var bxNewUrl = '';
@@ -83,6 +83,8 @@ if (selects) {
             jQuery('.cpo-finder-right-content').hide();
         }
     }
+} else {
+    jQuery('.cpo-finder-right-content').hide();
 }
 
 if (questions[0] == currentFacet && facets.getCurrentSelects().length == undefined && facets.getCurrentSelects(questions[1]) == null) {
@@ -112,6 +114,7 @@ if (currentFacet == expertFieldName) {
     createButton();
 } else {
     if (combinedQuestions) {
+        jQuery('.cpo-finder-right-content').hide();
         combinedQuestions.forEach(function(temp) {
             var tempFacetValues = facets.getFacetValues(temp)[temp];
         });
