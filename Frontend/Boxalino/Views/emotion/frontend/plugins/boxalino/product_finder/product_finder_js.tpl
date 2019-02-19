@@ -192,7 +192,6 @@ function createExpert(locationClass, templateHtml, selectedExpert="") {
     var selectionImg = facets.getFacetValueExtraInfo(expertFieldName, selectedExpert, 'selection-img');
     var description = facets.getFacetValueExtraInfo(expertFieldName, selectedExpert, 'desciption');
     var badges = facets.getFacetValueExtraInfo(expertFieldName, selectedExpert, 'badges');
-    var role = facets.getFacetValueExtraInfo(expertFieldName, selectedExpert, 'role');
 
     jQuery(locationClass).append(
         templateHtml.replace('%%ExpertFirstName%%', expertFirstName)
@@ -200,7 +199,6 @@ function createExpert(locationClass, templateHtml, selectedExpert="") {
             .replace('%%ExpertFirstName%%', expertFirstName)
             .replace('%%ExpertLastName%%', expertLastName)
             .replace('%%ExpertDescription%%', description[lang])
-            .replace('%%ExpertRole%%', role[lang])
             .replace('%%ExpertBadges%%', badges[lang])
             .replace('%%ExpertPersona%%', expertPersona[lang])
             .replace('%%ExpertExpertise%%', expertExpertise[lang])
