@@ -82,10 +82,11 @@
         </div>
 
         <div class="cpo-finder-right">
-            {block name="frontend_product_finder_content_right"}
+            {block name="frontend_product_finder_content_right_main"}
                 <div class="cpo-finder-right-content">
                     <div class="cpo-finder-right-title">{s namespace='boxalino/intelligence' name='productfinder/yourchoice'}Your choice{/s}</div>
                     <div class="cpo-finder-right-criteria"></div>
+                    {block name="frontend_product_finder_content_right"}{/block}
                 </div>
             {/block}
         </div>
@@ -98,75 +99,78 @@
 
 {block name="frontend_product_finder_script"}
     <script>
-        var expertHtml ='<div class="cpo-finder-expert-img">' +
-            '<img src="https://%%ExpertQuestionImage%%" />' +
-            '</div>' +
-            '<div class="cpo-finder-expert-text">' +
-            '<div class="cpo-finder-expert-name">' +
-            '<h4>%%ExpertFirstName%% %%ExpertLastName%%</h4>' +
-            '</div>' +
-            '<div class="cpo-finder-expert-persona">' +
-            '<p>%%ExpertPersona%%</p>' +
-            '</div>' +
-            '</div>';
 
-        var expertListHtml ='<div class="cpo-finder-expert cpo-finder-answer" id="%%ExpertFirstName%%%%ExpertLastName%%_button">' +
-            '<div class="cpo-finder-expert-img-list">' +
-            '<img src="https://%%ExpertSelectionImage%%">' +
-            '</div>' +
-            '<div class="cpo-finder-expert-name">' +
-            '<h4>%%ExpertFirstName%% %%ExpertLastName%%</h4>' +
-            '</div>' +
-            '<div class="cpo-finder-expert-characteristics">' +
-            '<ul>' +
-            '<li><div="cpo-finder-expert-description">%%ExpertDescription%%</div></li>' +
-            '</ul>' +
-            '<div class="cpo-finder-expert-button">' +
-            '<button type="button" name="button">{s namespace='boxalino/intelligence' name='productfinder/choose'}choose{/s}</button>' +
-            '</div>' +
-            '</div>';
+        {block name="frontend_product_finder_script_templates"}
+            var expertHtml ='<div class="cpo-finder-expert-img">' +
+                '<img src="https://%%ExpertQuestionImage%%" />' +
+                '</div>' +
+                '<div class="cpo-finder-expert-text">' +
+                '<div class="cpo-finder-expert-name">' +
+                '<h4>%%ExpertFirstName%% %%ExpertLastName%%</h4>' +
+                '</div>' +
+                '<div class="cpo-finder-expert-persona">' +
+                '<p>%%ExpertPersona%%</p>' +
+                '</div>' +
+                '</div>';
 
-        var expertLeftHtml ='<div class="cpo-finder-expert-img">' +
-            '<img src="https://%%ExpertQuestionImage%%" />' +
-            '</div>' +
-            '<div class="cpo-finder-expert-text">'+
-            '<div class="cpo-finder-expert-name">' +
-            '<h4>%%ExpertFirstName%% %%ExpertLastName%%</h4>' +
-            '</div>' +
-            '</div>';
+            var expertListHtml ='<div class="cpo-finder-expert cpo-finder-answer" id="%%ExpertFirstName%%%%ExpertLastName%%_button">' +
+                '<div class="cpo-finder-expert-img-list">' +
+                '<img src="https://%%ExpertSelectionImage%%">' +
+                '</div>' +
+                '<div class="cpo-finder-expert-name">' +
+                '<h4>%%ExpertFirstName%% %%ExpertLastName%%</h4>' +
+                '</div>' +
+                '<div class="cpo-finder-expert-characteristics">' +
+                '<ul>' +
+                '<li><div="cpo-finder-expert-description">%%ExpertDescription%%</div></li>' +
+                '</ul>' +
+                '<div class="cpo-finder-expert-button">' +
+                '<button type="button" name="button">{s namespace='boxalino/intelligence' name='productfinder/choose'}choose{/s}</button>' +
+                '</div>' +
+                '</div>';
 
-        var checkboxImageWithLabel ='<div class="cpo-finder-answer">' +
-            '<img class="cpo-finder-answer-image-with-label" src="https://%%AnswerImage%%">' +
-            '<div class="cpo-finder-answer-text">' +
-            '<input class="%%FieldValue%%_check cpo-finder-answer-multiselect" type="checkbox" name="%%AnswerCheckboxName%%" value="%%AnswerCheckboxValue%%" %%AnswerCheckboxChecked%%> <div></div><span>%%AnswerText%%</span>' +
-            '</div>' +
-            '</div>';
+            var expertLeftHtml ='<div class="cpo-finder-expert-img">' +
+                '<img src="https://%%ExpertQuestionImage%%" />' +
+                '</div>' +
+                '<div class="cpo-finder-expert-text">'+
+                '<div class="cpo-finder-expert-name">' +
+                '<h4>%%ExpertFirstName%% %%ExpertLastName%%</h4>' +
+                '</div>' +
+                '</div>';
 
-        var checkboxLabelWithoutImage = '<div class="cpo-finder-answer">' +
-            '<div class="cpo-finder-answer-text">'+
-            '<input class="%%FieldValue%%_check cpo-finder-answer-multiselect" type="checkbox"name="%%AnswerCheckboxName%%" value="%%AnswerCheckboxValue%%" %%AnswerCheckboxChecked%%> <div></div><span>%%AnswerText%%</span>' +
-            '</div>' +
-            '</div>';
+            var checkboxImageWithLabel ='<div class="cpo-finder-answer">' +
+                '<img class="cpo-finder-answer-image-with-label" src="https://%%AnswerImage%%">' +
+                '<div class="cpo-finder-answer-text">' +
+                '<input class="%%FieldValue%%_check cpo-finder-answer-multiselect" type="checkbox" name="%%AnswerCheckboxName%%" value="%%AnswerCheckboxValue%%" %%AnswerCheckboxChecked%%> <div></div><span>%%AnswerText%%</span>' +
+                '</div>' +
+                '</div>';
 
-        var radioImageWithLabel =   '<div class="cpo-finder-answer">' +
-            '<img class="cpo-finder-answer-image-with-label" src="https://%%AnswerImage%%">' +
-            '<div class="cpo-finder-answer-text">' +
-            '<input class="%%FieldValue%%_check cpo-finder-answer-radio" type="radio"name="%%AnswerCheckboxName%%" value="%%AnswerCheckboxValue%%" %%AnswerCheckboxChecked%%> <div></div><span>%%AnswerText%%</span>' +
-            '</div>' +
-            '</div>';
+            var checkboxLabelWithoutImage = '<div class="cpo-finder-answer">' +
+                '<div class="cpo-finder-answer-text">'+
+                '<input class="%%FieldValue%%_check cpo-finder-answer-multiselect" type="checkbox"name="%%AnswerCheckboxName%%" value="%%AnswerCheckboxValue%%" %%AnswerCheckboxChecked%%> <div></div><span>%%AnswerText%%</span>' +
+                '</div>' +
+                '</div>';
 
-        var radioLabelWithoutImage =   '<div class="cpo-finder-answer">' +
-            '<div class="cpo-finder-answer-text">' +
-            '<input class="%%FieldValue%%_check cpo-finder-answer-radio" type="radio"name="%%AnswerCheckboxName%%" value="%%AnswerCheckboxValue%%" %%AnswerCheckboxChecked%%> <div></div><span>%%AnswerText%%</span>' +
-            '</div>' +
-            '</div>';
+            var radioImageWithLabel =   '<div class="cpo-finder-answer">' +
+                '<img class="cpo-finder-answer-image-with-label" src="https://%%AnswerImage%%">' +
+                '<div class="cpo-finder-answer-text">' +
+                '<input class="%%FieldValue%%_check cpo-finder-answer-radio" type="radio"name="%%AnswerCheckboxName%%" value="%%AnswerCheckboxValue%%" %%AnswerCheckboxChecked%%> <div></div><span>%%AnswerText%%</span>' +
+                '</div>' +
+                '</div>';
 
-        var additionalButton = '<button id="cpo-finder-additional" type="button" name="additionalButton">{s namespace='boxalino/intelligence' name='filter/morevalues'}more values{/s}</button>';
-        var fewerButton = '<button id="cpo-finder-fewer" style="display: none;" type="button" name="fewerButton">{s namespace='boxalino/intelligence' name='filter/lessvalues'}less values{/s}</button>';
-        var backButton = '<button id="cpo-finder-back" type="button" name="backButton">{s namespace='boxalino/intelligence' name='productfinder/back'}back{/s}</button>';
-        var resultsButton = '<button id="cpo-finder-results" type="button" name="resultsButton">{s namespace='boxalino/intelligence' name='productfinder/advance'}advance{/s}</button>';
-        var skipButton = '<button id="cpo-finder-skip"  type="button" name="backButton">{s namespace='boxalino/intelligence' name='productfinder/skip'}skip{/s}</button>';
-        var showProductsButton = '<button id="cpo-finder-show-products" style="">{s namespace='boxalino/intelligence' name='productfinder/showresultsuntil'}Show results until {/s} %%CurrentScore%% %</button>';
+            var radioLabelWithoutImage =   '<div class="cpo-finder-answer">' +
+                '<div class="cpo-finder-answer-text">' +
+                '<input class="%%FieldValue%%_check cpo-finder-answer-radio" type="radio"name="%%AnswerCheckboxName%%" value="%%AnswerCheckboxValue%%" %%AnswerCheckboxChecked%%> <div></div><span>%%AnswerText%%</span>' +
+                '</div>' +
+                '</div>';
+
+            var additionalButton = '<button id="cpo-finder-additional" type="button" name="additionalButton">{s namespace='boxalino/intelligence' name='filter/morevalues'}more values{/s}</button>';
+            var fewerButton = '<button id="cpo-finder-fewer" style="display: none;" type="button" name="fewerButton">{s namespace='boxalino/intelligence' name='filter/lessvalues'}less values{/s}</button>';
+            var backButton = '<button id="cpo-finder-back" type="button" name="backButton">{s namespace='boxalino/intelligence' name='productfinder/back'}back{/s}</button>';
+            var resultsButton = '<button id="cpo-finder-results" type="button" name="resultsButton">{s namespace='boxalino/intelligence' name='productfinder/advance'}advance{/s}</button>';
+            var skipButton = '<button id="cpo-finder-skip"  type="button" name="backButton">{s namespace='boxalino/intelligence' name='productfinder/skip'}skip{/s}</button>';
+            var showProductsButton = '<button id="cpo-finder-show-products" style="">{s namespace='boxalino/intelligence' name='productfinder/showresultsuntil'}Show results until {/s} %%CurrentScore%% %</button>';
+        {/block}
 
         {if !$Data.cpo_is_narrative}
         {include file="frontend/plugins/boxalino/product_finder/product_finder_js.tpl" Data = $Data}
