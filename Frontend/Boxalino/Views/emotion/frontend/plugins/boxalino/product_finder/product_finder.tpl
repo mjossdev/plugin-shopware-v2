@@ -83,12 +83,10 @@
         <div class="cpo-finder-right">
             <div class="cpo-finder-right-content">
                 <div class="cpo-finder-right-title">{s namespace='boxalino/intelligence' name='productfinder/yourchoice'}Your choice{/s}</div>
-                <div class="cpo-finder-right-criteria">
-                </div>
+                <div class="cpo-finder-right-criteria"></div>
             </div>
         </div>
-        <div class="cpo-finder-button-container-below">
-        </div>
+        <div class="cpo-finder-button-container-below"></div>
     </div>
 {/block}
 
@@ -115,16 +113,7 @@
             '</div>' +
             '<div class="cpo-finder-expert-characteristics">' +
             '<ul>' +
-            '<li><p>%%ExpertPersona%%</p></li>' +
-            '<li>' +
-            '%%Characteristics0%%: %%Characteristics0Value%%' +
-            '</li>'+
-            '<li>' +
-            '%%Characteristics1%%: %%Characteristics1Value%%' +
-            '</li>'+
-            '<li>' +
-            '%%Characteristics2%%: %%Characteristics2Value%%' +
-            '</li>' +
+            '<li><div="cpo-finder-expert-description">%%ExpertDescription%%</div></li>' +
             '</ul>' +
             '<div class="cpo-finder-expert-button">' +
             '<button type="button" name="button">{s namespace='boxalino/intelligence' name='productfinder/choose'}choose{/s}</button>' +
@@ -137,30 +126,6 @@
             '<div class="cpo-finder-expert-text">'+
             '<div class="cpo-finder-expert-name">' +
             '<h4>%%ExpertFirstName%% %%ExpertLastName%%</h4>' +
-            '</div>' +
-            '<div class="cpo-finder-expert-extra">' +
-            '<div class="cpo-finder-expert-persona">' +
-            '<p>%%ExpertPersona%%</p>' +
-            '</div>' +
-            '<div class="cpo-finder-expert-expertise">' +
-            '<div class="cpo-finder-expert-expertise-description">' +
-            '<p>Expert in:</p>'+
-            '<p>%%ExpertExpertise%%</p>'+
-            '</div>' +
-            '<div class="cpo-finder-expert-characteristics">' +
-            '<ul>' +
-            '<li>' +
-            '%%Characteristics0%%: %%Characteristics0Value%%' +
-            '</li>'+
-            '<li>'+
-            '%%Characteristics1%%: %%Characteristics1Value%%' +
-            '</li>'+
-            '<li>'+
-            '%%Characteristics2%%: %%Characteristics2Value%%' +
-            '</li>'+
-            '</li>'+
-            '</div>' +
-            '</div>' +
             '</div>' +
             '</div>';
 

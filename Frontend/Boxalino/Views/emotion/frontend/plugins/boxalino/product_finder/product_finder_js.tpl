@@ -190,12 +190,18 @@ function createExpert(locationClass, templateHtml, selectedExpert="") {
     var expertExpertise = facets.getFacetValueExtraInfo(expertFieldName, selectedExpert, 'expertise');
     var expertCharacteristics = facets.getFacetValueExtraInfo(expertFieldName, selectedExpert, 'characteristics');
     var selectionImg = facets.getFacetValueExtraInfo(expertFieldName, selectedExpert, 'selection-img');
+    var description = facets.getFacetValueExtraInfo(expertFieldName, selectedExpert, 'desciption');
+    var badges = facets.getFacetValueExtraInfo(expertFieldName, selectedExpert, 'badges');
+    var role = facets.getFacetValueExtraInfo(expertFieldName, selectedExpert, 'role');
 
     jQuery(locationClass).append(
         templateHtml.replace('%%ExpertFirstName%%', expertFirstName)
             .replace('%%ExpertLastName%%', expertLastName)
             .replace('%%ExpertFirstName%%', expertFirstName)
             .replace('%%ExpertLastName%%', expertLastName)
+            .replace('%%ExpertDescription%%', description[lang])
+            .replace('%%ExpertRole%%', role[lang])
+            .replace('%%ExpertBadges%%', badges[lang])
             .replace('%%ExpertPersona%%', expertPersona[lang])
             .replace('%%ExpertExpertise%%', expertExpertise[lang])
             .replace('%%Characteristics0%%', expertCharacteristics[0]['alt-text'][lang])
@@ -223,33 +229,34 @@ function createFields() {
         fieldContainer.append(createField(combinedQuestions[1], visualisation, facetValues));
         container.append(fieldContainer);
 
-        facets.getFacets().forEach(function(fieldName) {
+        facets.getFacets().forEach(function (fieldName) {
             createFieldListener(fieldName);
         });
 
-        // only show as many as defined
         var displaySize = facets.getFacetExtraInfo(combinedQuestions[1], 'enumDisplayMaxSize');
         var secondDisplaySize = facets.getFacetExtraInfo(combinedQuestions[0], 'enumDisplayMaxSize');
-        if(secondDisplaySize == null){
+        if (secondDisplaySize == null) {
             secondDisplaySize = facets.getFacetValues(currentFacet)[currentFacet].length;
         }
         var combinedDisplaySize = parseInt(secondDisplaySize) + parseInt(displaySize);
+        var totalFacetLength = parseInt(facets.getFacetValues(currentFacet)[currentFacet].length) + parseInt(facetValues.length);
 
-        if (displaySize) {
+        if (combinedDisplaySize > totalFacetLength) {
             $('.cpo-finder-answer:gt(' + (displaySize - 1) + ')').hide();
+
+            jQuery('.cpo-finder-center-show-more-less').append(additionalButton);
+            jQuery('.cpo-finder-center-show-more-less').append(fewerButton);
+            $('#cpo-finder-additional').on('click', function (e) {
+                $('.cpo-finder-answers-container-second cpo-finder-answer').show();
+                $('#cpo-finder-additional').hide();
+                $('#cpo-finder-fewer').show();
+            });
+            $('#cpo-finder-fewer').on('click', function (e) {
+                $('.cpo-finder-answer:gt(' + (combinedDisplaySize - 1) + ')').hide();
+                $('#cpo-finder-fewer').hide();
+                $('#cpo-finder-additional').show();
+            });
         }
-        jQuery('.cpo-finder-center-show-more-less').append(additionalButton);
-        jQuery('.cpo-finder-center-show-more-less').append(fewerButton);
-        $('#cpo-finder-additional').on('click', function(e) {
-            $('.cpo-finder-answers-container-second cpo-finder-answer').show();
-            $('#cpo-finder-additional').hide();
-            $('#cpo-finder-fewer').show();
-        });
-        $('#cpo-finder-fewer').on('click', function(e) {
-            $('.cpo-finder-answer:gt(' + (combinedDisplaySize - 1) + ')').hide();
-            $('#cpo-finder-fewer').hide();
-            $('#cpo-finder-additional').show();
-        });
     }
 
     var fieldContainer = jQuery('<div class="' + currentFacet + '_container cpo-finder-answers-container"></div>');
