@@ -113,14 +113,16 @@ if (currentFacet == expertFieldName) {
     addIntroMessage(defaultExpert);
     createButton();
 } else {
+    var templateToUse = expertLeftHtml;
     if (combinedQuestions) {
+        templateToUse = expertHtml;
         jQuery('.cpo-finder-right-content').hide();
         combinedQuestions.forEach(function(temp) {
             var tempFacetValues = facets.getFacetValues(temp)[temp];
         });
     }
     var finderQuestion = facets.getFacetExtraInfo(currentFacet, 'finderQuestion');
-    var selectedExpert = createExpert(".cpo-finder-left-content", expertLeftHtml);
+    var selectedExpert = createExpert(".cpo-finder-left-content", templateToUse);
 
     addIntroMessage(selectedExpert);
     createFields();
