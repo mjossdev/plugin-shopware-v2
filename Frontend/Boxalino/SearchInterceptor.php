@@ -735,6 +735,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         try {
             $data = $this->View()->getAssign();
             $cpodata['category_id'] = $data['sCategoryContent']['id'];
+            $cpodata['sCategoryContent'] = $data['sCategoryContent'];
             $cpodata['locale'] = substr(Shopware()->Shop()->getLocale()->toString(), 0, 2);
             $cpodata['widget_type'] = 2;
             $cpodata['choice_id_productfinder'] = $choiceId;
@@ -742,8 +743,11 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             $cpodata['cpo_finder_link'] = $cpodata['category_id'];
             $cpodata['cpo_is_narrative'] = true;
             $data = $this->CPOFinder($cpodata);
+
             $this->View()->addTemplateDir($this->Bootstrap()->Path() . 'Views/emotion/');
             $this->View()->extendsTemplate("frontend/plugins/boxalino/product_finder/main.tpl");
+
+            $data['sCategoryContent'] = $cpodata['sCategoryContent'];
             $this->View()->assign('data', $data);
 
             return true;

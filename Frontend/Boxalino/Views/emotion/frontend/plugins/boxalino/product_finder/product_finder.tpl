@@ -1,9 +1,10 @@
 {block name="frontend_product_finder_content"}
     <div class="cpo-finder-wrapper loaded" style="display:none">
-        <div class="cpo-finder-left">
-            <div class="cpo-finder-left-content">
+        {block name="frontend_product_finder_content_left"}
+            <div class="cpo-finder-left">
+                <div class="cpo-finder-left-content"></div>
             </div>
-        </div>
+        {/block}
 
         <div class="cpo-finder-center">
             <div class="cpo-finder-center-content">
@@ -81,12 +82,17 @@
         </div>
 
         <div class="cpo-finder-right">
-            <div class="cpo-finder-right-content">
-                <div class="cpo-finder-right-title">{s namespace='boxalino/intelligence' name='productfinder/yourchoice'}Your choice{/s}</div>
-                <div class="cpo-finder-right-criteria"></div>
-            </div>
+            {block name="frontend_product_finder_content_right"}
+                <div class="cpo-finder-right-content">
+                    <div class="cpo-finder-right-title">{s namespace='boxalino/intelligence' name='productfinder/yourchoice'}Your choice{/s}</div>
+                    <div class="cpo-finder-right-criteria"></div>
+                </div>
+            {/block}
         </div>
-        <div class="cpo-finder-button-container-below"></div>
+
+        {block name="frontend_product_finder_content_below"}
+            <div class="cpo-finder-button-container-below"></div>
+        {/block}
     </div>
 {/block}
 
