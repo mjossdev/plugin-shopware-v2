@@ -422,8 +422,12 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxData {
      * @param $categoryId
      * @return int | null
      */
-    public function findStreamIdByCategoryId($categoryId)
+    public function findStreamIdByCategoryId($categoryId=null)
     {
+        if(is_null($categoryId)) {
+            return null;
+        }
+
         $sql = $this->db->select()->from(array("sc"=>"s_categories"), array("stream_id"))
             ->where("sc.id = ?", $categoryId);
 

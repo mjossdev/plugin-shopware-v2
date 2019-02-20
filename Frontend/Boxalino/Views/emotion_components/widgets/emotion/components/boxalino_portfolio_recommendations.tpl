@@ -113,13 +113,11 @@
         </div>
 
         <script>
-
             document.asyncReady(function() {
                 StateManager.updatePlugin('*[data-add-article="true"]','swAddArticle');
                 var groupSize = parseInt('{$Data.portfolio|count}');
                 var loadedRec = [];
                 $(document).ready(function() {
-
                     $.subscribe('plugin/swProductSlider/onLoadItemsSuccess', function (m,r,i) {
                         var el = r.$el;
                         var v = r.opts.ajaxCategoryID.split("-");
@@ -130,7 +128,6 @@
                                 r.destroy();
                                 $(el).parent().parent().next().show();
                                 $(el).parent().parent().remove();
-
                             }
                             //remove newbuy rec
                             $(el).parent().parent().next().remove();
@@ -169,7 +166,6 @@
                                 $(el).parent().parent().remove();
                             }
                         }
-
                     });
                 });
             });

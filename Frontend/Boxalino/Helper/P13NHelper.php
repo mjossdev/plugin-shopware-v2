@@ -533,7 +533,6 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         self::$bxClient->addRequest($bxRequest);
         $bxRequest = null;
 
-
         if($_REQUEST['dev_bx_debug'] == 'true'){
             $t2 = (microtime(true) - $t2) * 1000 ;
             $this->addNotification("Pre portfolio widget request took: " . $t2 . "ms.");

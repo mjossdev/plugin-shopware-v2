@@ -521,7 +521,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
 
         if($streamId) {
             $streamConfig = $this->BxData()->getStreamById($streamId);
-            if($streamConfig['conditions']){
+            if($streamConfig[$streamId]['conditions']){
                 $conditions = $this->unserialize(json_decode($streamConfig['conditions'], true));
                 $filter = $this->getConditionFilter($conditions);
                 if(is_null($filter)) {
