@@ -117,7 +117,6 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         }
 
         $view->addTemplateDir($this->Bootstrap()->Path() . 'Views/emotion/');
-
         $view->loadTemplate('frontend/plugins/boxalino/landingpage/content.tpl');
         if(version_compare(Shopware::VERSION, '5.3.0', '<')) {
             $view->extendsTemplate('frontend/plugins/boxalino/listing/filter/facet-value-list.tpl');
@@ -126,6 +125,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             $view->extendsTemplate('frontend/plugins/boxalino/listing/filter/_includes/filter-multi-selection.tpl');
             $view->extendsTemplate('frontend/plugins/boxalino/listing/index_5_3.tpl');
         }
+
         $service = $this->get('shopware_storefront.custom_sorting_service');
         $sortingIds = $this->container->get('config')->get('searchSortings');
         $sortingIds = array_filter(explode('|', $sortingIds));
