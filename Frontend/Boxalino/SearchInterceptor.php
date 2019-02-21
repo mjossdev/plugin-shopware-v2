@@ -692,6 +692,11 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
      */
     protected function prepareNarrativeCase($viewData)
     {
+        if(!isset($viewData['sCategoryContent']['attribute']['narrative_choice']))
+        {
+            return false;
+        }
+
         if(!empty($viewData['sCategoryContent']['attribute']['narrative_choice'])) {
             $this->isNarrative = true;
         }

@@ -20,7 +20,7 @@
     {* Article actions *}
     {block name='frontend_checkout_ajax_cart_add'}
         <div>
-            <form name="sAddToBasket{$sArticle.ordernumber}" method="post" class="bx-add-to-cart" data-add-article="true" data-eventName="submit" {if $theme.offcanvasCart} data-showModal="false" data-addArticleUrl="{url controller=checkout action=ajaxAddArticleCart}"{/if}>
+            <form name="sAddToBasket{$sArticle.ordernumber}" method="post" action="{url controller=checkout action=addArticle}" class="bx-add-to-cart" data-add-article="true" data-eventName="submit" {if $theme.offcanvasCart} data-showModal="false" data-addArticleUrl="{url controller=checkout action=ajaxAddArticleCart}"{/if}>
                 <input type="hidden" name="sAdd" value="{$sArticle.ordernumber}"/>
                 {if (!isset($sArticle.active) || $sArticle.active)}
                     {if $sArticle.isAvailable}

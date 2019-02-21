@@ -25,9 +25,7 @@
 
     {$smarty.block.parent}
     {if $withAddToBasket == 'true'}
-
-        <form name="sAddToBasket{$sArticle.ordernumber}" method="post" class="buybox--form" data-add-article="true" data-eventName="submit" {if $theme.offcanvasCart} data-showModal="false" data-addArticleUrl="{url controller=checkout action=ajaxAddArticleCart}"{/if}>
-
+        <form name="sAddToBasket{$sArticle.ordernumber}" method="post" action="{url controller=checkout action=addArticle}" class="buybox--form" data-add-article="true" data-eventName="submit" {if $theme.offcanvasCart} data-showModal="false" data-addArticleUrl="{url controller=checkout action=ajaxAddArticleCart}"{/if}>
             <input type="hidden" name="sAdd" value="{$sArticle.ordernumber}"/>
             <div class="buybox--button-container block-group">
                 <div class="buybox--quantity block">
@@ -47,7 +45,6 @@
                     <span class="bb-btn-text">In den Warenkorb</span>
                 </button>
             </div>
-
         </form>
     {/if}
 {/block}
