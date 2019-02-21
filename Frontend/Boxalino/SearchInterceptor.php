@@ -330,8 +330,8 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         $filter = array();
         if($streamId) {
             $streamConfig = $this->BxData()->getStreamById($streamId);
-            if($streamConfig['conditions']){
-                $conditions = $this->unserialize(json_decode($streamConfig['conditions'], true));
+            if($streamConfig[$streamId]['conditions']){
+                $conditions = $this->unserialize(json_decode($streamConfig[$stremId]['conditions'], true));
                 $filter = $this->getConditionFilter($conditions);
                 if(is_null($filter)) {
                     return null;
