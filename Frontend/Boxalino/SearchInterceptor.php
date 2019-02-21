@@ -309,7 +309,6 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         }
 
         $choice_id = $this->Request()->getParam('choice_id', null);
-
         if($choice_id) {
             $this->Request()->setParam('sCategory', Shopware()->Shop()->getCategory()->getId());
         }
@@ -331,7 +330,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         if($streamId) {
             $streamConfig = $this->BxData()->getStreamById($streamId);
             if($streamConfig[$streamId]['conditions']){
-                $conditions = $this->unserialize(json_decode($streamConfig[$stremId]['conditions'], true));
+                $conditions = $this->unserialize(json_decode($streamConfig[$streamId]['conditions'], true));
                 $filter = $this->getConditionFilter($conditions);
                 if(is_null($filter)) {
                     return null;
