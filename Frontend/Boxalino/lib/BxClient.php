@@ -430,7 +430,7 @@ class BxClient
         }
 
         $message = $e->getMessage() . " BxRequest: " . $this->getRequestId();
-        $e->setMessage($message);
+        $e->message = $message;
         throw $e;
     }
 
