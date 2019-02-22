@@ -387,8 +387,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                 if ($this->Request()->has('productBoxLayout')) {
                     $boxLayout = $this->Request()->get('productBoxLayout');
                 } else {
-                    $boxLayout = $catId ? Shopware()->Modules()->Categories()
-                        ->getProductBoxLayout($catId) : $this->get('config')->get('searchProductBoxLayout');
+                    $boxLayout = $catId ? Shopware()->Modules()->Categories()->getProductBoxLayout($catId) : $this->get('config')->get('searchProductBoxLayout');
                 }
                 $this->View()->assign($this->Request()->getParams());
                 $this->View()->extendsTemplate('frontend/plugins/boxalino/listing/filter/_includes/filter-multi-selection.tpl');
@@ -507,8 +506,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         $viewData = $this->View()->getAssign();
 
         $this->prepareNarrativeCase($viewData);
-        if($this->isNarrative && $this->replaceMain)
-        {
+        if($this->isNarrative && $this->replaceMain){
             return $this->processNarrativeRequest($viewData['sCategoryContent']['attribute']['narrative_choice'], $viewData['sCategoryContent']['attribute']['narrative_additional_choice']);
         }
 
@@ -538,10 +536,10 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             $filter['products_brand'] = [$viewData['manufacturer']->getName()];
         }
         $context  = $this->get('shopware_storefront.context_service')->getProductContext();
-        /* @var Shopware\Bundle\SearchBundle\Criteria $criteria */
         $orderParam = $this->get('query_alias_mapper')->getShortAlias('sSort');
 
-        if(is_null($this->Request()->getParam($orderParam))) {
+        $viewData['sSort'] = $this->Request()->getParam($orderParam);
+        if(is_null($viewData['sSort'])) {
             $specialCase = $this->Config()->get('boxalino_navigation_special_enabled');
             $ids = explode(',', $this->Config()->get('boxalino_navigation_exclude_ids'));
             if($specialCase && in_array($this->Request()->getParam('sCategory'), $ids)) {
@@ -549,11 +547,8 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                 $this->Request()->setParam('sSort', $default);
                 $viewData['sSort'] = $default;
             } else {
-                $viewData['sSort'] = null;
                 $this->Request()->setParam('sSort', 7);
             }
-        } else {
-            $viewData['sSort'] = $this->Request()->getParam($orderParam);
         }
 
         if(is_null($this->Request()->getParam('sSort')) && is_null($this->Request()->getParam($orderParam))) {
@@ -568,24 +563,26 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         $criteria = $this->get('shopware_search.store_front_criteria_factory')->createSearchCriteria($this->Request(), $context);
         $criteria->removeCondition("term");
         $criteria->removeBaseCondition("search");
+
         if($_REQUEST['dev_bx_debug'] == 'true'){
             $t1 = (microtime(true) - $start) * 1000 ;
             $this->Helper()->addNotification("Navigation before createFacets took in total: " . $t1 . "ms.");
         }
+
         $facets = $criteria->getFacets();
         $options = $showFacets ? $this->BxData()->getFacetConfig($facets, $this->Request()) : [];
         $sort = $this->BxData()->getSortOrder($criteria, $viewData['sSort'], true);
-
         $hitCount = $criteria->getLimit();
         $pageOffset = $criteria->getOffset();
+
         if($_REQUEST['dev_bx_debug'] == 'true'){
             $this->Helper()->addNotification("Navigation before response took in total: " . (microtime(true)- $start) * 1000 . "ms.");
         }
+
         $this->Helper()->addSearch('', $pageOffset, $hitCount, 'product', $sort, $options, $filter, !is_null($streamId));
         if($this->isNarrative && !$this->replaceMain){
             $this->processNarrativeRequest($viewData['sCategoryContent']['attribute']['narrative_choice'], $viewData['sCategoryContent']['attribute']['narrative_additional_choice'], false, $filter);
         }
-
         if($this->Helper()->getResponse()->getRedirectLink() != '') {
             $this->Controller()->redirect($this->Helper()->getResponse()->getRedirectLink());
         }
@@ -594,8 +591,10 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             $afterStart = microtime(true);
             $this->Helper()->addNotification("Navigation after response: " . $afterStart);
         }
+
         $facets = $showFacets ? $this->updateFacetsWithResult($facets, $context) : [];
         $articles = $this->BxData()->getLocalArticles($this->Helper()->getHitFieldValues('products_ordernumber'));
+
         $this->View()->addTemplateDir($this->Bootstrap()->Path() . 'Views/emotion/');
         if(version_compare(Shopware::VERSION, '5.3.0', '<')) {
             if ($this->Config()->get('boxalino_navigation_sorting') == true) {
@@ -611,6 +610,12 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             $sortingIds = array_filter(explode('|', $sortingIds));
             $sortings = $service->getList($sortingIds, $context);
         }
+
+        $boxLayout = $catId ? Shopware()->Modules()->Categories()->getProductBoxLayout($catId) : $this->get('searchProductBoxLayout');
+        if ($this->Request()->has('productBoxLayout')) {
+            $boxLayout = $this->Request()->get('productBoxLayout');
+        }
+
         $totalHitCount = $this->Helper()->getTotalHitCount();
         $pageCounts = array_values(explode('|', $this->get('config')->get('numberarticlestoshow')));
         $templateProperties = array(
@@ -621,6 +626,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             'criteria' => $criteria,
             'facets' => $facets,
             'sortings' => $sortings,
+            'sCategoryContent'=>['productBoxLayout' => $boxLayout],
             'sNumberArticles' => $totalHitCount,
             'sArticles' => $articles,
             'facetOptions' => $this->facetOptions,
@@ -631,8 +637,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             'isNarrative' => $this->isNarrative
         );
         $narrativeTemplateData = array();
-        if($this->isNarrative)
-        {
+        if($this->isNarrative){
             $narrativeTemplateData = $this->getNarrativeTemplateData($viewData['sCategoryContent']['attribute']['narrative_choice'], $viewData['sCategoryContent']['attribute']['narrative_additional_choice']);
         }
         $categoryTemplateData = new Shopware_Plugins_Frontend_Boxalino_Models_Listing_Template_CategoryData($this->Helper(), $viewData);

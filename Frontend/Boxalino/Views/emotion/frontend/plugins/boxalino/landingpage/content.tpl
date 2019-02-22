@@ -18,8 +18,8 @@
             {if $criteria}
                 {$pages = ceil($sNumberArticles / $criteria->getLimit())}
             {/if}
-            {$productBoxLayout = 'basic'}
 
+            {$productBoxLayout = 'minimal'}
             {if $sCategoryContent.productBoxLayout !== null && $sCategoryContent.productBoxLayout !== 'extend'}
                 {$productBoxLayout = $sCategoryContent.productBoxLayout}
             {/if}
@@ -32,7 +32,6 @@
 <script>
     document.asyncReady(function() {
         $(document).ready(function() {
-
             StateManager.updatePlugin('*[data-filter-type]', 'swFilterComponent');
             StateManager.updatePlugin('*[data-listing-actions="true"]', 'swListingActions');
             StateManager.updatePlugin('*[data-collapse-panel="true"]', 'swCollapsePanel');
