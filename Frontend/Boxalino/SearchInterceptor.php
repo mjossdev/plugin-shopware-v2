@@ -615,6 +615,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         if ($this->Request()->has('productBoxLayout')) {
             $boxLayout = $this->Request()->get('productBoxLayout');
         }
+        $viewData['sCategoryContent']['productBoxLayout'] = $boxLayout;
 
         $totalHitCount = $this->Helper()->getTotalHitCount();
         $pageCounts = array_values(explode('|', $this->get('config')->get('numberarticlestoshow')));
@@ -626,7 +627,6 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             'criteria' => $criteria,
             'facets' => $facets,
             'sortings' => $sortings,
-            'sCategoryContent'=>['productBoxLayout' => $boxLayout],
             'sNumberArticles' => $totalHitCount,
             'sArticles' => $articles,
             'facetOptions' => $this->facetOptions,

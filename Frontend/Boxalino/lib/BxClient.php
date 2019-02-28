@@ -37,6 +37,7 @@ class BxClient
 
     private $sessionId = null;
     private $profileId = null;
+    protected $uuid = null;
 
     private $requestMap = array();
 
@@ -794,20 +795,24 @@ class BxClient
 
     protected function uuid()
     {
-        $uuid = bin2hex(random_bytes(16));
-        $hyphen = chr(45);
-        return substr($uuid, 0, 8).$hyphen
-            .substr($uuid, 8, 4).$hyphen
-            .substr($uuid,12, 4).$hyphen
-            .substr($uuid,16, 4).$hyphen
-            .substr($uuid,20,12);
+        if (is_null($this->uuid)) {
+            $uuid = bin2hex(random_bytes(16));
+            $hyphen = chr(45);
+            $this->uuid =  substr($uuid, 0, 8).$hyphen
+                .substr($uuid, 8, 4).$hyphen
+                .substr($uuid,12, 4).$hyphen
+                .substr($uuid,16, 4).$hyphen
+                .substr($uuid,20,12);
+        }
+
+        return $this->uuid;
     }
 
     protected function getRequestId()
     {
         if(isset($this->requestContextParameters[self::BXL_UUID_REQUEST]))
         {
-            return $this->requestContextParameters[self::BXL_UUID_REQUEST];
+            return array_pop($this->requestContextParameters[self::BXL_UUID_REQUEST]);
         }
 
         return "undefined";
