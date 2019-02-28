@@ -613,7 +613,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
     protected function getReturnFields($type = "product") {
         $returnFields = array($this->getEntityIdFieldName($type));
         if ($type == 'product') {
-            $returnFields = array_merge($returnFields, ['id', 'score', 'products_bx_type', 'title', 'products_ordernumber', 'discountedPrice', 'products_bx_grouped_price', 'products_active', 'products_bx_grouped_active']);
+            $returnFields = array_merge($returnFields, ['id', 'score', 'products_bx_type', 'title', 'products_ordernumber', 'discountedPrice', 'products_bx_grouped_price', 'products_active']);
         } elseif ($type == 'bxi_content') {
             $returnFields = array_merge($returnFields, ['title', 'products_bxi_bxi_jssor_slide', 'products_bxi_bxi_jssor_transition', 'products_bxi_bxi_name', 'products_bxi_bxi_jssor_control', 'products_bxi_bxi_jssor_break']);
         } else {
