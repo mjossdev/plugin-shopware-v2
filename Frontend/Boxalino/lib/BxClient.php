@@ -56,11 +56,11 @@ class BxClient
             $this->requestMap = $_REQUEST;
         }
         $this->isDev = $isDev;
-        $this->apiKey = $apiKey;
+        $this->apiKey = trimp($apiKey);
         if (empty($apiKey)) {
             $this->apiKey = null;
         }
-        $this->apiSecret = $apiSecret;
+        $this->apiSecret = trim($apiSecret);
         if (empty($apiSecret)) {
             $this->apiSecret = null;
         }
