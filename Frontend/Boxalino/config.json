@@ -78,8 +78,7 @@
   {
     "name": "host",
     "label": "General - Host",
-    "value": "cdn.bx-cloud.com",
-    "description": "Optional: uses default value \"cdn.bx-cloud.com\" if left empty; For the new set-up use \"main.bx-cloud.com\". "
+    "description": "Optional: uses default value \"cdn.bx-cloud.com\" if left empty; For the new set-up - leave empty. "
   },
   {
     "name": "p13_user_name",
