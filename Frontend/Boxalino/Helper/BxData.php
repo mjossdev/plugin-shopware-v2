@@ -379,6 +379,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxData {
                     $productNumber=$product->getId();
                 }
                 $product = $productService->get($mainNumber, $context);
+                if(is_null($product)) {unset($resultedProducts[$number]); continue;}
                 $selection = array();
                 $selection = $product->getSelectedOptions();
                 $configurator = $configuratorService->getProductConfigurator(
