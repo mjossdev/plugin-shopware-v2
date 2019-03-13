@@ -757,6 +757,8 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             $this->View()->extendsTemplate("frontend/plugins/boxalino/product_finder/main.tpl");
 
             $data['sCategoryContent'] = $cpodata['sCategoryContent'];
+            $this->Bootstrap()->disableHttpCache();
+
             $this->View()->assign('data', $data);
 
             return true;

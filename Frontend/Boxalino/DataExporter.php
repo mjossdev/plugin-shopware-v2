@@ -182,7 +182,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
                 $this->log->info('BxIndexLog: pushing to DI for account: ' . $account);
                 try {
                     $this->bxData->pushData($this->_config->getExportTemporaryArchivePath($account), $this->getTimeoutForExporter($account));
-                } catch(RuntimeException $e){
+                } catch(LogicException $e){
                     $this->log->warning($e->getMessage());
                     $systemMessages[] = $e->getMessage();
                 }
