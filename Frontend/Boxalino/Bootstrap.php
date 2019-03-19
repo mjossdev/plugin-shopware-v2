@@ -40,7 +40,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
     }
 
     public function getVersion() {
-        return '1.6.25';
+        return '1.6.26';
     }
 
     public function getInfo() {
@@ -48,7 +48,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
             'version' => $this->getVersion(),
             'label' => $this->getLabel(),
             'author' => 'Boxalino AG',
-            'copyright' => 'Copyright © 2018, Boxalino AG',
+            'copyright' => 'Copyright © 2019, Boxalino AG',
             'description' => 'Integrates Boxalino search & recommendation into Shopware.',
             'support' => 'support@boxalino.com',
             'link' => 'http://www.boxalino.com/',
@@ -555,7 +555,20 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
                 'defaultValue' => 5000
             ));
         }
+
+        $sliderFiltersExists = $this->checkFieldExistsForEmotion($component, "slider_filters");
+        if(!$sliderFiltersExists)
+        {
+            $component->createTextField(array(
+                'name' => 'slider_filters',
+                'fieldLabel' => 'Additional Slider Filters (if needed)',
+                'supportText' => 'Divide values comma, fields by semicolon: field1 - value1, value2; field2 - value1, value2;',
+                'allowBlank' => true
+            ));
+        }
     }
+
+
 
     /**
      * Banner Emotion
@@ -766,18 +779,22 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
         $emotionRepository = Shopware()->Models()->getRepository('Shopware\Models\Emotion\Emotion');
         if(version_compare(Shopware::VERSION, '5.3.0', '>=')){
             $emotionModel = $emotionRepository->findOneBy(array('id' => $args['element']['emotionId']));
-            $categoryId = $emotionModel->getCategories()->first()->getId();
+            if(isset($data['slider_filters']))
+            {
+                $filterFields = $this->checkExtraRulesOnFiltering($data['slider_filters']);
+            } else {
+                $filterFields = ["category_id"=>$emotionModel->getCategories()->first()->getId()];
+            }
         } else {
-            $categoryId = $args->getSubject()->getEmotion($emotionRepository)[0]['categories'][0]['id'];
+            $filterFields = ["category_id" => $args->getSubject()->getEmotion($emotionRepository)[0]['categories'][0]['id']];
         }
-        $query = array(
+        $query = array_merge(array(
             'controller' => 'RecommendationSlider',
             'module' => 'frontend',
             'action' => 'productStreamSliderRecommendations',
             'bxChoiceId' => $data['choiceId'],
-            'bxCount' => $data['article_slider_max_number'],
-            'category_id' => $categoryId
-        );
+            'bxCount' => $data['article_slider_max_number']
+        ), $filterFields);
 
         $secure = $this->getServerIsSecure();
         $url = Shopware()->Front()->Router()->assemble($query);
@@ -1207,4 +1224,35 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
         return false;
     }
 
+    /**
+     * Used for updating emotion elements
+     *
+     * @param $component
+     * @param $fieldName
+     */
+    protected function checkFieldExistsForEmotion($component, $fieldName)
+    {
+        $component->getFields()->exists(function($key, $element) use ($fieldName){
+            return $fieldName === $element->getName();
+        });
+    }
+
+    /**
+     * Complex rules on emotion construct
+     *
+     * @param $filters
+     * @return array
+     */
+    protected function checkExtraRulesOnFiltering($filters)
+    {
+        $filterRules = explode(';', $filters);
+        $filterFields = [];
+        foreach ($filterRules as $rule) {
+            if(empty($rule)){continue;}
+            $fieldRuleMapping = explode(':', $rule);
+            $filterFields[$fieldRuleMapping[0]] = $fieldRuleMapping[1];
+        }
+
+        return $filterFields;
+    }
 }
