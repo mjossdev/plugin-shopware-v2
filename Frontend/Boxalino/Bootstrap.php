@@ -779,7 +779,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
         $emotionRepository = Shopware()->Models()->getRepository('Shopware\Models\Emotion\Emotion');
         if(version_compare(Shopware::VERSION, '5.3.0', '>=')){
             $emotionModel = $emotionRepository->findOneBy(array('id' => $args['element']['emotionId']));
-            if(isset($data['slider_filters']))
+            if(isset($data['slider_filters']) && !empty($data['slider_filters']))
             {
                 $filterFields = $this->checkExtraRulesOnFiltering($data['slider_filters']);
             } else {

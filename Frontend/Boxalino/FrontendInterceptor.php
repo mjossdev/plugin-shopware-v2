@@ -326,7 +326,7 @@ class Shopware_Plugins_Frontend_Boxalino_FrontendInterceptor
             }
             Shopware_Plugins_Frontend_Boxalino_EventReporter::reportPurchase(
                 $products,
-                $arguments->getSubject()->sOrderNumber,
+                $arguments->get("orderId"),
                 $arguments->getSubject()->sAmount,
                 Shopware()->Shop()->getCurrency()
             );
