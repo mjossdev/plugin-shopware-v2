@@ -572,7 +572,3 @@ function toggleProducts(){
         $('.bx-listing-emotion').show();
     }
 }
-
-if(document.readyState==='interactive') {
-    $(".cpo-finder-wrapper").fadeIn(100);
-}

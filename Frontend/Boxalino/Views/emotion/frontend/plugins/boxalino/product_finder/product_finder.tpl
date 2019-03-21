@@ -173,8 +173,12 @@
         {/block}
 
         {if !$Data.cpo_is_narrative}
-        {include file="frontend/plugins/boxalino/product_finder/product_finder_js.tpl" Data = $Data}
+            {include file="frontend/plugins/boxalino/product_finder/product_finder_js.tpl" Data = $Data}
+            {block name="frontend_product_finder_script_effect_custom"}
+                if(document.readyState==='interactive') {
+                    $(".cpo-finder-wrapper").fadeIn(100);
+                }
+            {/block}
         {/if}
-
     </script>
 {/block}
