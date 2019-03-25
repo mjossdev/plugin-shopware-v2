@@ -2027,15 +2027,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                         $facetMapping = [];
                         $attributeName = substr($fieldName, 9);
                         $json['facets'][$fieldNames]['parameterName'] = $attributeName;
-                        $attributeModel = Mage::getModel('eav/config')->getAttribute('catalog_product', $attributeName)->getSource();
-                        $options = $attributeModel->getAllOptions();
                         $responseValues =  $this->useValuesAsKeys($json['facets'][$fieldName]['facetValues']);
-                        foreach ($options as $option){
-                            $label = is_array($option) ? $option['label'] : $option;
-                            if(isset($responseValues[$label])){
-                                $facetMapping[$label] = $option['value'];
-                            }
-                        }
                         $json['facets'][$fieldName]['facetMapping'] = $facetMapping;
                     }
                     if($info_key == 'jsonDependencies' || $info_key == 'label' || $info_key == 'iconMap' || $info_key == 'facetValueExtraInfo') {

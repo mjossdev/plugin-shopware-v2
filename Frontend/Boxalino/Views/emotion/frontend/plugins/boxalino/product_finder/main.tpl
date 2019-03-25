@@ -20,11 +20,8 @@
         document.asyncReady(function() {
             $(document).ready(function () {
                 {include file="frontend/plugins/boxalino/product_finder/product_finder_js.tpl" Data = $data}
+                {block name="frontend_product_finder_script_effect_custom"}{/block}
             });
-
-            if(document.readyState==='interactive') {
-                $(".cpo-finder-wrapper").fadeIn(100);
-            }
         });
     </script>
 {/block}

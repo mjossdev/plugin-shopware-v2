@@ -11,26 +11,24 @@ facets.init(json);
 // Get the current facet
 var currentFacet = null;
 var questions = facets.getAdditionalFacets();
-if (highlighted == false) {
-    // remove questions with no options
-    questions.forEach(function(question){
-        if (facets.getFacetValues(question)[question].length === 0) {
-            var index = questions.indexOf(question);
-            if (index > -1) {
-                questions.splice(index, 1);
-            }
+// remove questions with no options
+questions.forEach(function(question){
+    if (facets.getFacetValues(question)[question].length === 0) {
+        var index = questions.indexOf(question);
+        if (index > -1) {
+            questions.splice(index, 1);
         }
-    });
+    }
+});
 
-    for (var i = 0; i < questions.length; i++) {
-        var fieldName = questions[i];
-        if (facets.getCurrentSelects(fieldName) === null) {
-            if(facets.getFacetValues(fieldName)[fieldName].length < 2){
-                continue;
-            }
-            currentFacet = fieldName;
-            break;
+for (var i = 0; i < questions.length; i++) {
+    var fieldName = questions[i];
+    if (facets.getCurrentSelects(fieldName) === null) {
+        if(facets.getFacetValues(fieldName)[fieldName].length < 2){
+            continue;
         }
+        currentFacet = fieldName;
+        break;
     }
 }
 
@@ -104,10 +102,10 @@ expertFacetValues.forEach(function(value) {
 if (currentFacet == expertFieldName) {
     createExpert(".cpo-finder-left-content", expertHtml, defaultExpert);
     expertFacetValues.forEach(function(value) {
-        if (facets.getFacetValueExtraInfo(expertFieldName, value, 'is-initial') != true) {
+        if (facets.getFacetValueExtraInfo(expertFieldName, value, 'is-initial') != true && facets.getFacetValueExtraInfo(expertFieldName, value, 'active') != false) {
             createExpert(".cpo-finder-center-content-container", expertListHtml, value);
+            createExpertFieldListener(value);
         }
-        createExpertFieldListener(value);
     });
 
     addIntroMessage(defaultExpert);
@@ -557,18 +555,13 @@ $('#cpo-finder-show-products').on('click', function() {
             }
         }
     }
-    if (highlighted == true) {
-        $('.bx-present').show();
-        toggleProducts();
-    } else {
-        toggleProducts();
-    }
+    toggleProducts();
 });
 
 function toggleProducts(){
-    if($('.bx-listing-emotion').css('display') == 'block'){
-        $('.bx-listing-emotion').hide();
+    if($('.cpo-finder-listing').css('display') == 'block'){
+        $('.cpo-finder-listing').hide();
     } else {
-        $('.bx-listing-emotion').show();
+        $('.cpo-finder-listing').show();
     }
 }

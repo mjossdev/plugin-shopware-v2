@@ -1,5 +1,5 @@
 {block name="frontend_product_finder_content"}
-    <div class="cpo-finder-wrapper loaded" style="display:none">
+    <div class="cpo-finder-wrapper loaded">
         {block name="frontend_product_finder_content_left"}
             <div class="cpo-finder-left">
                 <div class="cpo-finder-left-content"></div>
@@ -66,6 +66,7 @@
                                     {block name='frontend_detail_actions'}{/block}
                                 </div>
                             {/foreach}
+                            {block name="frontend_cpo_finder_listing_present_after"}{/block}
                         </div>
                     {/block}
                     {block name="frontend_cpo_finder_listing_listing"}
@@ -174,11 +175,7 @@
 
         {if !$Data.cpo_is_narrative}
             {include file="frontend/plugins/boxalino/product_finder/product_finder_js.tpl" Data = $Data}
-            {block name="frontend_product_finder_script_effect_custom"}
-                if(document.readyState==='interactive') {
-                    $(".cpo-finder-wrapper").fadeIn(100);
-                }
-            {/block}
+            {block name="frontend_product_finder_script_effect_custom"}{/block}
         {/if}
     </script>
 {/block}
