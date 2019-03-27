@@ -40,7 +40,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
     }
 
     public function getVersion() {
-        return '1.6.26';
+        return '1.6.27';
     }
 
     public function getInfo() {
@@ -211,6 +211,8 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
             __DIR__ . '/Views/responsive/frontend/_resources/javascript/jquery.bx_register_add_article.js',
             __DIR__ . '/Views/responsive/frontend/_resources/javascript/jquery.search_enhancements.js',
             __DIR__ . '/Views/responsive/frontend/_resources/javascript/boxalinoFacets.js',
+            __DIR__ . '/Views/responsive/frontend/_resources/javascript/boxalinoFinder.js',
+            __DIR__ . '/Views/responsive/frontend/_resources/javascript/boxalinoFinderFn.js',
             __DIR__ . '/Views/responsive/frontend/_resources/javascript/jssor.slider-26.2.0.min.js'
         );
         return new Doctrine\Common\Collections\ArrayCollection($jsFiles);
