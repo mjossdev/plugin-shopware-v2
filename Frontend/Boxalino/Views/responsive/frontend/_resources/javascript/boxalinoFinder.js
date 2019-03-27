@@ -75,7 +75,7 @@
 
         function init(facetsJson, locale, controller, score, highlight, alert) {
             max_score = score;
-            highlighted = highlight;
+            highlighted = (highlight=="true");
             alertString = alert;
             lang = locale;
             url = controller;
