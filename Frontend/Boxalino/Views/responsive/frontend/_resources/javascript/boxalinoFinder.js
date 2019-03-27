@@ -16,6 +16,7 @@
             expertFacetValues = [],
             expertFieldOrder = 0,
             defaultExpert = null,
+            selectedExpert = null,
             alertString = "",
             additionalButton = "",
             expertListHtml = "",
@@ -72,12 +73,12 @@
             '</div>' +
             '</div>';
 
-        function init(facetsJson, locale, url, max_score, highlighted, alertString) {
-            max_score = max_score;
-            highlighted = highlighted;
-            alertString = alertString;
+        function init(facetsJson, locale, controller, score, highlight, alert) {
+            max_score = score;
+            highlighted = highlight;
+            alertString = alert;
             lang = locale;
-            url = url;
+            url = controller;
             facets = new bxFacets();
             facets.init(facetsJson);
 
@@ -91,7 +92,7 @@
             expertFieldName = facets.getDataOwnerFacet();
             expertFacetValues = facets.getFacetValues(expertFieldName)[expertFieldName];
             expertFieldOrder = questions.findIndex(isExpertQuestion);
-            defaultExpert = getDefaultExpert();
+            selectedExpert = defaultExpert = getDefaultExpert();
         }
 
         function setExpertListHtml(html){
@@ -144,8 +145,7 @@
                     });
                 }
                 let finderQuestion = facets.getFacetExtraInfo(currentFacet, 'finderQuestion');
-                let selectedExpert = createExpert(".cpo-finder-left-content", templateToUse);
-
+                selectedExpert = createExpert(".cpo-finder-left-content", templateToUse);
                 addIntroMessage(selectedExpert);
                 createFields();
                 createButton();
@@ -241,7 +241,7 @@
             });
         }
 
-        function addIntroMessage(selectedExpert) {
+        function addIntroMessage() {
             let expertIntroSentence = facets.getFacetValueExtraInfo(expertFieldName, selectedExpert, 'intro-sentence');
             let expertQuestionSentence = facets.getFacetValueExtraInfo(expertFieldName, selectedExpert, 'question-sentence');
             if (currentFacet != null) {
