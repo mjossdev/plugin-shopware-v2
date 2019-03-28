@@ -209,6 +209,8 @@
                     jQuery(currentArticleID).show();
                 }
             });
+
+            $(".cpo-finder-wrapper").fadeIn(100);
         }
 
         function identifyCombinedQuestions(facets){

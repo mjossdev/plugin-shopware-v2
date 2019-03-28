@@ -42,7 +42,7 @@
         {/block}
         {block name="frontend_product_finder_script_templates_button_skip"}
             <div class="bx-finder-template-skipButton" style="display:none">
-                <button id="%%ID%%"  type="button" name="backButton">{s namespace='boxalino/intelligence' name='productfinder/skip'}skip{/s}</button>
+                <button id="%%ID%%"  type="button" name="skipButton">{s namespace='boxalino/intelligence' name='productfinder/skip'}skip{/s}</button>
             </div>
         {/block}
         {block name="frontend_product_finder_script_templates_button_show_products"}
@@ -54,7 +54,7 @@
 
 
     {block name="frontend_product_finder_content"}
-        <div class="cpo-finder-wrapper loaded">
+        <div class="cpo-finder-wrapper" style="display:none">
             {block name="frontend_product_finder_content_left"}
                 <div class="cpo-finder-left">
                     <div class="cpo-finder-left-content"></div>
