@@ -9,7 +9,8 @@ class Shopware_Controllers_Backend_BoxalinoExport extends Shopware_Controllers_B
         return [
             'full',
             'delta',
-            'index'
+            'index',
+            'flush'
         ];
     }
 
@@ -30,6 +31,26 @@ class Shopware_Controllers_Backend_BoxalinoExport extends Shopware_Controllers_B
 
     public function deltaAction() {
         $this->exportData(true);
+    }
+
+    public function flushAction()
+    {
+        $this->container->get('front')->Plugins()->ViewRenderer()->setNoRender();
+
+        $tmpPath = Shopware()->DocPath('media_temp_boxalinoexport');
+        $exporter = new Shopware_Plugins_Frontend_Boxalino_DataExporter($tmpPath, false);
+        if ($exporter->canStartExport())
+        {
+            echo "The export can be run.\n";
+            return;
+        }
+
+        $exporter->clearExportTable();
+        if ($exporter->canStartExport())
+        {
+            echo "The exporter table has been cleared. Run the process again.\n";
+            return;
+        }
     }
 
     private function exportData($delta = false)

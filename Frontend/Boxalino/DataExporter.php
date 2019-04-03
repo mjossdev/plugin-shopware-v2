@@ -1554,13 +1554,21 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
     /**
      * The export table is to be updated based on the flow (start or failed)
      */
-    private function updateExportTable($start = false) {
+    protected function updateExportTable($start = false) {
         if ($start)
         {
-            $this->db->query('TRUNCATE `boxalino_exports`');
+            $this->clearExportTable();
         }
 
         $this->db->query('INSERT INTO `boxalino_exports` values(NOW())');
+    }
+
+    /**
+     * The export table is truncated
+     */
+    public function clearExportTable() {
+        $this->db->query('TRUNCATE `boxalino_exports`');
+        return true;
     }
 
     /**
@@ -1568,7 +1576,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
      * For a prior successfull export, there must be 2 logged in dates - start and end
      * If there is only 1 - the prior export crashed
      */
-    protected function canStartExport()
+    public function canStartExport()
     {
         $existingRecordsSql =  $this->db->select()
             ->from('boxalino_exports', array('export_date'));

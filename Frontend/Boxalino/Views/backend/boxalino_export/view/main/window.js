@@ -5,7 +5,7 @@
  * @package    Shopware_Plugins
  */
 
-    //{namespace name=backend/order/main}
+//{namespace name=backend/order/main}
 Ext.require([
     'Ext.grid.*', 'Ext.data.*', 'Ext.panel.*'
 ]);
@@ -53,7 +53,8 @@ Ext.define('Shopware.apps.BoxalinoExport.view.main.Window', {
                     handler: function () {
                         window.open('{url module=backend controller=boxalino_export action=full}');
                     }
-                }, {
+                },
+                {
                     xtype: 'splitter'
                 },
                 {
@@ -66,7 +67,21 @@ Ext.define('Shopware.apps.BoxalinoExport.view.main.Window', {
                         window.open('{url module=backend controller=BoxalinoExport action=delta}');
 
                     }
-                }
+                },
+                {
+                    xtype: 'splitter'
+                },
+                {
+                    xtype: 'button',
+                    text: 'Flush Exports',
+                    name: 'dex',
+                    id: 'dex',
+                    cls:'connectedSearch',
+                    handler: function () {
+                        window.open('{url module=backend controller=BoxalinoExport action=flush}');
+
+                    }
+                },
             ]
         });
     }
