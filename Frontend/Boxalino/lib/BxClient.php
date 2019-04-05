@@ -795,17 +795,13 @@ class BxClient
 
     protected function uuid()
     {
-        if (is_null($this->uuid)) {
-            $uuid = bin2hex(random_bytes(16));
-            $hyphen = chr(45);
-            $this->uuid =  substr($uuid, 0, 8).$hyphen
-                .substr($uuid, 8, 4).$hyphen
-                .substr($uuid,12, 4).$hyphen
-                .substr($uuid,16, 4).$hyphen
-                .substr($uuid,20,12);
-        }
-
-        return $this->uuid;
+        $uuid = bin2hex(random_bytes(16));
+        $hyphen = chr(45);
+        return substr($uuid, 0, 8).$hyphen
+            .substr($uuid, 8, 4).$hyphen
+            .substr($uuid,12, 4).$hyphen
+            .substr($uuid,16, 4).$hyphen
+            .substr($uuid,20,12);
     }
 
     protected function getRequestId()
