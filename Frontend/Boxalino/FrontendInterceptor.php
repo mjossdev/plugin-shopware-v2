@@ -115,7 +115,8 @@ class Shopware_Plugins_Frontend_Boxalino_FrontendInterceptor
             case 'recommendation':
                 break;
             case 'checkout':
-                $script = $this->basket($arguments);
+                $this->basket($arguments);
+                $script = $script = Shopware_Plugins_Frontend_Boxalino_EventReporter::reportPageView();
                 break;
             case 'account':
                 if ($_SESSION['Shopware']['sUserId'] != null) {
