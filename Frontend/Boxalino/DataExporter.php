@@ -1584,8 +1584,15 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
         $existingRecordsSql =  $this->db->select()
             ->from('boxalino_exports', array('export_date'));
 
-        if(count($this->db->fetchCol($existingRecordsSql)) == 1)
+        $trackedExports = $this->db->fetchCol($existingRecordsSql);
+        if(count($trackedExports) == 1)
         {
+            $allowedHour = date("Y-m-d H:i:s", strtotime("-30min"));
+            if($trackedExports[0] === min($allowedHour, $trackedExports[0]))
+            {
+                return true;
+            }
+
             return false;
         }
 
