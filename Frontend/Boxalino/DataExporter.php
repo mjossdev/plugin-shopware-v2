@@ -128,10 +128,6 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
                 $this->bxData->verifyCredentials();
             } catch (\Throwable $e){
                 $this->log->error("BxIndexLog: verifyCredentials failed with exception: {$e->getMessage()}");
-
-                $this->updateExportTable();
-                $this->log->info("BxIndexLog: Log boxalino_exports $type data sync end for account {$account}");
-
                 throw new \Exception("BxIndexLog: verifyCredentials on account {$account} failed with exception: {$e->getMessage()}");
             }
 
@@ -168,8 +164,6 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
                             $this->bxData->pushDataSpecifications();
                         } else {
                             $this->log->info("BxIndexLog: pushDataSpecifications failed with exception: " . $e->getMessage());
-                            $this->updateExportTable();
-                            $this->log->info("BxIndexLog: Log boxalino_exports $type data sync end for account {$account}");
                             throw new \Exception("BxIndexLog: pushDataSpecifications failed with exception: " . $e->getMessage());
                         }
                     }
@@ -200,6 +194,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
         } catch(\Throwable $e) {
             error_log("BxIndexLog: failed with exception: " .$e->getMessage());
             $this->log->info("BxIndexLog: failed with exception: " . $e->getMessage());
+
             $this->updateExportTable();
             $this->log->info("BxIndexLog: Log boxalino_exports $type data sync end for account {$account}");
 
