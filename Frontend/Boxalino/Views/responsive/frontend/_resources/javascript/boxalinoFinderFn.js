@@ -22,6 +22,7 @@
         this.$finderJs.setResultsButtonHtml(this.$el.find('.bx-finder-template-resultsButton').html());
         this.$finderJs.setSkipButtonHtml(this.$el.find('.bx-finder-template-skipButton').html());
         this.$finderJs.setShowProductsButtonHtml(this.$el.find('.bx-finder-template-showProductsButton').html());
+        this.$finderJs.setConfiguratorMessageHtml(this.$el.find('.bx-finder-template-configuratorMessage').html());
 
         this.$finderJs.createView();
     }

@@ -282,7 +282,10 @@
                 });
             }
             if(label === '') {
-                label = bxFacets[fieldName]['label'];
+                var bxFieldProp = bxFacets[fieldName];
+                if(bxFieldProp!=null) {
+                    label = bxFacets[fieldName]['label'];
+                }
             }
             return label;
         }

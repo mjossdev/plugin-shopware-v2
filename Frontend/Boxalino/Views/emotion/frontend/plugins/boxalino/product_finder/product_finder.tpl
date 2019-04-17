@@ -50,11 +50,20 @@
                 <button id="%%ID%%" style="">{s namespace='boxalino/intelligence' name='productfinder/showresultsuntil'}Show results until {/s} %%CurrentScore%% %</button>
             </div>
         {/block}
+        {block name="frontend_product_finder_script_templates_show_products"}
+            <div class="bx-finder-template-showProducts" style="display:none">
+                <p style="">{s namespace='boxalino/intelligence' name='productfinder/showresultsuntil'}Your matching products{/s}</p>
+            </div>
+        {/block}
+        {block name="frontend_product_finder_script_templates_configurator_message"}
+            <div class="bx-finder-template-configuratorMessage" style="display:none">
+                <p class="bx-finder-configurator-notice">{s namespace='boxalino/intelligence' name='productfinder/configuratormessage'}Please go to the product page for more options{/s}</p>
+            </div>
+        {/block}
     {/block}
 
-
     {block name="frontend_product_finder_content"}
-        <div class="cpo-finder-wrapper" style="display:none">
+        <div class="cpo-finder-wrapper loaded" style="display:none">
             {block name="frontend_product_finder_content_left"}
                 <div class="cpo-finder-left">
                     <div class="cpo-finder-left-content"></div>
@@ -77,7 +86,7 @@
                         {block name="frontend_cpo_finder_listing_present"}
                             <div class="cpo-finder-listing bx-present product--details" data-ajax-wishlist="true" data-compare-ajax="true"{if $theme.ajaxVariantSwitch} data-ajax-variants-container="true"{/if}>
                                 {foreach $Data.highlighted_articles as $sArticle}
-                                    {include file="frontend/detail/content/header.tpl"}
+                                    {include file="frontend/detail/content/header.tpl" isFinder='true'}
                                     {* Variable for tracking active user variant selection *}
                                     {$activeConfiguratorSelection = true}
                                     {if $sArticle.sConfigurator && ($sArticle.sConfiguratorSettings.type == 1 || $sArticle.sConfiguratorSettings.type == 2)}
@@ -92,14 +101,7 @@
                                     <div class="content product--details product--detail-upper block-group" data-ajax-wishlist="true" data-compare-ajax="true"{if $theme.ajaxVariantSwitch} data-ajax-variants-container="true"  data-ajax-bx-product-finder={$sArticle.articleID}{/if}>
                                         {* Product image *}
                                         {block name='frontend_detail_index_image_container'}
-                                            <div class="product--image-container image-slider{if $sArticle.image && {config name=sUSEZOOMPLUS}} product--image-zoom{/if}"
-                                                    {if $sArticle.image}
-                                                data-image-slider="true"
-                                                data-image-gallery="true"
-                                                data-maxZoom="{$theme.lightboxZoomFactor}"
-                                                data-thumbnails=".image--thumbnails"
-                                                    {/if}>
-
+                                            <div class="product--image-container">
                                                 <span class="cpo-finder-listing-score">{s namespace="boxalino/intelligence" name="productfinder/score"}{/s} {$sArticle.bx_score}%</span>
                                                 <progress class="cpo-finder-listing-score-progress" value="{$sArticle.bx_score}" max="100"></progress>
                                                 {if !empty($sArticle.comment)}
@@ -112,12 +114,12 @@
                                                     </div>
                                                 {/if}
 
-                                                {include file="frontend/listing/product-box/product-image.tpl"}
+                                                {include file="frontend/listing/product-box/product-image.tpl" isFinder='true'}
                                             </div>
                                         {/block}
 
                                         {* "Buy now" box container *}
-                                        {include file="frontend/detail/content/buy_container.tpl" Shop = $Data.shop}
+                                        {include file="frontend/detail/content/buy_container.tpl" Shop = $Data.shop isFinder='true'}
                                         {block name='frontend_detail_actions'}{/block}
                                     </div>
                                 {/foreach}

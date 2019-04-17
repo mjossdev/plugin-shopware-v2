@@ -24,7 +24,8 @@
             backButton = "",
             resultsButton = "",
             skipButton = "",
-            showProductsButton = "";
+            showProductsButton = "",
+            configuratorMessage = "";
 
         var expertLeftHtml ='<div class="cpo-finder-expert-img">' +
             '<img src="https://%%ExpertQuestionImage%%" />' +
@@ -99,6 +100,10 @@
             expertListHtml = html;
         }
 
+        function setConfiguratorMessageHtml(html){
+            configuratorMessage = html;
+        }
+
         function setAdditionalButtonHtml(html, id="cpo-finder-additional"){
             additionalButton = html.replace('%%ID%%', id);
         }
@@ -150,7 +155,7 @@
                 createFields();
                 createButton();
             }
-            
+
             $('#cpo-finder-results').on('click', function (e) {
                 var proceedToNextQuestion;
                 var forceAnswer = facets.getFacetExtraInfo(currentFacet, 'finderForceAnswer');
@@ -185,18 +190,17 @@
                 window.history.back();
             });
 
-            $('#cpo-finder-show-products').on('click', function() {
-                var selects = facets.getCurrentSelects();
-                var count = 0;
-                if (selects) {
-                    for (var key in selects) {
-                        if (key != 'bxi_data_owner_expert' && selects[key] != '*') {
-                            count++;
-                        }
-                    }
-                }
+            var useClickEventOnShowRecommendedProducts = facets.getFacetExtraInfo(currentFacet, 'finderShowProductsOnClick');
+            var showRecommendedProducts = facets.getFacetExtraInfo(currentFacet, 'finderShowProductsDisable');
+            if(useClickEventOnShowRecommendedProducts==true) {
+                $('#cpo-finder-show-products').on('click', function() {
+                    toggleProducts();
+                });
+            } else if(showRecommendedProducts==null && currentFacet!=null) {
+                $('#cpo-finder-show-products').hide();
+                $(".bx-finder-template-showProducts").insertBefore($(".cpo-finder-listing-wrapper")).show();
                 toggleProducts();
-            });
+            } else {}
 
             jQuery('.cpo-finder-listing-comment-button').on('click', function() {
                 if (jQuery(this).hasClass('comment-active') ){
@@ -207,6 +211,20 @@
                     jQuery(this).addClass('comment-active');
                     currentArticleID = '.cpo-finder-listing-comment-' + jQuery(this).attr('articleid');
                     jQuery(currentArticleID).show();
+                }
+            });
+
+            //delete the article configurator options action
+            $(".configurator--form").removeAttr("action");
+            $(".configurator--form").click(function(event){
+                event.preventDefault();
+                var selectedOptionEl = event.target;
+                var selectedOptionForm = selectedOptionEl.closest('form');
+                var messageElement = $(".bx-finder-template-configuratorMessage");
+                if(selectedOptionEl.getAttribute("checked")=="checked") {
+                    messageElement.fadeOut("fast");
+                } else {
+                    messageElement.insertAfter(selectedOptionForm).fadeIn(50);
                 }
             });
 
@@ -525,14 +543,21 @@
                     jQuery('.cpo-finder-button-container').append(backButton);
                 }
 
-                jQuery('.cpo-finder-button-container').append(resultsButton);
+                var blockNext = facets.getFacetExtraInfo(currentFacet, 'finderContinueButtonDisable');
+                if(blockNext==null){
+                    jQuery('.cpo-finder-button-container').append(resultsButton);
+                }
 
-                var allowSkip = facets.getFacetExtraInfo(currentFacet, 'finderBlockSkip');
+                var allowSkip = facets.getFacetExtraInfo(currentFacet, 'finderSkipButtonDisable');
                 if(allowSkip==null) {
                     jQuery('.cpo-finder-button-container').append(skipButton);
                 }
-                if(max_score > 0 && questions[0]!= currentFacet && questions[1]!= currentFacet && currentFacet != expertFieldName) {
-                    jQuery('.cpo-finder-button-container-below').append(showProductsButton.replace('%%CurrentScore%%', max_score));
+
+                var showRecommendedProducts = facets.getFacetExtraInfo(currentFacet, 'finderShowProductsDisable');
+                if(showRecommendedProducts==null){
+                    if(max_score > 0 && questions[0]!= currentFacet && questions[1]!= currentFacet && currentFacet != expertFieldName) {
+                        jQuery('.cpo-finder-button-container-below').append(showProductsButton.replace('%%CurrentScore%%', max_score));
+                    }
                 }
             } else {
                 jQuery('.cpo-finder-button-container').append(backButton);
@@ -593,6 +618,7 @@
                     paramString += param;
                 }
             });
+            $('#cpo-finder-results').prop('disabled', true);
             window.location.search.substr(1).split("&").forEach(function(param, index) {
                 if (param.indexOf(prefix) !== 0 && param.indexOf(contextPrefix) !== 0) {
                     bind = ((paramString === '') ? (index > 0 ? '&' : '?') : '&');
@@ -688,6 +714,7 @@
             init: init,
             createView: createView,
             setExpertListHtml: setExpertListHtml,
+            setConfiguratorMessageHtml: setConfiguratorMessageHtml,
             setAdditionalButtonHtml: setAdditionalButtonHtml,
             setFewerButtonHtml: setFewerButtonHtml,
             setBackButtonHtml: setBackButtonHtml,
