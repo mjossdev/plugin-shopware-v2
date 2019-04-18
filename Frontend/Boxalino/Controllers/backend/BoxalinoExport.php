@@ -57,11 +57,21 @@ class Shopware_Controllers_Backend_BoxalinoExport extends Shopware_Controllers_B
     {
         $this->container->get('front')->Plugins()->ViewRenderer()->setNoRender();
 
+        $accounts = array_filter(explode(",", $this->Request()->getQuery('account')));
         $tmpPath = Shopware()->DocPath('media_temp_boxalinoexport');
         $config = new Shopware_Plugins_Frontend_Boxalino_Helper_BxIndexConfig();
 
-        echo "BxIndexLog: Exporting for accounts: " . implode(', ', $config->getAccounts()) . "\n";
+        if(empty($accounts))
+        {
+            echo "BxIndexLog: Exporting for accounts: " . implode(', ', $config->getAccounts()) . "\n";
+        }
         foreach ($config->getAccounts() as $account) {
+            if(!empty($accounts) && !in_array($account, $accounts))
+            {
+                echo "BxIndexLog: {$account} is skipped; \n";
+                continue;
+            }
+
             try{
                 $exporter = new Shopware_Plugins_Frontend_Boxalino_DataExporter($tmpPath, $delta);
                 $exporter->setAccount($account);
