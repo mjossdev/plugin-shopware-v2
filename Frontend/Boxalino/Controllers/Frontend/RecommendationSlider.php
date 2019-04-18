@@ -40,7 +40,8 @@ class Shopware_Controllers_Frontend_RecommendationSlider extends Enlight_Control
         $this->productStreamSliderRecommendationsAction();
     }
 
-    public function detailAction() {
+    public function detailAction()
+    {
         $choiceIds = array();
         $this->config = Shopware()->Config();
         $id = $this->request->getParam('articleId');
@@ -72,25 +73,16 @@ class Shopware_Controllers_Frontend_RecommendationSlider extends Enlight_Control
             Shopware()->Plugins()->Frontend()->Boxalino()->logException($exception, __FUNCTION__, $this->request->getRequestUri());
             $sArticles = [];
         }
-        $boughtArticles = [];
-        $viewedArticles = [];
-        $sRelatedArticles = isset($sArticles['sRelatedArticles']) ? $sArticles['sRelatedArticles'] : [];
-        $sSimilarArticles = isset($sArticles['sSimilarArticles']) ? $sArticles['sSimilarArticles'] : [];
-
         $helper = Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper::instance();
         $helper->setRequest($this->Request());
+
+        $contextParams = $this->prepareContextParams($sArticles);
         foreach ($this->_productRecommendations as $var_name => $recommendation) {
             if ($this->config->get("{$recommendation}_enabled")) {
                 $choiceId = $this->config->get("{$recommendation}_name");
                 $max = $this->config->get("{$recommendation}_max");
                 $min = $this->config->get("{$recommendation}_min");
-                $excludes = array();
-                if ($var_name == 'sRelatedArticles' ||$var_name == 'sSimilarArticles') {
-                    foreach ($$var_name as $article) {
-                        $excludes[] = $article['articleID'];
-                    }
-                }
-                $helper->getRecommendation($choiceId, $max, $min, 0, $id, 'product', false, $excludes);
+                $helper->getRecommendation($choiceId, $max, $min, 0, $id, 'product', false, [], false, $contextParams);
                 $choiceIds[$recommendation] = $choiceId;
             }
         }
@@ -98,8 +90,7 @@ class Shopware_Controllers_Frontend_RecommendationSlider extends Enlight_Control
         foreach ($this->_productRecommendations as $var_name => $recommendation) {
             if (isset($choiceIds[$recommendation])) {
                 $hitIds = $helper->getRecommendation($choiceIds[$recommendation]);
-                $articles = array_merge($$var_name, $helper->getLocalArticles($hitIds));
-                $sArticles[$var_name] = $articles;
+                $sArticles[$var_name] = $helper->getLocalArticles($hitIds);
             }
         }
 
@@ -107,6 +98,27 @@ class Shopware_Controllers_Frontend_RecommendationSlider extends Enlight_Control
         $this->View()->addTemplateDir($path . 'Views/emotion/');
         $this->View()->loadTemplate('frontend/plugins/boxalino/detail/recommendation.tpl');
         $this->View()->assign('sArticle', $sArticles);
+    }
+
+    /**
+     * Setting details about related/similar products defined on article definition
+     *
+     * @param $article
+     * @return array
+     */
+    protected function prepareContextParams($article)
+    {
+        $contextParams = array();
+        foreach ($this->_productRecommendations as $key => $recommendation) {
+            if(!isset($contextParams['bx_' . $key . '_' . $article['articleID']]) && isset($article[$key]) && !empty($article[$key])){
+                $contextParams['bx_' . $key . '_' . $article['articleID']] = array();
+                foreach ($article[$key] as $rec) {
+                    $contextParams['bx_' . $key . '_' . $article['articleID']][] = $rec['articleID'];
+                }
+            }
+        }
+
+        return $contextParams;
     }
 
     /**
