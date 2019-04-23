@@ -104,27 +104,45 @@
             configuratorMessage = html;
         }
 
-        function setAdditionalButtonHtml(html, id="cpo-finder-additional"){
+        function setAdditionalButtonHtml(html, id){
+            if(id===undefined){
+                id="cpo-finder-additional";
+            }
             additionalButton = html.replace('%%ID%%', id);
         }
 
-        function setFewerButtonHtml(html, id="cpo-finder-fewer"){
+        function setFewerButtonHtml(html, id){
+            if(id===undefined){
+                id="cpo-finder-fewer";
+            }
             fewerButton = html.replace('%%ID%%', id);
         }
 
-        function setBackButtonHtml(html, id="cpo-finder-back"){
+        function setBackButtonHtml(html, id){
+            if(id===undefined){
+                id="cpo-finder-back";
+            }
             backButton = html.replace('%%ID%%', id);
         }
 
-        function setResultsButtonHtml(html, id="cpo-finder-results"){
+        function setResultsButtonHtml(html, id){
+            if(id===undefined){
+                id="cpo-finder-results";
+            }
             resultsButton = html.replace('%%ID%%', id);
         }
 
-        function setSkipButtonHtml(html, id="cpo-finder-skip"){
+        function setSkipButtonHtml(html, id){
+            if(id===undefined){
+                id="cpo-finder-skip";
+            }
             skipButton = html.replace('%%ID%%', id);
         }
 
-        function setShowProductsButtonHtml(html, id="cpo-finder-show-products"){
+        function setShowProductsButtonHtml(html, id){
+            if(id===undefined){
+                id="cpo-finder-show-products";
+            }
             showProductsButton = html.replace('%%ID%%', id);
         }
 
@@ -149,7 +167,7 @@
                         var tempFacetValues = facets.getFacetValues(temp)[temp];
                     });
                 }
-                selectedExpert = createExpert(".cpo-finder-left-content", templateToUse);
+                selectedExpert = createExpert(".cpo-finder-left-content", templateToUse, "");
                 addIntroMessage(selectedExpert);
                 createFields();
                 createButton();
@@ -284,7 +302,7 @@
             }
         }
 
-        function createExpert(locationClass, templateHtml, selectedExpert="") {
+        function createExpert(locationClass, templateHtml, selectedExpert) {
             if(selectedExpert != "") {
                 selectedExpert = selectedExpert;
             } else if(facets.getCurrentSelects(expertFieldName) && facets.getCurrentSelects(expertFieldName) !='*') {
@@ -586,7 +604,8 @@
             }
         }
 
-        function toggleProducts(productClass=".cpo-finder-listing"){
+        function toggleProducts(productClass){
+            productClass = (productClass === undefined) ? ".cpo-finder-listing" : productClass;
             if($(productClass).css('display') == 'block'){
                 $(productClass).hide();
             } else {
@@ -629,7 +648,6 @@
 
         function isExpertQuestion(element) { return element==expertFieldName;}
 
-
         function getDefaultExpert(){
             expertFacetValues.forEach(function(value) {
                 if (facets.getFacetValueExtraInfo(expertFieldName, value, 'is-initial')) {
@@ -640,7 +658,10 @@
             return defaultExpert;
         }
 
-        function prepareSelectionHistory(classLine=".cpo-finder-right-criteria", classContent=".cpo-finder-right-content"){
+        function prepareSelectionHistory(classLine, classContent){
+            classLine = (classLine === undefined) ? ".cpo-finder-right-criteria" : classLine;
+            classContent = (classContent === undefined) ? ".cpo-finder-right-content" : classContent;
+
             if (Object.keys(selects).length > 0) {
                 jQuery(classLine).append('<br>');
                 var bxUrl = window.location.href;
