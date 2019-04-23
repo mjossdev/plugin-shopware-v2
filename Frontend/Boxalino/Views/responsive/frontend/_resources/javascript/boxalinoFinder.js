@@ -149,7 +149,6 @@
                         var tempFacetValues = facets.getFacetValues(temp)[temp];
                     });
                 }
-                let finderQuestion = facets.getFacetExtraInfo(currentFacet, 'finderQuestion');
                 selectedExpert = createExpert(".cpo-finder-left-content", templateToUse);
                 addIntroMessage(selectedExpert);
                 createFields();
@@ -262,12 +261,12 @@
         }
 
         function addIntroMessage() {
-            let expertIntroSentence = facets.getFacetValueExtraInfo(expertFieldName, selectedExpert, 'intro-sentence');
-            let expertQuestionSentence = facets.getFacetValueExtraInfo(expertFieldName, selectedExpert, 'question-sentence');
+            var expertIntroSentence = facets.getFacetValueExtraInfo(expertFieldName, selectedExpert, 'intro-sentence');
+            var expertQuestionSentence = facets.getFacetValueExtraInfo(expertFieldName, selectedExpert, 'question-sentence');
             if (currentFacet != null) {
-                let facetLabel = facets.getFacetExtraInfo(currentFacet, 'finderQuestion');
+                var facetLabel = facets.getFacetExtraInfo(currentFacet, 'finderQuestion');
                 if(currentFacet == expertFieldName) {
-                    let dataOwnerHeader = facets.getFacetExtraInfo(currentFacet, 'dataOwnerHeader');
+                    var dataOwnerHeader = facets.getFacetExtraInfo(currentFacet, 'dataOwnerHeader');
                     jQuery('.cpo-finder-center-content-header').append(dataOwnerHeader);
                 } else if (currentFacet == questions[expertFieldOrder+1]) {
                     jQuery('.cpo-finder-center-content-header').append(expertIntroSentence[lang]);
@@ -294,15 +293,15 @@
                 selectedExpert = defaultExpert;
             }
 
-            let expertQuestionImg = facets.getFacetValueExtraInfo(expertFieldName, selectedExpert, 'question-img');
-            let expertFirstName = facets.getFacetValueExtraInfo(expertFieldName, selectedExpert, 'first-name').replace(' ', '');
-            let expertLastName = facets.getFacetValueExtraInfo(expertFieldName, selectedExpert, 'last-name');
-            let expertPersona = facets.getFacetValueExtraInfo(expertFieldName, selectedExpert, 'persona');
-            let expertExpertise = facets.getFacetValueExtraInfo(expertFieldName, selectedExpert, 'expertise');
-            let expertCharacteristics = facets.getFacetValueExtraInfo(expertFieldName, selectedExpert, 'characteristics');
-            let selectionImg = facets.getFacetValueExtraInfo(expertFieldName, selectedExpert, 'selection-img');
-            let description = facets.getFacetValueExtraInfo(expertFieldName, selectedExpert, 'desciption');
-            let badges = facets.getFacetValueExtraInfo(expertFieldName, selectedExpert, 'badges');
+            var expertQuestionImg = facets.getFacetValueExtraInfo(expertFieldName, selectedExpert, 'question-img');
+            var expertFirstName = facets.getFacetValueExtraInfo(expertFieldName, selectedExpert, 'first-name').replace(' ', '');
+            var expertLastName = facets.getFacetValueExtraInfo(expertFieldName, selectedExpert, 'last-name');
+            var expertPersona = facets.getFacetValueExtraInfo(expertFieldName, selectedExpert, 'persona');
+            var expertExpertise = facets.getFacetValueExtraInfo(expertFieldName, selectedExpert, 'expertise');
+            var expertCharacteristics = facets.getFacetValueExtraInfo(expertFieldName, selectedExpert, 'characteristics');
+            var selectionImg = facets.getFacetValueExtraInfo(expertFieldName, selectedExpert, 'selection-img');
+            var description = facets.getFacetValueExtraInfo(expertFieldName, selectedExpert, 'desciption');
+            var badges = facets.getFacetValueExtraInfo(expertFieldName, selectedExpert, 'badges');
 
             jQuery(locationClass).append(
                 templateHtml.replace('%%ExpertFirstName%%', expertFirstName)
@@ -329,29 +328,29 @@
 
         function createFields() {
             if (combinedQuestions.length > 1) {
-                let container = jQuery('.cpo-finder-center-current-question-options-second');
+                var containerCombined = jQuery('.cpo-finder-center-current-question-options-second');
 
-                let fieldContainer = jQuery('<div class="' + combinedQuestions[1] + '_container cpo-finder-answers-container-second"></div>');
-                let facetValues = facets.getFacetValues(combinedQuestions[1])[combinedQuestions[1]];
-                let visualisation = facets.getFacetExtraInfo(combinedQuestions[1], 'visualisation');
+                var fieldCombinedContainer = jQuery('<div class="' + combinedQuestions[1] + '_container cpo-finder-answers-container-second"></div>');
+                var facetCombinedValues = facets.getFacetValues(combinedQuestions[1])[combinedQuestions[1]];
+                var visualisationCombined = facets.getFacetExtraInfo(combinedQuestions[1], 'visualisation');
 
-                fieldContainer.append(createField(combinedQuestions[1], visualisation, facetValues));
-                container.append(fieldContainer);
+                fieldCombinedContainer.append(createField(combinedQuestions[1], visualisationCombined, facetCombinedValues));
+                containerCombined.append(fieldCombinedContainer);
 
                 facets.getFacets().forEach(function (fieldName) {
                     createFieldListener(fieldName);
                 });
 
-                let displaySize = facets.getFacetExtraInfo(combinedQuestions[1], 'enumDisplayMaxSize');
-                let secondDisplaySize = facets.getFacetExtraInfo(combinedQuestions[0], 'enumDisplayMaxSize');
-                if (secondDisplaySize == null) {
-                    secondDisplaySize = facets.getFacetValues(currentFacet)[currentFacet].length;
+                var displayCombinedSize = facets.getFacetExtraInfo(combinedQuestions[1], 'enumDisplayMaxSize');
+                var secondCombinedDisplaySize = facets.getFacetExtraInfo(combinedQuestions[0], 'enumDisplayMaxSize');
+                if (secondCombinedDisplaySize == null) {
+                    secondCombinedDisplaySize = facets.getFacetValues(currentFacet)[currentFacet].length;
                 }
-                let combinedDisplaySize = parseInt(secondDisplaySize) + parseInt(displaySize);
-                let totalFacetLength = parseInt(facets.getFacetValues(currentFacet)[currentFacet].length) + parseInt(facetValues.length);
+                var combinedDisplaySize = parseInt(secondCombinedDisplaySize) + parseInt(displayCombinedSize);
+                var totalFacetLength = parseInt(facets.getFacetValues(currentFacet)[currentFacet].length) + parseInt(facetCombinedValues.length);
 
                 if (combinedDisplaySize > totalFacetLength) {
-                    $('.cpo-finder-answer:gt(' + (displaySize - 1) + ')').hide();
+                    $('.cpo-finder-answer:gt(' + (displayCombinedSize - 1) + ')').hide();
 
                     jQuery('.cpo-finder-center-show-more-less').append(additionalButton);
                     jQuery('.cpo-finder-center-show-more-less').append(fewerButton);
@@ -368,12 +367,12 @@
                 }
             }
 
-            let fieldContainer = jQuery('<div class="' + currentFacet + '_container cpo-finder-answers-container"></div>');
-            let facetValues = facets.getFacetValues(currentFacet)[currentFacet];
-            let visualisation = facets.getFacetExtraInfo(currentFacet, 'visualisation');
+            var fieldContainer = jQuery('<div class="' + currentFacet + '_container cpo-finder-answers-container"></div>');
+            var facetValues = facets.getFacetValues(currentFacet)[currentFacet];
+            var visualisation = facets.getFacetExtraInfo(currentFacet, 'visualisation');
             fieldContainer.append(createField(currentFacet, visualisation, facetValues));
 
-            let container = jQuery('.cpo-finder-center-current-question-options');
+            var container = jQuery('.cpo-finder-center-current-question-options');
             container.append(fieldContainer);
 
             facets.getFacets().forEach(function(fieldName) {
@@ -381,17 +380,17 @@
             });
 
             // only show as many as defined
-            let displaySize = facets.getFacetExtraInfo(currentFacet, 'enumDisplayMaxSize');
+            var displaySize = facets.getFacetExtraInfo(currentFacet, 'enumDisplayMaxSize');
             if (displaySize) {
                 $('.cpo-finder-answer:gt(' + (displaySize - 1) + ')').hide();
             }
         }
 
         function createField(field, elementType, values) {
-            let element = null;
-            let facetLabel = facets.getFacetExtraInfo(field, 'finderQuestion');
-            let displayMode = facets.getFacetExtraInfo(field, 'display-mode');
-            let facetExtraInfo = facets.getFacetExtraInfo(field, 'facetValueExtraInfo');
+            var element = null;
+            var facetLabel = facets.getFacetExtraInfo(field, 'finderQuestion');
+            var displayMode = facets.getFacetExtraInfo(field, 'display-mode');
+            var facetExtraInfo = facets.getFacetExtraInfo(field, 'facetValueExtraInfo');
             switch (elementType) {
                 case 'multiselect':
                     element = $('<div></div>');
@@ -478,7 +477,7 @@
         }
 
         function createFieldListener(field) {
-            let type = facets.getFacetExtraInfo(field, 'visualisation');
+            var type = facets.getFacetExtraInfo(field, 'visualisation');
             $("." + field + "_check").on('change', function() {
                 if (type == 'radio') {
                     facets.removeSelect(field);
@@ -502,7 +501,7 @@
         }
 
         function update() {
-            let fields = facets.getUpdatedValues();
+            var fields = facets.getUpdatedValues();
             for (var fieldName in fields) {
                 var select = $('.' + fieldName).empty();
                 var optionValues = fields[fieldName];
@@ -602,10 +601,10 @@
         }
 
         function goToNextQuestion(){
-            let params = facets.getFacetParameters(),
+            var params = facets.getFacetParameters(),
                 paramString = '',
                 prefix = facets.getParameterPrefix();
-            let contextPrefix = facets.getContextParameterPrefix();
+            var contextPrefix = facets.getContextParameterPrefix();
             params.forEach(function(param, index) {
                 if (index > 0) {
                     paramString += '&';
