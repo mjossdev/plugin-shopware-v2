@@ -248,6 +248,10 @@
             $(".cpo-finder-wrapper").fadeIn(100);
         }
 
+        function createFallbackView(){
+            $(".cpo-finder-wrapper-fallback").fadeIn(100);
+        }
+
         function identifyCombinedQuestions(facets){
             if (questions[0] == currentFacet && facets.getCurrentSelects().length == undefined && facets.getCurrentSelects(questions[1]) == null) {
                 return [questions[0], questions[1]];
@@ -740,7 +744,8 @@
             setBackButtonHtml: setBackButtonHtml,
             setResultsButtonHtml: setResultsButtonHtml,
             setSkipButtonHtml: setSkipButtonHtml,
-            setShowProductsButtonHtml: setShowProductsButtonHtml
+            setShowProductsButtonHtml: setShowProductsButtonHtml,
+            createFallbackView : createFallbackView
         };
     }
 

@@ -154,4 +154,14 @@
             {/block}
         </div>
     {/block}
+    {block name="frontend_product_finder_fallback"}
+        <div class="cpo-finder-wrapper-fallback" style="display:none">
+            {block name="frontend_product_finder_script_templates_fallback"}
+                <div class="bx-finder-template-fallback">
+                    <p class="bx-finder-fallback-header">{s namespace='boxalino/intelligence' name='productfinder/fallbackheader'}Apologies, we are having troubles displaying your content{/s}</p>
+                    <p class="bx-finder-fallback">{s namespace='boxalino/intelligence' name='productfinder/fallback'}To continue, reload or go to another page. If you are seeing this frequently, contact us.{/s}</p>
+                </div>
+            {/block}
+        </div>
+    {/block}
 </div>
