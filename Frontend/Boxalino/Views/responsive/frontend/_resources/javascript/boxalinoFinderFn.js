@@ -41,7 +41,10 @@
     };
 
     $(function () {
-        $('*[data-bx-finder="true"]').bxFinder();
+        var el = $('*[data-bx-finder="true"]');
+        if(el.length > 0) {
+            el.bxFinder();
+        }
     });
 
 })(jQuery);
