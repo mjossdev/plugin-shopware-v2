@@ -27,6 +27,7 @@
                 this.$finderJs.init(this.$validatedJson, this.$finderLanguage, this.$finderUrl, this.$finderMaxScore, this.$finderHighlighted, this.$finderAlert);
                 this.$finderJs.createView();
             } catch(err) {
+                console.log("Please contact us." + err.name);
                 this.$finderJs.createFallbackView();
             }
         } catch(err) {

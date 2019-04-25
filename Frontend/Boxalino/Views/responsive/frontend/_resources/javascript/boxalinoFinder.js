@@ -344,6 +344,10 @@
                     .replace('%%ExpertSelectionImage%%', selectionImg)
             );
 
+            jQuery(".icon-expert").each(function(i, obj) {
+                jQUery(".icon-expert").html($(obj).html().replace('%%ExpertSelectionImage%%', selectionImg));
+            });
+
             return selectedExpert;
         }
 
