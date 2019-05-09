@@ -23,7 +23,10 @@
             this.$finderJs.setConfiguratorMessageHtml(this.$el.find('.bx-finder-template-configuratorMessage').html());
 
             try{
-                this.$validatedJson = $.parseJSON(JSON.parse(JSON.stringify(this.$facetsJson.substr(0, Number(this.$facetsJson.lastIndexOf("}"))+1))));
+                var contentJson = this.$facetsJson.substr(0, Number(this.$facetsJson.lastIndexOf("}"))+1);
+                if(!contentJson.length) { location.reload(); }
+
+                this.$validatedJson = $.parseJSON(JSON.parse(JSON.stringify(contentJson)));
                 this.$finderJs.init(this.$validatedJson, this.$finderLanguage, this.$finderUrl, this.$finderMaxScore, this.$finderHighlighted, this.$finderAlert);
                 this.$finderJs.createView();
             } catch(err) {
