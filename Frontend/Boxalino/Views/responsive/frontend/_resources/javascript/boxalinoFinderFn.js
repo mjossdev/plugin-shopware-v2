@@ -24,11 +24,13 @@
 
             try{
                 var contentJson = this.$facetsJson.substr(0, Number(this.$facetsJson.lastIndexOf("}"))+1);
-                if(!contentJson.length) { location.reload(); }
-
-                this.$validatedJson = $.parseJSON(JSON.parse(JSON.stringify(contentJson)));
-                this.$finderJs.init(this.$validatedJson, this.$finderLanguage, this.$finderUrl, this.$finderMaxScore, this.$finderHighlighted, this.$finderAlert);
-                this.$finderJs.createView();
+                if(contentJson.length) {
+                    this.$validatedJson = $.parseJSON(JSON.parse(JSON.stringify(contentJson)));
+                    this.$finderJs.init(this.$validatedJson, this.$finderLanguage, this.$finderUrl, this.$finderMaxScore, this.$finderHighlighted, this.$finderAlert);
+                    this.$finderJs.createView();
+                } else {
+                    location.reload();
+                }
             } catch(err) {
                 console.log("Please contact us." + err.name);
                 this.$finderJs.createFallbackView();
