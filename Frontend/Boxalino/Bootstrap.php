@@ -797,19 +797,8 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
             'bxChoiceId' => $data['choiceId'],
             'bxCount' => $data['article_slider_max_number']
         ), $filterFields);
+        $data["ajaxFeed"] = $this->getUrl(Shopware()->Front()->Router()->assemble($query));
 
-        $secure = $this->getServerIsSecure();
-        $url = Shopware()->Front()->Router()->assemble($query);
-        if($secure){
-            if(strpos($url, 'https:') === false){
-                $url = str_replace('http:', 'https:', $url);
-            }
-        }else{
-            if(strpos($url, 'http:') === false){
-                $url = str_replace('https:', 'http:', $url);
-            }
-        }
-        $data["ajaxFeed"] = $url;
         return $data;
     }
 
@@ -1211,6 +1200,22 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
             $categoryId = Shopware()->Shop()->getCategory()->getId();
         }
         return $categoryId;
+    }
+
+    public function getUrl($url)
+    {
+        $secure = $this->getServerIsSecure();
+        if($secure){
+            if(strpos($url, 'https:') === false){
+                return  str_replace('http:', 'https:', $url);
+            }
+        }
+
+        if(strpos($url, 'http:') === false){
+            return str_replace('https:', 'http:', $url);
+        }
+
+        return $url;
     }
 
     protected function getServerIsSecure()

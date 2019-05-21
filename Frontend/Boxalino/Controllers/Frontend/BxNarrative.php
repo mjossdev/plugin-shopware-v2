@@ -28,7 +28,7 @@ class Shopware_Controllers_Frontend_BxNarrative extends Enlight_Controller_Actio
         try {
             $choiceId = $this->Request()->getQuery('choice_id');
             $additional = $this->Request()->getQuery('additional');
-            $narrativeLogic = new Shopware_Plugins_Frontend_Boxalino_Models_Narrative_Narrative($choiceId, Shopware()->Front()->Request(), true, $additional);
+            $narrativeLogic = new Shopware_Plugins_Frontend_Boxalino_Models_Narrative_Narrative($choiceId, Shopware()->Front()->Request(), true, $additional, true);
 
             $narratives = $narrativeLogic->getNarratives();
             $dependencies = $narrativeLogic->getDependencies();

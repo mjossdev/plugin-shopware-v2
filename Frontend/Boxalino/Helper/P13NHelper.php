@@ -678,8 +678,9 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
             $filters[] = new \com\boxalino\bxclient\v1\BxFilter('products_bx_parent_active', array('1'));
             $shop_id = $this->getShopId();
             $filters[] = new \com\boxalino\bxclient\v1\BxFilter('products_shop_id', array($shop_id));
-            if ($query == '' && !$recommendation && !$stream) {
-                if(Shopware()->Shop()->getCategory()->getId() != $this->Request()->getParam('sCategory')) {
+            $category = Shopware()->Shop()->getCategory();
+            if ($query == '' && !$recommendation && !$stream & !is_null($category)) {
+                if($category->getId() != $this->Request()->getParam('sCategory')) {
                     $filters[] = new \com\boxalino\bxclient\v1\BxFilter('category_id', array($this->Request()->getParam('sCategory')));
                 }
             }

@@ -53,6 +53,10 @@ class Shopware_Plugins_Frontend_Boxalino_Models_Narrative_Narrative
      */
     public function getNarratives()
     {
+        if($this->isEmotion)
+        {
+            $this->helper->setRequest($this->request);
+        }
         list($options, $hitCount, $pageOffset, $sort) = $this->getPageSetup();
         return $this->helper->getNarrative($this->choiceId, $this->additionalChoiceIds, $options, $hitCount, $pageOffset, $sort, $this->request, $this->filters, $this->execute);
     }

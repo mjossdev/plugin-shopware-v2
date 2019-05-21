@@ -59,13 +59,18 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
      */
     public function onNarrativeEmotion($data)
     {
-        $narrativeLogic = new Shopware_Plugins_Frontend_Boxalino_Models_Narrative_Narrative($data['choiceId'], Shopware()->Front()->Request(), true, $data['additional_choiceId']);
+        try{
+            $narrativeLogic = new Shopware_Plugins_Frontend_Boxalino_Models_Narrative_Narrative($data['choiceId'], Shopware()->Front()->Request(), true, $data['additional_choiceId'], true);
 
-        $data['narrative'] = $narrativeLogic->getNarratives();
-        $data['dependencies'] = $narrativeLogic->getDependencies();
-        $data['bxRender'] = $narrativeLogic->getRenderer();
+            $data['narrative'] = $narrativeLogic->getNarratives();
+            $data['dependencies'] = $narrativeLogic->getDependencies();
+            $data['bxRender'] = $narrativeLogic->getRenderer();
+            $data['narrativeData'] = $data['bxRender']->getTemplateDataToBeAssigned($data['narrative']);
 
-        return $data;
+            return $data;
+        }catch (\Exception $e) {
+            Shopware()->Container()->get('pluginlogger')->error($e);
+        }
     }
 
     public function landingPage() {
@@ -775,7 +780,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
      * @param null $additionalChoiceId
      * @return bool
      */
-    public function processNarrative($choiceId, $additionalChoiceId = null, $execute = true)
+    public function processNarrative($choiceId, $additionalChoiceId = null, $execute = true, $filters)
     {
         try {
             $data = $this->View()->getAssign();
