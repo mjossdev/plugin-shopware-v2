@@ -797,6 +797,11 @@
     "description": "Optional: list of product properties separated by ','; if left empty, then all properties will be exported, this field is ignored if the list of product properties to include is not empty."
   },
   {
+    "name": "export_products_extratables",
+    "label": "Exporter - Products - Additional Tables",
+    "description": "Optional: list of additional tables related to the products entity, separated by ','; the tables are to be exported as they are."
+  },
+  {
     "name": "export_product_images",
     "label": "Exporter - Products - Image url",
     "type": "select",
@@ -858,6 +863,11 @@
     "description": "Optional: list of customer properties separated by ','; if left empty, then all properties will be exported, this field is ignored if the list of customer properties to include is not empty."
   },
   {
+    "name": "export_customers_extratables",
+    "label": "Exporter - Customers - Additional Tables",
+    "description": "Optional: list of additional tables related to the customers entity, separated by ','; the tables are to be exported as they are."
+  },
+  {
     "name": "export_transaction_enable",
     "label": "Exporter - Transactions ",
     "type": "select",
@@ -900,6 +910,11 @@
     "name": "export_transaction_exclude",
     "label": "Exporter - Transactions - Exclude Properties",
     "description": "Optional: list of customer properties separated by ','; if left empty, then all properties will be exported, this field is ignored if the list of customer properties to include is not empty."
+  },
+  {
+    "name": "export_transactions_extratables",
+    "label": "Exporter - Transactions - Additional Tables",
+    "description": "Optional: list of additional tables related to the transactions entity, separated by ','; the tables are to be exported as they are."
   },
   {
     "name": "export_voucher_enable",

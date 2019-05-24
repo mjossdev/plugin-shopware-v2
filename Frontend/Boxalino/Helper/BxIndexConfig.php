@@ -335,8 +335,8 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxIndexConfig{
      * @return array
      * @throws Exception
      */
-    public function getAccountProductsProperties($account, $allProperties, $requiredProperties=array()) {
-
+    public function getAccountProductsProperties($account, $allProperties, $requiredProperties=array())
+    {
         $config = $this->getAccountConfig($account);
         $includes = explode(',', $config['export_product_include']);
         $excludes = explode(',', $config['export_product_exclude']);
@@ -350,8 +350,8 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxIndexConfig{
      * @return array
      * @throws Exception
      */
-    public function getAccountCustomersProperties($account, $allProperties, $requiredProperties=array()) {
-
+    public function getAccountCustomersProperties($account, $allProperties, $requiredProperties=array())
+    {
         $config = $this->getAccountConfig($account);
         $includes = explode(',', $config['export_customer_include']);
         $excludes = explode(',', $config['export_customer_exclude']);
@@ -365,12 +365,32 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxIndexConfig{
      * @return array
      * @throws Exception
      */
-    public function getAccountTransactionsProperties($account, $allProperties, $requiredProperties=array()) {
-
+    public function getAccountTransactionsProperties($account, $allProperties, $requiredProperties=array())
+    {
         $config = $this->getAccountConfig($account);
         $includes = explode(',', $config['export_transaction_include']);
         $excludes = explode(',', $config['export_transaction_exclude']);
         return $this->getFinalProperties($allProperties, $includes, $excludes, $requiredProperties);
+    }
+
+    /**
+     * Getting additional tables for each entity to be exported (products, customers, transactions)
+     *
+     * @param $account
+     * @param string $type
+     * @return array
+     * @throws \Exception
+     */
+    public function getAccountExtraTablesByEntityType($account, $type)
+    {
+        $config = $this->getAccountConfig($account);
+        $additionalTablesList = $config["export_{$type}_extratables"];
+        if($additionalTablesList)
+        {
+            return explode(',', $additionalTablesList);
+        }
+
+        return [];
     }
 
     /**

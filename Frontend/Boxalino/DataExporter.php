@@ -24,9 +24,6 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
     protected $bxData;
     protected $_attributes = array();
     protected $shopProductIds = array();
-    protected $config = array();
-    protected $locales = array();
-    protected $languages = array();
     protected $rootCategories = array();
 
     protected $account = null;
@@ -296,6 +293,9 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
                 $this->log->info("exportVouchers after memory: " . memory_get_usage(true));
                 $this->log->info("BxIndexLog: Finished products - voucher.");
             }
+
+            $this->log->info("BxIndexLog: Products - exporting additional tables for account: {$account}");
+            $this->exportExtraTables('products', $files, $this->_config->getAccountExtraTablesByEntityType($account,'products'));
         }
         return $export_products;
     }
@@ -1428,6 +1428,10 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
             if ($attribute == 'id') continue;
             $this->bxData->addSourceStringField($customerSourceKey, $attribute, $attribute);
         }
+
+        $this->log->info("BxIndexLog: Customers - exporting additional tables for account: {$account}");
+        $this->exportExtraTables('customers', $files, $this->_config->getAccountExtraTablesByEntityType($account,'customers'));
+
         $this->log->info('BxIndexLog: Customer export finished for account: ' . $account);
     }
 
@@ -1525,6 +1529,9 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
 
         $sourceKey =  $this->bxData->setCSVTransactionFile($files->getPath('transactions.csv'), 'id', 'articledetailsID', 'userID', 'ordertime', 'total_order_value', 'price', 'discounted_price', 'currency', 'email');
         $this->bxData->addSourceCustomerGuestProperty($sourceKey,'guest_id');
+
+        $this->log->info("BxIndexLog: Transactions - exporting additional tables for account: {$account}");
+        $this->exportExtraTables('transactions', $files, $this->_config->getAccountExtraTablesByEntityType($account,'transactions'));
     }
 
 
@@ -1667,6 +1674,76 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
         $doneCases = array();
         $files->savePartToCsv('voucher_codes.csv', $data);
         $this->bxData->addCSVItemFile($files->getPath('voucher_codes.csv'), 'id');
+    }
+
+    /**
+     * Exporting additional tables that are related to entities
+     * No logic on the connection is defined
+     * To be added in the ETL
+     *
+     * @param $entity
+     * @param $files
+     * @param array $tables
+     * @return $this
+     */
+    public function exportExtraTables($entity, $files, $tables = [])
+    {
+        if(empty($tables))
+        {
+            $this->log->info("BxIndexLog: {$entity} no additional tables have been found.");
+            return $this;
+        }
+
+        foreach($tables as $table)
+        {
+            $this->log->info("BxIndexLog:  Extra table - {$table}.");
+            try{
+                $columns = $this->getColumnsByTableName($table);
+                $tableContent = $this->getTableContent($table);
+                if(!is_array($tableContent))
+                {
+                    throw new Exception("Extra table {$table} content empty.");
+                }
+                $dataToSave = array_merge(array(array_keys(end($tableContent))), $tableContent);
+
+                $fileName = "extra_". $table . ".csv";
+                $files->savePartToCsv($fileName, $dataToSave);
+
+                $this->bxData->addExtraTableToEntity($files->getPath($fileName), $entity, reset($columns), $columns);
+                $this->log->info("BxIndexLog:  {$entity} - additional table {$table} exported.");
+            } catch (\Exception $exception)
+            {
+                $this->log->info("BxIndexLog: {$entity} additional table error:". $exception->getMessage());
+                continue;
+            }
+        }
+
+        return $this;
+    }
+
+    protected function getColumnsByTableName($table)
+    {
+        $columns = $this->db->fetchCol("DESCRIBE {$table}");
+        if(empty($columns))
+        {
+            throw new \Exception("BxIndexLog: {$table} does not exist.");
+        }
+
+        return $columns;
+    }
+
+    protected function getTableContent($table)
+    {
+        try {
+            $select = $this->db->select()
+                ->from($table, array('*'));
+
+            return $this->db->fetchAll($select);
+        } catch(\Exception $exc)
+        {
+            $this->log->warning("BxIndexLog: {$table} - additional table error: ". $exc->getMessage());
+            return array();
+        }
     }
 
     public function setAccount($account)
