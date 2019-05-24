@@ -5,6 +5,13 @@ On every plugin update - please check the file and what needs to be tested on yo
 
 If you have any question, just contact us at support@boxalino.com
 
+### v1.3.1 - 2019-05-24
+##### 1. Data Exporter - export additional tables
+* *setup version* : 1.6.28
+* *description* : Admin configuration fields to define entity-related tables which have to be exported to Boxalino. The table names must exist within your store database and they are exported as is. 
+* *configuration*: "Exporter - Products - Additional Tables", "Exporter - Customers - Additional Tables", "Exporter - Transactions - Additional Tables"
+* *commits* :  
+https://github.com/boxalino/plugin-shopware-v2/commit/ad705039b05553f050174c4bb89e0217b0f89763
 
 ### v1.3.0 - 2019-05-09
 * *post-deploy steps* : clear cache, re-create theme
