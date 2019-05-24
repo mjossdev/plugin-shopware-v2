@@ -31,7 +31,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxRender
     public function __construct($p13Helper, $searchInterceptor, $request)
     {
         $this->p13Helper = $p13Helper;
-        $this->dataHelper = Shopware_Plugins_Frontend_Boxalino_Helper_BxData::instance();;
+        $this->dataHelper = $searchInterceptor->BxData();
         $this->searchInterceptor = $searchInterceptor;
         $this->request = $request;
         $this->resourceManager = Shopware_Plugins_Frontend_Boxalino_Helper_BxResourceManager::instance();

@@ -1,4 +1,7 @@
 <?php
+
+use Shopware\Components\ReflectionHelper;
+
 /**
  * Class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper
  */
@@ -228,102 +231,6 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxData {
         return $options;
     }
 
-    /**
-     * @param Shopware\Bundle\SearchBundle\Criteria $criteria
-     * @return array
-     */
-    public function getSortOrder(Shopware\Bundle\SearchBundle\Criteria $criteria, $default_sort = null, $listing = false)
-    {
-        /* @var Shopware\Bundle\SearchBundle\Sorting\Sorting $sort */
-        $sort = current($criteria->getSortings());
-        if(empty($sort))
-        {
-            $sort = new \Shopware\Bundle\SearchBundle\Sorting\SearchRankingSorting(Shopware\Bundle\SearchBundle\SortingInterface::SORT_DESC);
-        }
-
-        $dir = null;
-        $additionalSort = null;
-        if($listing && is_null($default_sort) && $this->Config()->get('boxalino_navigation_sorting')){
-            return array();
-        }
-
-        $name = "default";
-        if($sort instanceof Shopware\Bundle\SearchBundle\Sorting\Sorting)
-        {
-            $name = $name = $sort->getName();
-        }
-
-        switch ($name) {
-            case 'popularity':
-                $field = 'products_sales';
-                break;
-            case 'prices':
-                $field = 'products_bx_grouped_price';
-                break;
-            case 'product_name':
-                $field = 'title';
-                break;
-            case 'release_date':
-                $field = 'products_datum';
-                $additionalSort = true;
-                break;
-            default:
-                if ($listing == true) {
-                    $default_sort = is_null($default_sort) ? $this->getDefaultSort() : $default_sort;
-                    switch ($default_sort) {
-                        case 1:
-                            $field = 'products_datum';
-                            $additionalSort = true;
-                            break 2;
-                        case 2:
-                            $field = 'products_sales';
-                            break 2;
-                        case 3:
-                        case 4:
-                            if ($default_sort == 3) {
-                                $dir = false;
-                            }
-                            $field = 'products_bx_grouped_price';
-                            break 2;
-                        case 5:
-                        case 6:
-                            if ($default_sort == 5) {
-                                $dir = false;
-                            }
-                            $field = 'title';
-                            break 2;
-                        default:
-                            if ($this->Config()->get('boxalino_navigation_sorting') == false) {
-                                $field = 'products_datum';
-                                $additionalSort = true;
-                                break 2;
-                            }
-                            break;
-                    }
-                }
-                return array();
-        }
-        $sortReturn[] = array(
-            'field' => $field,
-            'reverse' => (is_null($dir) ? $sort->getDirection() == Shopware\Bundle\SearchBundle\SortingInterface::SORT_DESC : $dir)
-        );
-        if($additionalSort) {
-            $sortReturn[] = array(
-                'field' => 'products_changetime',
-                'reverse' => (is_null($dir) ? $sort->getDirection() == Shopware\Bundle\SearchBundle\SortingInterface::SORT_DESC : $dir)
-            );
-        }
-        return $sortReturn;
-    }
-
-    protected function getDefaultSort(){
-        $sql = $this->db->select()
-            ->from(array('c_e' => 's_core_config_elements', array('c_v.value')))
-            ->join(array('c_v' => 's_core_config_values'), 'c_v.element_id = c_e.id')
-            ->where("name = ?", "defaultListingSorting");
-        $result = $this->db->fetchRow($sql);
-        return isset($result) ? unserialize($result['value']) : null;
-    }
 
     public function getLocalArticles($ids, $highlightedProducts=array()) {
         if (empty($ids)) {
@@ -433,6 +340,114 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxData {
             ->where("sc.id = ?", $categoryId);
 
         return $this->db->fetchOne($sql);
+    }
+
+    /**
+     * Preparing facets
+     *
+     * @param $conditions
+     * @return array|null
+     */
+    public function getConditionFilter($conditions) {
+        $filter = array();
+        foreach ($conditions as $condition) {
+            switch(get_class($condition)) {
+                case 'Shopware\Bundle\SearchBundle\Condition\PropertyCondition':
+                    $filterValues = $condition->getValueIds();
+                    $option_id = $this->getOptionIdFromValue(reset($filterValues));
+                    $useTranslation = $this->useTranslation('propertyvalue');
+                    $result = $this->getFacetValuesResult($option_id, $filterValues, $useTranslation);
+                    $values = array();
+                    foreach ($result as $r) {
+                        if(!empty($r['value'])){
+                            if($useTranslation == true && isset($r['objectdata'])) {
+                                $translation = unserialize($r['objectdata']);
+                                $r['value'] = isset($translation['optionValue']) && $translation['optionValue'] != '' ?
+                                    $translation['optionValue'] : $r['value'];
+                            }
+                            $values[] = trim($r['value']);
+                        }
+                    }
+                    $filter['products_optionID_' . $option_id] = $values;
+                    break;
+                case 'Shopware\Bundle\SearchBundle\Condition\CategoryCondition':
+                    $filterValues = $condition->getCategoryIds();
+                    $filter['category_id'] = $filterValues;
+                    break;
+                case 'Shopware\Bundle\SearchBundle\Condition\ManufacturerCondition':
+                    $filterValues = $condition->getManufacturerIds();
+                    $filter['products_brand'] = $this->getManufacturerById($filterValues);
+                    break;
+                default:
+                    return null;
+                    break;
+            }
+        }
+        return $filter;
+    }
+
+    public function getFacetValuesResult($option_id, $values, $translation){
+        $shop_id = $this->getShopId();
+        $where_statement = '';
+        foreach ($values as $index => $value) {
+            $id = end(explode("_bx_", $value));
+            if($index > 0) {
+                $where_statement .= ' OR ';
+            }
+            $where_statement .= 'v.id = '. $this->db->quote($id);
+        }
+        $sql = $this->db->select()
+            ->from(array('v' => 's_filter_values', array()))
+            ->where($where_statement)
+            ->where('v.optionID = ?', $option_id);
+        if($translation == true) {
+            $sql = $sql
+                ->joinLeft(array('t' => 's_core_translations'),
+                    't.objectkey = v.id AND t.objecttype = ' . $this->db->quote('propertyvalue') . ' AND t.objectlanguage = ' . $shop_id,
+                    array('objectdata'));
+        }
+        $result = $this->db->fetchAll($sql);
+        return $result;
+    }
+
+    /**
+     * @param $value_id
+     * @return string
+     */
+    private function getOptionIdFromValue($value_id) {
+        $sql = $this->db->select()
+            ->from('s_filter_values', array('optionId'))
+            ->where('s_filter_values.id = ?', $value_id);
+        return $this->db->fetchOne($sql);
+    }
+
+    private function getManufacturerById($ids) {
+        $names = array();
+        $select = $this->db->select()->from(array('s' => 's_articles_supplier'), array('name'))
+            ->where('s.id IN(' . implode(',', $ids) . ')');
+        $stmt = $this->db->query($select);
+        if($stmt->rowCount()) {
+            while($row = $stmt->fetch()){
+                $names[] = $row['name'];
+            }
+        }
+        return $names;
+    }
+
+    public function unserialize($serialized)
+    {
+        $reflector = new ReflectionHelper();
+        if (empty($serialized)) {
+            return [];
+        }
+        $sortings = [];
+        foreach ($serialized as $className => $arguments) {
+            $className = explode('|', $className);
+            $className = $className[0];
+            $sortings[] = $reflector->createInstanceFromNamedArguments($className, $arguments);
+        }
+
+        return $sortings;
     }
 
     public function transformBlog($blogs) {
