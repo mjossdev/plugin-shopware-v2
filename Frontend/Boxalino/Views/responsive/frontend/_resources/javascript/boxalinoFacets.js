@@ -44,6 +44,7 @@
         function checkParams(){
             window.location.search.substr(1).split("&").forEach(function(param) {
                 param = param.replace('[]', '');
+                param = param.replace('%5B%5D', '');
                 var contextPrefix = getContextParameterPrefix(),
                     prefix = getParameterPrefix(),
                     facetName = '',
