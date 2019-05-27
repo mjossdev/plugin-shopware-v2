@@ -303,11 +303,14 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             $this->Bootstrap()->disableHttpCache();
         }
 
+        $request = $this->Request();
+        $viewData = $this->View()->getAssign();
         $searchBundle = new Shopware_Plugins_Frontend_Boxalino_Bundle_Search($this->Helper(), 'listingAjax');
         try {
-            $searchBundle->setRequest($this->Request());
-            $searchBundle->addViewData($this->View()->getAssign());
+            $searchBundle->setRequest($request);
+            $searchBundle->addViewData($viewData);
             $searchBundle->execute();
+            $request = $searchBundle->getRequest();
         } catch (Shopware_Plugins_Frontend_Boxalino_Bundle_NullException $exception){
             return null;
         } catch(\Exception $exception) {
@@ -319,17 +322,17 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
 
         if(version_compare(Shopware::VERSION, '5.3.0', '>=')) {
             $body['totalCount'] = $this->Helper()->getTotalHitCount();
-            if ($this->Request()->getParam('loadFacets')) {
+            if ($request->getParam('loadFacets')) {
                 $facets = $searchBundle->getSearchBundle()->showFacets() ? $this->updateFacetsWithResult($searchBundle->getSearchBundle()->getFacets(), $searchBundle->getSearchBundle()->getContext()) : [];
                 $body['facets'] = array_values($facets);
             }
-            if ($this->Request()->getParam('loadProducts')) {
-                if ($this->Request()->has('productBoxLayout')) {
-                    $boxLayout = $this->Request()->get('productBoxLayout');
+            if ($request->getParam('loadProducts')) {
+                if ($request->has('productBoxLayout')) {
+                    $boxLayout = $request->get('productBoxLayout');
                 } else {
                     $boxLayout = $catId ? Shopware()->Modules()->Categories()->getProductBoxLayout($catId) : $this->get('config')->get('searchProductBoxLayout');
                 }
-                $this->View()->assign($this->Request()->getParams());
+                $this->View()->assign($request->getParams());
                 $this->View()->extendsTemplate('frontend/plugins/boxalino/listing/filter/_includes/filter-multi-selection.tpl');
                 $this->View()->extendsTemplate('frontend/plugins/boxalino/listing/index_5_3.tpl');
                 $articles = $this->BxData()->getLocalArticles($this->Helper()->getHitFieldValues('products_ordernumber'));
@@ -337,16 +340,16 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                 $this->loadThemeConfig();
                 $this->View()->assign([
                     'sArticles' => $articles,
-                    'pageIndex' => $this->Request()->getParam('sPage'),
+                    'pageIndex' => $request->getParam('sPage'),
                     'productBoxLayout' => $boxLayout,
                     'sCategoryCurrent' => $catId,
                 ]);
                 $body['listing'] = '<div style="display:none;">'.$this->Helper()->getRequestId().'</div>' . $this->View()->fetch('frontend/listing/listing_ajax.tpl');
-                $sPerPage = $this->Request()->getParam('sPerPage');
+                $sPerPage = $request->getParam('sPerPage');
                 $this->View()->assign([
-                    'sPage' => $this->Request()->getParam('sPage'),
+                    'sPage' => $request->getParam('sPage'),
                     'pages' => ceil($this->Helper()->getTotalHitCount() / $sPerPage),
-                    'baseUrl' => $this->Request()->getBaseUrl() . $this->Request()->getPathInfo(),
+                    'baseUrl' => $request->getBaseUrl() . $request->getPathInfo(),
                     'pageSizes' => explode('|', $this->container->get('config')->get('numberArticlesToShow')),
                     'shortParameters' => $this->container->get('query_alias_mapper')->getQueryAliases(),
                     'limit' => $sPerPage,
@@ -403,10 +406,11 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         }
 
         $request = $this->Request();
+        $viewData = $this->View()->getAssign();
         $searchBundle = new Shopware_Plugins_Frontend_Boxalino_Bundle_Search($this->Helper(), 'listing');
         try {
-            $searchBundle->setRequest($this->Request());
-            $searchBundle->addViewData($this->View()->getAssign());
+            $searchBundle->setRequest($request);
+            $searchBundle->addViewData($viewData);
             $searchBundle->execute();
             $request= $searchBundle->getRequest();
         } catch (Shopware_Plugins_Frontend_Boxalino_Bundle_NullException $exception){
@@ -570,7 +574,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             return $this->processCPOFinderRequest($choiceId, $additionalChoiceId);
         }
 
-        return $this->processNarrative($choiceId, $additionalChoiceId, $execute, $filters);
+        return $this->processNarrative($choiceId, $filters, $additionalChoiceId, $execute);
     }
 
     /**
@@ -619,7 +623,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
      * @param $filters
      * @return bool
      */
-    public function processNarrative($choiceId, $additionalChoiceId = null, $execute = true, $filters)
+    public function processNarrative($choiceId, $filters = [], $additionalChoiceId = null, $execute = true)
     {
         try {
             $data = $this->View()->getAssign();
@@ -774,10 +778,12 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
 
         $templateBlogSearchProperties = array();
         $config = $this->get('config');
+        $request = $this->Request();
+        $viewData = $this->View()->getAssign();
         $searchBundle = new Shopware_Plugins_Frontend_Boxalino_Bundle_Search($this->Helper(), 'search');
         try {
-            $searchBundle->setRequest($this->Request());
-            $searchBundle->addViewData($this->View()->getAssign());
+            $searchBundle->setRequest($request);
+            $searchBundle->addViewData($viewData);
             $searchBundle->execute();
             if($config->get('boxalino_blog_search_enabled'))
             {
@@ -796,7 +802,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         if($debug){
             $this->Helper()->addNotification("Search before response took in total: " . (microtime(true)- $start) * 1000 . "ms.");
         }
-        if($this->Helper()->getResponse()->getRedirectLink() != '' && $this->Request()->getParam('bxActiveTab') !== 'blog') {
+        if($this->Helper()->getResponse()->getRedirectLink() != '' && $request->getParam('bxActiveTab') !== 'blog') {
             $this->Controller()->redirect($this->Helper()->getResponse()->getRedirectLink());
         }
 
