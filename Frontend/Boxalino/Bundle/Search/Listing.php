@@ -1,5 +1,5 @@
 <?php
-class Shopware_Plugins_Frontend_Boxalino_Bundle_Search_Listing
+class Shopware_Plugins_Frontend_Boxalino_Bundle_Search_ListingAjax
     extends Shopware_Plugins_Frontend_Boxalino_Bundle_Search_BoxalinoSearch
 {
     protected $sSortRule = null;
@@ -7,30 +7,30 @@ class Shopware_Plugins_Frontend_Boxalino_Bundle_Search_Listing
     public function init()
     {
         parent::init();
-        if($this->stream && !$this->config->get('boxalino_navigation_product_stream'))
-        {
-            throw new Shopware_Plugins_Frontend_Boxalino_Bundle_NullException("BxListingError: the stream {$this->stream} can not be used. Please enable Boxalino Search - Navigatio -Product-Stream");
+        $listingCount = $this->getRequest()->getActionName() == 'listingCount';
+        if(version_compare(Shopware::VERSION, '5.3.0', '>=')) {
+            if(!$listingCount || (!empty($this->stream) && !$this->config->get('boxalino_navigation_product_stream'))) {
+                throw new Shopware_Plugins_Frontend_Boxalino_Bundle_NullException("BxListingAjaxError: the stream {$this->stream} can not be used. Please enable Boxalino Search - Navigation -Product-Stream");
+            }
+        } else {
+            if ((!empty($this->stream) && !$this->config->get('boxalino_navigation_product_stream'))) {
+                throw new Shopware_Plugins_Frontend_Boxalino_Bundle_NullException("BxListingAjaxError: the stream {$this->stream} can not be used. Please enable Boxalino Search - Navigation -Product-Stream");
+            }
         }
+    }
+
+    public function getContext()
+    {
+        return $this->get('shopware_storefront.context_service')->getShopContext();
     }
 
     public function _request()
     {
         $requestOrder = $this->getRequest()->getParam($this->getOrderParam());
-        $defaultListingSort = $this->getDefaultListingSorting();
         $this->sSortRule = $requestOrder;
-        if(is_null($this->sSortRule))
-        {
-            $specialCase = $this->config->get('boxalino_navigation_special_enabled');
-            $ids = explode(',', $this->config->get('boxalino_navigation_exclude_ids'));
-            $sSortValue = Shopware_Plugins_Frontend_Boxalino_Bundle_Sorting_BoxalinoSortingInterface::BOXALINO_BUNDLE_SORTING_DEFAULT;
-            if($specialCase && in_array($this->getRequest()->getParam('sCategory'), $ids)) {
-                $sSortValue = $defaultListingSort;
-            }
-            $this->getRequest()->setParam("sSort", $sSortValue);
-            $this->sSortRule = $sSortValue;
-        }
 
         $sSortParam = $this->getRequest()->getParam("sSort");
+        $defaultListingSort = $this->getDefaultListingSorting();
         if(is_null($requestOrder) && is_null($sSortParam))
         {
             $this->getRequest()->setParam("sSort", $defaultListingSort);
@@ -43,14 +43,9 @@ class Shopware_Plugins_Frontend_Boxalino_Bundle_Search_Listing
         }
     }
 
-    public function getContext()
-    {
-        return $this->get('shopware_storefront.context_service')->getProductContext();
-    }
-
     public function getQueryText()
     {
-        return "";
+        return $this->getRequest()->getParams()['q'];
     }
 
     public function getSort()
@@ -59,7 +54,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bundle_Search_Listing
             ->setSortId($this->sSortRule)
             ->setIsListing(true);
 
-        return $this->getSortBundle()->getSort();
+        return parent::getSort();
     }
 
     public function getOptions()
@@ -83,15 +78,11 @@ class Shopware_Plugins_Frontend_Boxalino_Bundle_Search_Listing
                 $conditions = $this->dataHelper->unserialize(json_decode($streamConfig[$this->stream]['conditions'], true));
                 $filter = $this->dataHelper->getConditionFilter($conditions);
                 if(is_null($filter)) {
-                    throw new Shopware_Plugins_Frontend_Boxalino_Bundle_NullException("BxListingError: the filter is corrupt.");
+                    throw new Shopware_Plugins_Frontend_Boxalino_Bundle_NullException("BxListingError: the stream {$this->stream} can not be used. Please enable Boxalino Search - Navigatio -Product-Stream");
                 }
             } else {
                 $filter['products_stream_id'] = [$this->stream];
             }
-        }
-
-        if(isset($this->viewData['manufacturer']) && !empty($this->viewData['manufacturer'])) {
-            $filter['products_brand'] = [$this->viewData['manufacturer']->getName()];
         }
 
         if($supplier = $this->getRequest()->getParam('sSupplier')) {
@@ -100,6 +91,8 @@ class Shopware_Plugins_Frontend_Boxalino_Bundle_Search_Listing
                 $filter['products_brand'] = [$supplier_name];
             }
         }
+
+        return $filter;
     }
 
 }

@@ -137,7 +137,11 @@ class Shopware_Plugins_Frontend_Boxalino_Models_Narrative_Narrative
         $hitCount = $criteria->getLimit();
         $pageOffset = $criteria->getOffset();
 
-        $sort =  $this->interceptor->BxData()->getSortOrder($criteria, null, true);
+        $sort = new Shopware_Plugins_Frontend_Boxalino_Bundle_Sorting();
+        $sort->setIsListing(true);
+        $sort->setSortId(null);
+        $sort->setCriteria($criteria);
+        $sort =  $sort->getSort();
         $facets = $criteria->getFacets();
         $options = $this->interceptor->BxData()->getFacetConfig($facets, $this->request);
 
