@@ -1,11 +1,9 @@
 {extends name="parent:frontend/detail/index.tpl"}
-
 {block name="frontend_detail_index_tabs_cross_selling"}
     <div class="tab-menu--cross-selling"{if $sArticle.relatedProductStreams} data-scrollable="true"{/if}>
         <div id="bx-loader"></div>
     </div>
 {/block}
-
 
 {block name='frontend_index_content_inner'}
     {$smarty.block.parent}
@@ -45,15 +43,15 @@
                 });
 
                 {if $bx_load_blogs}
-                var blogcontroller = '{url controller=RecommendationSlider action=detailBlogRecommendation articleId=$sArticle.articleID}';
-                $.ajax({
-                    type: "GET",
-                    url: blogcontroller
-                }).done(function (res) {
-                    $('.bx-detail-blog').html(res);
-                    StateManager.updatePlugin('*[data-product-slider="true"]', 'swProductSlider');
-                }, function (err) {
-                });
+                    var blogcontroller = '{url controller=RecommendationSlider action=detailBlogRecommendation articleId=$sArticle.articleID}';
+                    $.ajax({
+                        type: "GET",
+                        url: blogcontroller
+                    }).done(function (res) {
+                        $('.bx-detail-blog').html(res);
+                        StateManager.updatePlugin('*[data-product-slider="true"]', 'swProductSlider');
+                    }, function (err) {
+                    });
                 {/if}
             });
         });

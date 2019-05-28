@@ -15,7 +15,6 @@
     <script>
         document.asyncReady(function() {
             $(document).ready(function () {
-
                 $.subscribe('plugin/swProductSlider/onLoadItemsSuccess', function(e,o,r) {
                     if(r.length === 0) {
                         if ($(o.$el).closest('.emotion--element').length > 0) {

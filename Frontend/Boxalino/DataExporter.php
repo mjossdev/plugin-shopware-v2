@@ -1314,7 +1314,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
 
         $attributes = $db->fetchAll($select);
         foreach ($attributes as $attribute) {
-            if($attribute['COLUMN_NAME'] == 'orderID' || $attribute['COLUMN_NAME'] == 'id' || $attribute['COLUMN_NAME'] == 'ordernumber'){
+            if($attribute['COLUMN_NAME'] == 'orderID' || $attribute['COLUMN_NAME'] == 'id' || $attribute['COLUMN_NAME'] == 'ordernumber' || $attribute['COLUMN_NAME'] == 'status'){
                 if($attribute['TABLE_NAME'] == 's_order_details'){
                     continue;
                 }
@@ -1323,7 +1323,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
             $all_attributes[$key] = $attribute['COLUMN_NAME'];
         }
 
-        $requiredProperties = array('id','articleID','userID','ordertime','invoice_amount','currencyFactor','price');
+        $requiredProperties = array('id','articleID','userID','ordertime','invoice_amount','currencyFactor','price', 'status');
         $filteredAttributes = $this->_config->getAccountTransactionsProperties($account, $all_attributes, $requiredProperties);
 
         return $filteredAttributes;
@@ -1457,7 +1457,8 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
                 'shipping_costs' => new Zend_Db_Expr(
                     "ROUND($oInvoiceShipping * $oCurrencyFactor, $quoted2)"),
                 'price' => new Zend_Db_Expr(
-                    "ROUND($dPrice * $oCurrencyFactor, $quoted2)")
+                    "ROUND($dPrice * $oCurrencyFactor, $quoted2)"),
+                'detail_status' => 's_order_details.status'
             )
         );
 
@@ -1470,7 +1471,6 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
         $mode = $this->_config->getTransactionMode($account);
         $firstShop = true;
         foreach ($this->_config->getAccountLanguages($account) as $shop_id => $language) {
-
             $page = 1;
             while ($countMax > $totalCount + $limit) {
                 $sql = $db->select()
@@ -1502,7 +1502,6 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
                 $stmt = $db->query($sql);
 
                 if ($stmt->rowCount()) {
-
                     while ($row = $stmt->fetch()) {
                         // @note list price at the time of the order is not stored, only the final price
                         $row['discounted_price'] = $row['price'];

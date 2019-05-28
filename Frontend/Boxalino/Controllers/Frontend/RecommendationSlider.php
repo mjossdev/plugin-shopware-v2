@@ -124,7 +124,8 @@ class Shopware_Controllers_Frontend_RecommendationSlider extends Enlight_Control
     /**
      * Recommendation for boxalino emotion slider
      */
-    public function productStreamSliderRecommendationsAction() {
+    public function productStreamSliderRecommendationsAction()
+    {
         if ($_REQUEST['dev_bx_debug'] == 'true') {
             $t1 = microtime(true);
         }
@@ -171,8 +172,8 @@ class Shopware_Controllers_Frontend_RecommendationSlider extends Enlight_Control
         }
     }
 
-    public function portfolioRecommendationAction() {
-
+    public function portfolioRecommendationAction()
+    {
         try{
             $helper = Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper::instance();
             $helper->setRequest($this->request);
@@ -215,8 +216,8 @@ class Shopware_Controllers_Frontend_RecommendationSlider extends Enlight_Control
 
     }
 
-    public function blogRecommendationAction() {
-
+    public function blogRecommendationAction()
+    {
         try{
             $helper = Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper::instance();
             $bxData = Shopware_Plugins_Frontend_Boxalino_Helper_BxData::instance();
@@ -239,8 +240,8 @@ class Shopware_Controllers_Frontend_RecommendationSlider extends Enlight_Control
         }
     }
 
-    public function detailBlogRecommendationAction() {
-
+    public function detailBlogRecommendationAction()
+    {
         try{
             $helper = Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper::instance();
             $bxData = Shopware_Plugins_Frontend_Boxalino_Helper_BxData::instance();
@@ -254,6 +255,7 @@ class Shopware_Controllers_Frontend_RecommendationSlider extends Enlight_Control
             $fields = ['products_blog_title', 'products_blog_id', 'products_blog_category_id', 'products_blog_short_description', 'products_blog_media_id'];
             $blogs = $helper->getRecommendationHitFieldValues($choiceId, $fields);
             $articles = $bxData->transformBlog($blogs);
+
             $this->View()->loadTemplate('frontend/plugins/boxalino/detail/ajax_blog_rec.tpl');
             $path = Shopware()->Plugins()->Frontend()->Boxalino()->Path();
             $this->View()->addTemplateDir($path . 'Views/emotion/');
@@ -268,4 +270,5 @@ class Shopware_Controllers_Frontend_RecommendationSlider extends Enlight_Control
             Shopware()->Plugins()->Frontend()->Boxalino()->logException($exception, __FUNCTION__, $this->request->getRequestUri());
         }
     }
+
 }
