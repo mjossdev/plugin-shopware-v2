@@ -5,6 +5,20 @@ On every plugin update - please check the file and what needs to be tested on yo
 
 If you have any question, just contact us at support@boxalino.com
 
+### v1.3.2 - 2019-05-29
+* *post-deploy steps* : in the plugin configuration, set "Exporter - Transactions - Mode" to *Full* for 1 day. Switch back to *Incremental* after a full data sync.
+
+##### 1. Data Exporter - order status updates
+* *description* : Updates on transactions export so that the order status would not be overwritten by detail status on CSV data save. 
+* *commits* :  
+https://github.com/boxalino/plugin-shopware-v2/commit/d1705bcb0a99fe1866e2a0275aba39ea1d3546fe
+
+##### 2. Product Finder - encoded URL facet parsing update
+* *description* : Fix for facets JS to be able to parse _encoded_ URL with array values.
+* *commits* :  
+https://github.com/boxalino/plugin-shopware-v2/commit/423aa68c613b8891379edc4002b41d610d0f6824
+
+
 ### v1.3.1 - 2019-05-24
 ##### 1. Data Exporter - export additional tables
 * *setup version* : 1.6.28
