@@ -7,6 +7,7 @@
             facets = {},
             max_score = 0,
             currentFacet = null,
+            previousFacet = null,
             highlighted = false,
             questions = {},
             selectedValues = {},
@@ -85,6 +86,7 @@
 
             questions = prepareQuestions();
             currentFacet = getCurrentFacet();
+            previousFacet = getPreviousFacet();
             selects = facets.getCurrentSelects();
 
             prepareSelectionHistory();
@@ -218,6 +220,11 @@
                 $(".bx-finder-template-showProducts").insertBefore($(".cpo-finder-listing-wrapper")).show();
                 toggleProducts();
             } else {}
+
+            var previousFacetDisabledProducts = facets.getFacetExtraInfo(previousFacet, 'finderShowProductsDisable');
+            if(previousFacetDisabledProducts!=null) {
+                jQuery('.cpo-finder-center-content-notification').append($(".bx-finder-template-notification").show());
+            }
 
             jQuery('.cpo-finder-listing-comment-button').on('click', function() {
                 if (jQuery(this).hasClass('comment-active') ){
@@ -735,6 +742,14 @@
                 }
             }
 
+            return null;
+        }
+
+        function getPreviousFacet(){
+            var currentFacetOrder = questions.indexOf(currentFacet);
+            if(currentFacetOrder>0){
+                return questions[currentFacetOrder-1];
+            }
             return null;
         }
 
