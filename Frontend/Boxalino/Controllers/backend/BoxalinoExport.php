@@ -73,8 +73,9 @@ class Shopware_Controllers_Backend_BoxalinoExport extends Shopware_Controllers_B
             }
 
             try{
-                $exporter = new Shopware_Plugins_Frontend_Boxalino_DataExporter($tmpPath, $delta);
+                $exporter = Shopware()->Container()->get('boxalino_intelligence.service_exporter');
                 $exporter->setAccount($account);
+                $exporter->setDelta($delta);
                 $output = $exporter->run();
                 echo $output . "\n";
             } catch(\Throwable $e) {

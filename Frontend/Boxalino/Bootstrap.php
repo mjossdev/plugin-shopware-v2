@@ -16,6 +16,11 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
      */
     private $frontendInterceptor;
 
+    /**
+     * @var Shopware_Plugins_Frontend_Boxalino_DataExporter
+     */
+    protected $dataExporter;
+
     public function __construct($name, $info = null) {
         parent::__construct($name, $info);
 
@@ -40,7 +45,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
     }
 
     public function getVersion() {
-        return '1.6.28';
+        return '1.6.29';
     }
 
     public function getInfo() {
@@ -65,6 +70,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
     public function install() {
         try {
             $this->registerEvents();
+            $this->addCustomPluginEvents();
             $this->createConfiguration();
             $this->addNarrativeAttributesOnCategory();
             $this->addNarrativeAttributesOnDetail();
@@ -84,6 +90,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
     public function update($version) {
         try {
             $this->registerEvents();
+            $this->addCustomPluginEvents();
             $this->createConfiguration();
             $this->addNarrativeAttributesOnCategory();
             $this->addNarrativeAttributesOnDetail();
@@ -258,6 +265,22 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
         Shopware()->Db()->query('INSERT INTO `boxalino_cronexports` values(NOW())');
     }
 
+    public function addCustomPluginEvents()
+    {
+        $this->subscribeEvent("Enlight_Bootstrap_InitResource_boxalino_intelligence.service_exporter", "getExporterService");
+    }
+
+    public function getExporterService()
+    {
+        $this->dataExporter = new Shopware_Plugins_Frontend_Boxalino_DataExporter();
+        Shopware()->Container()->get("events")->notify(
+            'Enlight_Bootstrap_BeforeSetResource_boxalino_intelligence.service_exporter', ['subject' => $this]
+        );
+        Shopware()->Container()->set("boxalino_intelligence.service_exporter", $this->getDataExporter());
+
+        return $this->getDataExporter();
+    }
+
     private function canRunDelta() {
         $db = Shopware()->Db();
         $sql = $db->select()
@@ -286,8 +309,9 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
         $successMessages = array();
         foreach ($config->getAccounts() as $account) {
             try {
-                $exporter = new Shopware_Plugins_Frontend_Boxalino_DataExporter($tmpPath, $delta);
+                $exporter = Shopware()->Container()->get('boxalino_intelligence.service_exporter');
                 $exporter->setAccount($account);
+                $exporter->setDelta($delta);
                 $output = $exporter->run();
                 $successMessages[] = $output;
             } catch (\Throwable $e) {
@@ -1261,5 +1285,16 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
         }
 
         return $filterFields;
+    }
+
+    public function getDataExporter()
+    {
+        return $this->dataExporter;
+    }
+
+    public function setDataExporter($dataExporter)
+    {
+        $this->dataExporter  = $dataExporter;
+        return $this;
     }
 }
