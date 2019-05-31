@@ -5,6 +5,21 @@ On every plugin update - please check the file and what needs to be tested on yo
 
 If you have any question, just contact us at support@boxalino.com
 
+
+### v1.3.3 - 2019-05-31
+* *post-deploy steps* : clear cache
+* *setup version* : 1.6.29
+
+##### 1. Data Exporter - hook event to update the service
+* *description* : Added a Enlight_Bootstrap_BeforeSetResource_boxalino_intelligence.service_exporter event so that the DataExporter class can be changed/extended with custom logic.
+* *commits* : 
+https://github.com/boxalino/plugin-shopware-v2/commit/7a9d6e910ad1036c24b09080f9ea6bcce52f6c22
+
+##### 2. Product Finder notification message
+* *description* : Update the productfinder template with a notification bar; 
+* *commits* :
+https://github.com/boxalino/plugin-shopware-v2/commit/665f29319d802571d531fffbecd3b3dd3c7c598c
+
 ### v1.3.2 - 2019-05-29
 * *post-deploy steps* : in the plugin configuration, set "Exporter - Transactions - Mode" to *Full* for 1 day. Switch back to *Incremental* after a full data sync.
 
