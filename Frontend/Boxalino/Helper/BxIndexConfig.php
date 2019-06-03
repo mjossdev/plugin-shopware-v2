@@ -47,7 +47,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxIndexConfig{
      * @throws \Doctrine\ORM\OptimisticLockException
      * @throws \Doctrine\ORM\TransactionRequiredException
      */
-    protected function getConfigurationByShopId($id) {
+    public function getConfigurationByShopId($id) {
 
         $shop = Shopware()->Models()->find('Shopware\\Models\\Shop\\Shop', $id);
         $customer = $shop->getCustomerGroup();
