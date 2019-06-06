@@ -1233,10 +1233,12 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
             if(strpos($url, 'https:') === false){
                 return  str_replace('http:', 'https:', $url);
             }
-        } else {
-            if(strpos($url, 'http:') === false){
-                return str_replace('https:', 'http:', $url);
-            }
+
+            return $url;
+        }
+
+        if(strpos($url, 'http:') === false){
+            return str_replace('https:', 'http:', $url);
         }
 
         return $url;
