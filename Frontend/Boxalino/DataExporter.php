@@ -108,9 +108,10 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
 
             try {
                 $this->bxData->verifyCredentials();
+            } catch(\LogicException $e){
+                $this->log->warning('BxIndexLog: verifyCredentials returned a timeout: ' . $e->getMessage());
             } catch (\Throwable $e){
                 $this->log->error("BxIndexLog: verifyCredentials failed with exception: {$e->getMessage()}");
-                throw new \Exception("BxIndexLog: verifyCredentials on account {$account} failed with exception: {$e->getMessage()}");
             }
 
             $this->log->info('BxIndexLog: Preparing the attributes and category data for each language of the account: ' . $account);
@@ -139,13 +140,15 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
                     try {
                         $this->log->info('BxIndexLog: Push the XML configuration file to the Data Indexing server for account: ' . $account);
                         $this->bxData->pushDataSpecifications();
+                    }catch(\LogicException $e){
+                        $this->log->warning('BxIndexLog: publishing XML configurations returned a timeout: ' . $e->getMessage());
                     } catch (\Throwable $e) {
                         $value = @json_decode($e->getMessage(), true);
                         if (isset($value['error_type_number']) && $value['error_type_number'] == 3) {
                             $this->log->info('BxIndexLog: Try to push the XML file a second time, error 3 happens always at the very first time but not after: ' . $account);
                             $this->bxData->pushDataSpecifications();
                         } else {
-                            $this->log->info("BxIndexLog: pushDataSpecifications failed with exception: " . $e->getMessage());
+                            $this->log->error("BxIndexLog: pushDataSpecifications failed with exception: " . $e->getMessage() . " If you have attribute changes, please check with Boxalino.");
                             throw new \Exception("BxIndexLog: pushDataSpecifications failed with exception: " . $e->getMessage());
                         }
                     }
