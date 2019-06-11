@@ -245,10 +245,13 @@
 
             //delete the article configurator options action
             $(".configurator--form").removeAttr("action");
-            $(".configurator--form").click(function(event){
+            $(".configurator--form").click(function(e){
+                var event = e.originalEvent;
                 event.preventDefault();
-                var selectedOptionEl = event.target;
-                var selectedOptionForm = selectedOptionEl.closest('form');
+                event.returnValue = false;
+
+                var selectedOptionEl = e.target;
+                var selectedOptionForm = $(selectedOptionEl).closest('form');
                 var messageElement = $(".bx-finder-template-configuratorMessage");
                 if(selectedOptionEl.getAttribute("checked")=="checked") {
                     messageElement.fadeOut("fast");
