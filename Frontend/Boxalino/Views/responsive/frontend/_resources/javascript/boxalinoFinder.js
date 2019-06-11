@@ -94,7 +94,7 @@
 
             expertFieldName = facets.getDataOwnerFacet();
             expertFacetValues = facets.getFacetValues(expertFieldName)[expertFieldName];
-            expertFieldOrder = questions.findIndex(isExpertQuestion);
+            expertFieldOrder = getExpertFieldOrder();
             selectedExpert = defaultExpert = getDefaultExpert();
         }
 
@@ -187,10 +187,15 @@
                         }
                     })
                 } else if(forceAnswer){
-                    proceedToNextQuestion = false;
+                    if(facets.getCurrentSelects(currentFacet) == null){
+                        proceedToNextQuestion = false;
+                    } else {
+                        proceedToNextQuestion = true;
+                    }
                 } else{
                     proceedToNextQuestion = true;
                 }
+
                 if (proceedToNextQuestion == false){
                     window.alert(alertString);
                 } else {
@@ -690,7 +695,7 @@
                     if (selects[key] =='*' || key == 'bxi_data_owner_expert') { emptyValues = emptyValues + 1; }
                     if (key != 'bxi_data_owner_expert' && selects[key] != '*') {
                         bxUrlParams.forEach(function(param) {
-                            if (param.includes(key)) {
+                            if (param.indexOf(key) > -1) {
                                 bxNewUrl = bxUrl.substring(0, bxUrl.indexOf(param));
                             }
                         });
@@ -751,6 +756,18 @@
                 return questions[currentFacetOrder-1];
             }
             return null;
+        }
+
+        function getExpertFieldOrder(){
+            var index = -1;
+            for (var i = 0; i < questions.length; ++i) {
+                if (questions[i] == expertFieldName) {
+                    index = i;
+                    break;
+                }
+            }
+
+            return index;
         }
 
         return {
