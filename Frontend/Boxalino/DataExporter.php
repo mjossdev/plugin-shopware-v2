@@ -10,13 +10,11 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
     protected $request;
     protected $manager;
 
-    private static $instance = null;
-
     protected $propertyDescriptions = array();
-    protected $dirPath;
+    protected $dirPath = null;
     protected $db;
     protected $log;
-    protected $delta;
+    protected $delta = false;
     protected $deltaLast;
     protected $fileHandle;
     protected $deltaIds = array();
@@ -27,6 +25,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
     protected $rootCategories = array();
 
     protected $account = null;
+    protected $files = null;
 
     protected $translationFields = array(
         'name',
@@ -41,34 +40,19 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
     );
 
     /**
-     * constructor
+     * Data Exporter constructor
      *
      * @param string $dirPath
      * @param bool   $delta
      */
-    public function __construct($dirPath, $delta = false) {
-
-        $this->delta = $delta;
-        $this->dirPath = $dirPath;
+    public function __construct()
+    {
+        $this->dirPath = Shopware()->DocPath('media_temp_boxalinoexport');
         $this->db = Shopware()->Db();
         $this->log = Shopware()->Container()->get('pluginlogger');
         $libPath = __DIR__ . '/lib';
         require_once($libPath . '/BxClient.php');
         \com\boxalino\bxclient\v1\BxClient::LOAD_CLASSES($libPath);
-    }
-
-    /**
-     * @param $dir
-     * @param bool $delta
-     * @return null|Shopware_Plugins_Frontend_Boxalino_DataExporter
-     */
-    public static function instance($dir, $delta = false)
-    {
-        if (self::$instance == null){
-            self::$instance = new Shopware_Plugins_Frontend_Boxalino_DataExporter($dir, $delta);
-        }
-
-        return self::$instance;
     }
 
     /**
@@ -87,9 +71,10 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
         $type = $this->delta ? 'delta' : 'full';
         try {
             $account = $this->getAccount();
-            if(empty($account))
+            $dirPath = $this->getDirPath();
+            if(empty($account) || empty($dirPath))
             {
-                $message = "BxIndexLog: Cancelled Boxalino {$type} data sync. The account name can not be empty.";
+                $message = "BxIndexLog: Cancelled Boxalino {$type} data sync. The account/directory path name can not be empty.";
                 $this->log->warning($message);
 
                 return $message;
@@ -116,31 +101,32 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
             $this->log->info("BxIndexLog: Exporting store ID : {$this->_config->getAccountStoreId($account)}");
             $this->log->info("BxIndexLog: Initialize files on account: {$account}");
 
-            $files = new Shopware_Plugins_Frontend_Boxalino_Helper_BxFiles($this->dirPath, $account, $type);
             $bxClient = new \com\boxalino\bxclient\v1\BxClient($account, $this->_config->getAccountPassword($account), "");
+            $this->files = new Shopware_Plugins_Frontend_Boxalino_Helper_BxFiles($dirPath, $account, $type);
             $this->bxData = new \com\boxalino\bxclient\v1\BxData($bxClient, $this->_config->getAccountLanguages($account), $this->_config->isAccountDev($account), $this->delta);
             $this->log->info("BxIndexLog: verify credentials for account: " . $account);
 
             try {
                 $this->bxData->verifyCredentials();
+            } catch(\LogicException $e){
+                $this->log->warning('BxIndexLog: verifyCredentials returned a timeout: ' . $e->getMessage());
             } catch (\Throwable $e){
                 $this->log->error("BxIndexLog: verifyCredentials failed with exception: {$e->getMessage()}");
-                throw new \Exception("BxIndexLog: verifyCredentials on account {$account} failed with exception: {$e->getMessage()}");
             }
 
             $this->log->info('BxIndexLog: Preparing the attributes and category data for each language of the account: ' . $account);
             $this->log->info("BxIndexLog: Preparing products.");
-            $exportProducts = $this->exportProducts($account, $files);
+            $exportProducts = $this->exportProducts();
             $this->shopProductIds = null;
             if ($type == 'full') {
                 if ($this->_config->isCustomersExportEnabled($account)) {
                     $this->log->info("BxIndexLog: Preparing customers.");
-                    $this->exportCustomers($account, $files);
+                    $this->exportCustomers();
                 }
 
                 if ($this->_config->isTransactionsExportEnabled($account)) {
                     $this->log->info("BxIndexLog: Preparing transactions.");
-                    $this->exportTransactions($account, $files);
+                    $this->exportTransactions();
                 }
             }
 
@@ -154,13 +140,15 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
                     try {
                         $this->log->info('BxIndexLog: Push the XML configuration file to the Data Indexing server for account: ' . $account);
                         $this->bxData->pushDataSpecifications();
+                    }catch(\LogicException $e){
+                        $this->log->warning('BxIndexLog: publishing XML configurations returned a timeout: ' . $e->getMessage());
                     } catch (\Throwable $e) {
                         $value = @json_decode($e->getMessage(), true);
                         if (isset($value['error_type_number']) && $value['error_type_number'] == 3) {
                             $this->log->info('BxIndexLog: Try to push the XML file a second time, error 3 happens always at the very first time but not after: ' . $account);
                             $this->bxData->pushDataSpecifications();
                         } else {
-                            $this->log->info("BxIndexLog: pushDataSpecifications failed with exception: " . $e->getMessage());
+                            $this->log->error("BxIndexLog: pushDataSpecifications failed with exception: " . $e->getMessage() . " If you have attribute changes, please check with Boxalino.");
                             throw new \Exception("BxIndexLog: pushDataSpecifications failed with exception: " . $e->getMessage());
                         }
                     }
@@ -209,102 +197,290 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
         return implode("\n", $systemMessages);
     }
 
-    /**
-     * Get timeout for exporter
-     * @return bool|int
-     */
-    protected function getTimeoutForExporter($account)
-    {
-        if($this->delta)
-        {
-            return 120;
-        }
-        $customTimeout = $this->_config->getExporterTimeout($account);
-        if($customTimeout)
-        {
-            return (int)$customTimeout;
-        }
-        return 3000;
-    }
 
     /**
-     * @param $account
-     * @param $files
      * @return bool
+     * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
      */
-    private function exportProducts($account, $files) {
-
+    public function exportProducts()
+    {
+        $account = $this->getAccount();
         $this->log->info("BxIndexLog: Preparing products - main.");
-        $export_products = $this->exportMainProducts($account, $files);
-        $this->log->info("Main product after memory: " . memory_get_usage(true));
+        $export_products = $this->exportMainProducts();
+        $this->log->info("BxIndexLog: -- Main product after memory: " . memory_get_usage(true));
 
         $this->log->info("BxIndexLog: Finished products - main.");
         if ($export_products) {
             $this->log->info("BxIndexLog: Preparing products - categories.");
-            $this->exportItemCategories($account, $files);
-            $this->log->info("exportItemCategories after memory: " . memory_get_usage(true));
+            $this->exportItemCategories();
+            $this->log->info("BxIndexLog: -- exportItemCategories after memory: " . memory_get_usage(true));
             $this->log->info("BxIndexLog: Finished products - categories.");
             $this->log->info("BxIndexLog: Preparing products - translations.");
-            $this->exportItemTranslationFields($account, $files);
-            $this->log->info("exportItemTranslationFields after memory: " . memory_get_usage(true));
+            $this->exportItemTranslationFields();
+            $this->log->info("BxIndexLog: -- exportItemTranslationFields after memory: " . memory_get_usage(true));
             $this->log->info("BxIndexLog: Finished products - translations.");
             $this->log->info("BxIndexLog: Preparing products - brands.");
-            $this->exportItemBrands($files);
-            $this->log->info("exportItemBrands after memory: " . memory_get_usage(true));
+            $this->exportItemBrands();
+            $this->log->info("BxIndexLog: -- exportItemBrands after memory: " . memory_get_usage(true));
             $this->log->info("BxIndexLog: Finished products - brands.");
             $this->log->info("BxIndexLog: Preparing products - facets.");
-            $this->exportItemFacets($account, $files);
-            $this->log->info("exportItemFacets after memory: " . memory_get_usage(true));
+            $this->exportItemFacets();
+            $this->log->info("BxIndexLog: -- exportItemFacets after memory: " . memory_get_usage(true));
             $this->log->info("BxIndexLog: Finished products - facets.");
             $this->log->info("BxIndexLog: Preparing products - price.");
-            $this->exportItemPrices($account, $files);
-            $this->log->info("exportItemPrices after memory: " . memory_get_usage(true));
+            $this->exportItemPrices();
+            $this->log->info("BxIndexLog: -- exportItemPrices after memory: " . memory_get_usage(true));
             $this->log->info("BxIndexLog: Finished products - price.");
             if ($this->_config->exportProductImages($account)) {
                 $this->log->info("BxIndexLog: Preparing products - image.");
-                $this->exportItemImages($account, $files);
-                $this->log->info("exportItemImages after memory: " . memory_get_usage(true));
+                $this->exportItemImages();
+                $this->log->info("BxIndexLog: -- exportItemImages after memory: " . memory_get_usage(true));
                 $this->log->info("BxIndexLog: Finished products - image.");
             }
             if ($this->_config->exportProductUrl($account)) {
                 $this->log->info("BxIndexLog: Preparing products - url.");
-                $this->exportItemUrls($account, $files);
+                $this->exportItemUrls();
                 $this->log->info("exportItemUrls after memory: " . memory_get_usage(true));
                 $this->log->info("BxIndexLog: Finished products - url.");
             }
             if(!$this->delta) {
                 $this->log->info("BxIndexLog: Preparing products - blogs.");
-                $this->exportItemBlogs($account, $files);
-                $this->log->info("exportItemBlogs after memory: " . memory_get_usage(true));
+                $this->exportItemBlogs();
+                $this->log->info("BxIndexLog: -- exportItemBlogs after memory: " . memory_get_usage(true));
                 $this->log->info("BxIndexLog: Finished products - blogs.");
             }
             $this->log->info("BxIndexLog: Preparing products - votes.");
-            $this->exportItemVotes($files);
-            $this->log->info("exportItemVotes after memory: " . memory_get_usage(true));
+            $this->exportItemVotes();
+            $this->log->info("BxIndexLog: -- exportItemVotes after memory: " . memory_get_usage(true));
             $this->log->info("BxIndexLog: Finished products - votes.");
             $this->log->info("BxIndexLog: Preparing products - product streams.");
-            $this->exportProductStreams($files);
-            $this->log->info("exportProductStreams after memory: " . memory_get_usage(true));
+            $this->exportProductStreams();
+            $this->log->info("BxIndexLog: -- exportProductStreams after memory: " . memory_get_usage(true));
             $this->log->info("BxIndexLog: Finished products - product streams.");
             if ($this->_config->isVoucherExportEnabled($account)) {
                 $this->log->info("BxIndexLog: Preparing products - voucher.");
                 $this->log->info("BxIndexLog: Preparing vouchers.");
-                $this->exportVouchers($account, $files);
-                $this->log->info("exportVouchers after memory: " . memory_get_usage(true));
+                $this->exportVouchers();
+                $this->log->info("BxIndexLog: -- exportVouchers after memory: " . memory_get_usage(true));
                 $this->log->info("BxIndexLog: Finished products - voucher.");
             }
 
             $this->log->info("BxIndexLog: Products - exporting additional tables for account: {$account}");
-            $this->exportExtraTables('products', $files, $this->_config->getAccountExtraTablesByEntityType($account,'products'));
+            $this->exportExtraTables('products', $this->_config->getAccountExtraTablesByEntityType($account,'products'));
         }
+
         return $export_products;
     }
 
     /**
-     * @param $files
+     * Export products as they are in an unified view
+     * Create products.csv
+     *
+     * @return bool
+     * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
      */
-    private function exportProductStreams($files) {
+    public function exportMainProducts()
+    {
+        $db = $this->db;
+        $account = $this->getAccount();
+        $files = $this->getFiles();
+        $product_attributes = $this->getProductAttributes($account);
+        $product_properties = array_flip($product_attributes);
 
+        $countMax = 100000000;
+        $limit = 1000000;
+        $header = true;
+        $data = array();
+        $categoryShopIds = $this->_config->getShopCategoryIds($account);
+        $main_shop_id = $this->_config->getAccountStoreId($account);
+        $startforeach = microtime(true);
+        foreach ($this->_config->getAccountLanguages($account) as $shop_id => $language)
+        {
+            $logCount = 0;
+            $log = true;
+            $totalCount = 0;
+            $page = 1;
+            $category_id = $categoryShopIds[$shop_id];
+            while ($countMax > $totalCount + $limit)
+            {
+                $sql = $db->select()
+                    ->from(array('s_articles'), $product_properties)
+                    ->join(array('s_articles_details'), 's_articles_details.articleID = s_articles.id', array())
+                    ->join(array('s_articles_attributes'), 's_articles_attributes.articledetailsID = s_articles_details.id', array())
+                    ->join(array('s_articles_categories'), 's_articles_categories.articleID = s_articles_details.articleID', array())
+                    ->joinLeft(array('s_articles_prices'), 's_articles_prices.articledetailsID = s_articles_details.id', array('price'))
+                    ->joinLeft(array('s_categories'), 's_categories.id = s_articles_categories.categoryID', array())
+                    ->where('s_articles.mode = ?', 0)
+                    ->where('s_categories.path LIKE \'%|' . $category_id . '|%\'')
+                    ->limit($limit, ($page - 1) * $limit)
+                    ->group('s_articles_details.id')
+                    ->order('s_articles.id');
+                if ($this->delta) {
+                    $sql->where('s_articles.changetime > ?', $this->getLastDelta());
+                }
+                $start = microtime(true);
+                $stmt = $db->query($sql);
+                $currentCount = 0;
+                if ($stmt->rowCount()) {
+                    while ($row = $stmt->fetch()) {
+                        $currentCount++;
+                        if($log) {
+                            $end = (microtime(true) - $start) * 1000;
+                            $this->log->info("BxIndexLog: -- Main product query (shop:$shop_id) took: $end ms, memory: " . memory_get_usage(true));
+                            $log = false;
+                        }
+                        if (is_null($row['price'])) {
+                            continue;
+                        }
+                        if(isset($this->shopProductIds[$row['id']])) {
+                            $this->shopProductIds[$row['id']] .= "|$shop_id";
+                            continue;
+                        }
+                        $this->shopProductIds[$row['id']] = $shop_id;
+                        unset($row['price']);
+                        $row['purchasable'] = $this->getProductPurchasableValue($row);
+                        $row['immediate_delivery'] = $this->getProductImmediateDeliveryValue($row);
+                        if ($this->delta && !isset($this->deltaIds[$row['articleID']])) {
+                            $this->deltaIds[$row['articleID']] = $row['articleID'];
+                        }
+                        $row['group_id'] = $this->getProductGroupValue($row);
+                        if($header) {
+                            $main_properties = array_keys($row);
+                            $data[] = $main_properties;
+                            $header = false;
+                        }
+                        $data[] = $row;
+                        $totalCount++;
+                        if(sizeof($data)  > 1000){
+                            $files->savePartToCsv('products.csv', $data);
+                            $data = [];
+                        }
+                    }
+                    if($logCount++%5 == 0) {
+                        $end = (microtime(true) - $start) * 1000;
+                        $this->log->info("Main product data process (shop:$shop_id) took: $end ms, memory: " . memory_get_usage(true) . ", totalCount: $totalCount");
+                        $log = true;
+                    }
+                } else {
+                    if ($totalCount == 0 && $main_shop_id == $shop_id) {
+                        return false;
+                    }
+                    break;
+                }
+
+                $files->savePartToCsv('products.csv', $data);
+                $data = [];
+                $page++;
+                if($currentCount < $limit -1) {
+                    break;
+                }
+            }
+        }
+
+        $end =  (microtime(true) - $startforeach) * 1000;
+        $this->log->info("All shops for main product took: $end ms, memory: " . memory_get_usage(true));
+        $mainSourceKey = $this->bxData->addMainCSVItemFile($files->getPath('products.csv'), 'id');
+        $this->bxData->addSourceStringField($mainSourceKey, 'bx_purchasable', 'purchasable');
+        $this->bxData->addSourceStringField($mainSourceKey, 'immediate_delivery', 'immediate_delivery');
+        $this->bxData->addSourceStringField($mainSourceKey, 'bx_type', 'id');
+        $pc_field = $this->_config->isVoucherExportEnabled($account) ?
+            'CASE WHEN group_id IS NULL THEN CASE WHEN %%LEFTJOINfield_products_voucher_id%% IS NULL THEN "blog" ELSE "voucher" END ELSE "product" END AS final_value' :
+            'CASE WHEN group_id IS NULL THEN "blog" ELSE "product" END AS final_value';
+        $this->bxData->addFieldParameter($mainSourceKey, 'bx_type', 'pc_fields', $pc_field);
+        $this->bxData->addFieldParameter($mainSourceKey, 'bx_type', 'multiValued', 'false');
+
+        foreach ($main_properties as $property)
+        {
+            if ($property == 'id') {
+                continue;
+            }
+            if ($property == 'sales') {
+                $this->bxData->addSourceNumberField($mainSourceKey, $property, $property);
+                $this->bxData->addFieldParameter($mainSourceKey, $property, 'multiValued', 'false');
+                continue;
+            }
+            $this->bxData->addSourceStringField($mainSourceKey, $property, $property);
+            if ($property == 'group_id' || $property == 'releasedate' || $property == 'datum' || $property == 'changetime') {
+                $this->bxData->addFieldParameter($mainSourceKey, $property, 'multiValued', 'false');
+            }
+        }
+
+        $data[] = ["id", "shop_id"];
+        foreach ($this->shopProductIds as $id => $shopIds) {
+            $data[] = [$id, $shopIds];
+            $this->shopProductIds[$id] = true;
+        }
+        $this->files->savePartToCsv('product_shop.csv', $data);
+        $data = null;
+        $sourceKey = $this->bxData->addCSVItemFile($this->files->getPath('product_shop.csv'), 'id');
+        $this->bxData->addSourceStringField($sourceKey, 'shop_id', 'shop_id');
+        $this->bxData->addFieldParameter($sourceKey,'shop_id', 'splitValues', '|');
+
+        return true;
+    }
+
+    /**
+     * @param $id
+     * @return mixed
+     */
+    protected function getShopCategoryIdsQuery($id)
+    {
+        if (!array_key_exists($id, $this->rootCategories)) {
+            $db = $this->db;
+            $sql = $db->select()
+                ->from('s_core_shops', array('category_id'))
+                ->where($this->qi('id') . ' = ?', $id)
+                ->orWhere($this->qi('main_id') . ' = ?', $id);
+
+            $cPath = $this->qi('c.path');
+            $catIds = array();
+            foreach ($db->fetchCol($sql) as $categoryId) {
+                $catIds[] = "$cPath LIKE " . $db->quote("%|$categoryId|%");
+            }
+            if (count($catIds)) {
+                $this->rootCategories[$id] = ' AND (' . implode(' OR ', $catIds) . ')';
+            } else {
+                $this->rootCategories[$id] = '';
+            }
+        }
+        return $this->rootCategories[$id];
+    }
+
+    /**
+     * @param $id
+     * @return array
+     * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
+     */
+    protected function getShopCategoryIds($id)
+    {
+        $shopCat = array();
+        $db = $this->db;
+        $sql = $db->select()
+            ->from('s_core_shops', array('id', 'category_id'))
+            ->where($this->qi('id') . ' = ?', $id)
+            ->orWhere($this->qi('main_id') . ' = ?', $id);
+        $stmt = $db->query($sql);
+        if($stmt->rowCount()) {
+            while($row = $stmt->fetch()) {
+                $shopCat[$row['id']] = $row['category_id'];
+            }
+        }
+        return $shopCat;
+    }
+
+    /**
+     * Export product streams from s_product_streams_selection
+     * Save the data to the product_stream.csv file
+     *
+     * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
+     */
+    public function exportProductStreams()
+    {
+        $files = $this->getFiles();
         $db = $this->db;
         $data = array();
         $header = true;
@@ -348,11 +524,14 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
     }
 
     /**
-     * @param $account
-     * @param $files
+     * Export item votes to vote.csv and product_vote.csv
+     *
+     * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
      */
-    private function exportItemVotes($files) {
-
+    public function exportItemVotes()
+    {
+        $files = $this->getFiles();
         $db = $this->db;
         $data = array();
         $header = true;
@@ -418,11 +597,16 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
     }
 
     /**
-     * @param $account
-     * @param $files
+     * Export item prices to product_price.csv
+     * Creating logical fields for DI integration: discounted, bx_grouped_price
+     *
+     * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
      */
-    private function exportItemPrices($account, $files)
+    public function exportItemPrices()
     {
+        $account = $this->getAccount();
+        $files = $this->getFiles();
         $customer_group_key = $this->_config->getCustomerGroupKey($account);
         $customer_group_id = $this->_config->getCustomerGroupId($account);
         $header = true;
@@ -499,12 +683,17 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
     }
 
     /**
-     * @param $account
-     * @param $files
+     * Export product facets from s_filter_options, s_filter_values
+     * Creating product_<filter>.csv and optionID_mapped.csv files
+     *
+     * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
      */
-    private function exportItemFacets($account, $files)
+    public function exportItemFacets()
     {
         $db = $this->db;
+        $account = $this->getAccount();
+        $files = $this->getFiles();
         $mapped_option_values = array();
         $option_values = array();
         $languages = $this->_config->getAccountLanguages($account);
@@ -613,59 +802,23 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
             $this->bxData->addSourceLocalizedTextField($secondAttributeSourceKey, "optionID_mapped_{$facet_id}", "{$facet_name}_id", $optionMappedSourceKey);
             $this->bxData->addSourceStringField($secondAttributeSourceKey, "optionID_{$facet_id}_id_mapped", "{$facet_name}_id");
             $end = (microtime(true) - $start) * 1000;
+
             $this->log->info("Facets option ($facet_name) data processing time for products: " . $end . "ms, memory: " . memory_get_usage(true));
         }
     }
 
     /**
-     * @param $id
-     * @return mixed
+     * Export blog articles
+     * Create product_blog.csv
+     *
+     * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
      */
-    protected function getShopCategoryIdsQuery($id) {
-
-        if (!array_key_exists($id, $this->rootCategories)) {
-            $db = $this->db;
-            $sql = $db->select()
-                ->from('s_core_shops', array('category_id'))
-                ->where($this->qi('id') . ' = ?', $id)
-                ->orWhere($this->qi('main_id') . ' = ?', $id);
-
-            $cPath = $this->qi('c.path');
-            $catIds = array();
-            foreach ($db->fetchCol($sql) as $categoryId) {
-                $catIds[] = "$cPath LIKE " . $db->quote("%|$categoryId|%");
-            }
-            if (count($catIds)) {
-                $this->rootCategories[$id] = ' AND (' . implode(' OR ', $catIds) . ')';
-            } else {
-                $this->rootCategories[$id] = '';
-            }
-        }
-        return $this->rootCategories[$id];
-    }
-
-    protected function getShopCategoryIds($id) {
-        $shopCat = array();
+    public function exportItemBlogs()
+    {
         $db = $this->db;
-        $sql = $db->select()
-            ->from('s_core_shops', array('id', 'category_id'))
-            ->where($this->qi('id') . ' = ?', $id)
-            ->orWhere($this->qi('main_id') . ' = ?', $id);
-        $stmt = $db->query($sql);
-        if($stmt->rowCount()) {
-            while($row = $stmt->fetch()) {
-                $shopCat[$row['id']] = $row['category_id'];
-            }
-        }
-        return $shopCat;
-    }
-    /**
-     * @param $account
-     * @param $files
-     */
-    private function exportItemBlogs($account, $files){
-
-        $db = $this->db;
+        $account = $this->getAccount();
+        $files = $this->getFiles();
         $headers = array('id', 'title', 'author_id', 'active', 'short_description', 'description', 'views',
             'display_date', 'category_id', 'template', 'meta_keywords', 'meta_description', 'meta_title',
             'assigned_articles', 'tags', 'media_id', 'shop_id', 'media_url');
@@ -724,12 +877,17 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
     }
 
     /**
-     * @param $account
-     * @param $files
+     * Export product URL
+     * Create url.csv and products_url.csv
+     *
+     * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
      */
-    private function exportItemUrls($account, $files) {
-
+    public function exportItemUrls()
+    {
         $db = $this->db;
+        $account = $this->getAccount();
+        $files = $this->getFiles();
         $main_shopId = $this->_config->getAccountStoreId($account);
         $repository = Shopware()->Container()->get('models')->getRepository('Shopware\Models\Shop\Shop');
         $shop = $repository->getActiveById($main_shopId);
@@ -837,11 +995,15 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
     }
 
     /**
-     * @param $account
-     * @param $files
+     * Export item images link
+     *
+     * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
      */
-    private function exportItemImages($account, $files) {
-
+    public function exportItemImages()
+    {
+        $account = $this->getAccount();
+        $files = $this->getFiles();
         $db = $this->db;
         $data = array();
         $pipe = $db->quote('|');
@@ -894,11 +1056,16 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
     }
 
     /**
-     * @param $files
+     * Export item brands/suppliers
+     * Create file product_brands.csv
+     *
+     * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
      */
-    private function exportItemBrands($files) {
-
+    public function exportItemBrands()
+    {
         $db = $this->db;
+        $files = $this->getFiles();
         $data = array();
         $header = true;
         $sql = $db->select()
@@ -935,11 +1102,16 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
     }
 
     /**
-     * @param $account
-     * @param $files
+     * Export item translations
+     *
+     * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
      */
-    private function exportItemTranslationFields($account, $files) {
+    public function exportItemTranslationFields()
+    {
         $db = $this->db;
+        $account = $this->getAccount();
+        $files = $this->getFiles();
         $data = array();
         $selectFields = array();
         $attributeValueHeader = array();
@@ -1037,12 +1209,15 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
     }
 
     /**
-     * @param $account
-     * @param $files
+     * Export item categories
+     * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
      */
-    private function exportItemCategories($account, $files) {
-
+    public function exportItemCategories()
+    {
         $db = $this->db;
+        $account = $this->getAccount();
+        $files = $this->getFiles();
         $categories = array();
         $header = true;
         $languages = $this->_config->getAccountLanguages($account);
@@ -1126,150 +1301,86 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
     }
 
     /**
+     * Export vouchers
+     *
      * @param $account
      * @param $files
-     * @return bool
      */
-    private function exportMainProducts($account, $files) {
-
-        $db = $this->db;
-        $product_attributes = $this->getProductAttributes($account);
-        $product_properties = array_flip($product_attributes);
-
-        $countMax = 100000000;
-        $limit = 1000000;
+    public function exportVouchers()
+    {
+        $db = Shopware()->Db();
+        $account = $this->getAccount();
+        $files = $this->getFiles();
+        $languages = $this->_config->getAccountLanguages($account);
         $header = true;
         $data = array();
-        $categoryShopIds = $this->_config->getShopCategoryIds($account);
-        $main_shop_id = $this->_config->getAccountStoreId($account);
-        $startforeach = microtime(true);
-        foreach ($this->_config->getAccountLanguages($account) as $shop_id => $language) {
-            $logCount = 0;
-            $log = true;
-            $totalCount = 0;
-            $page = 1;
-            $category_id = $categoryShopIds[$shop_id];
-            while ($countMax > $totalCount + $limit) {
-                $sql = $db->select()
-                    ->from(array('s_articles'), $product_properties)
-                    ->join(array('s_articles_details'), 's_articles_details.articleID = s_articles.id', array())
-                    ->join(array('s_articles_attributes'), 's_articles_attributes.articledetailsID = s_articles_details.id', array())
-                    ->join(array('s_articles_categories'), 's_articles_categories.articleID = s_articles_details.articleID', array())
-                    ->joinLeft(array('s_articles_prices'), 's_articles_prices.articledetailsID = s_articles_details.id', array('price'))
-                    ->joinLeft(array('s_categories'), 's_categories.id = s_articles_categories.categoryID', array())
-                    ->where('s_articles.mode = ?', 0)
-                    ->where('s_categories.path LIKE \'%|' . $category_id . '|%\'')
-                    ->limit($limit, ($page - 1) * $limit)
-                    ->group('s_articles_details.id')
-                    ->order('s_articles.id');
-                if ($this->delta) {
-                    $sql->where('s_articles.changetime > ?', $this->getLastDelta());
+        $doneCases = array();
+        $headers = array();
+        foreach ($languages as $shop_id => $language) {
+            $sql = $db->select()->from(array('v' => 's_emarketing_vouchers'),
+                array('v.*',
+                    'used_codes' => new Zend_Db_Expr("IF( modus = '0',
+                (SELECT count(*) FROM s_order_details as d WHERE articleordernumber =v.ordercode AND d.ordernumber!='0'),
+                (SELECT count(*) FROM s_emarketing_voucher_codes WHERE voucherID =v.id AND cashed=1))")))
+                ->where('(v.subshopID IS NULL OR v.subshopID = ?)', $shop_id)
+                ->where('((CURDATE() BETWEEN v.valid_from AND v.valid_to) OR (v.valid_from IS NULL AND v.valid_to IS NULL) OR (DATE(NOW())<DATE(v.valid_to) AND v.valid_from IS NULL) OR (DATE(NOW())>DATE(v.valid_from) AND v.valid_to IS NULL))');
+            $vouchers = $db->fetchAll($sql);
+            foreach($vouchers as $row)
+            {
+                if($header) {
+                    $headers = array_keys($row);
+                    $data[] = $headers;
+                    $header = false;
                 }
-                $start = microtime(true);
-                $stmt = $db->query($sql);
-                $currentCount = 0;
-                if ($stmt->rowCount()) {
-                    while ($row = $stmt->fetch()) {
-                        $currentCount++;
-                        if($log) {
-                            $end = (microtime(true) - $start) * 1000;
-                            $this->log->info("Main product query (shop:$shop_id) took: $end ms, memory: " . memory_get_usage(true));
-                            $log = false;
-                        }
-                        if (is_null($row['price'])) {
-                            continue;
-                        }
-                        if(isset($this->shopProductIds[$row['id']])) {
-                            $this->shopProductIds[$row['id']] .= "|$shop_id";
-                            continue;
-                        }
-                        $this->shopProductIds[$row['id']] = $shop_id;
-                        unset($row['price']);
-                        $row['purchasable'] = ($row['laststock'] == 1 && $row['instock'] == 0) ? 0 : 1;
-                        $row['immediate_delivery'] = ($row['instock'] >= $row['minpurchase']) ? 1 : 0;
-                        if ($this->delta && !isset($this->deltaIds[$row['articleID']])) {
-                            $this->deltaIds[$row['articleID']] = $row['articleID'];
-                        }
-                        $row['group_id'] = $row['articleID'];
-                        if($header) {
-                            $main_properties = array_keys($row);
-                            $data[] = $main_properties;
-                            $header = false;
-                        }
-                        $data[] = $row;
-                        $totalCount++;
-                        if(sizeof($data)  > 1000){
-                            $files->savePartToCsv('products.csv', $data);
-                            $data = [];
-                        }
-                    }
-                    if($logCount++%5 == 0) {
-                        $end = (microtime(true) - $start) * 1000;
-                        $this->log->info("Main product data process (shop:$shop_id) took: $end ms, memory: " . memory_get_usage(true) . ", totalCount: $totalCount");
-                        $log = true;
-                    }
-                } else {
-                    if ($totalCount == 0 && $main_shop_id == $shop_id) {
-                        return false;
-                    }
-                    break;
-                }
-
-                $files->savePartToCsv('products.csv', $data);
-                $data = [];
-                $page++;
-                if($currentCount < $limit -1) {
-                    break;
-                }
+                if(isset($doneCases[$row['id']])) continue;
+                $doneCases[$row['id']] = true;
+                $row['id'] = 'voucher_' . $row['id'];
+                $data[] = $row;
             }
-        }
-        $end =  (microtime(true) - $startforeach) * 1000;
-        $this->log->info("All shops for main product took: $end ms, memory: " . memory_get_usage(true));
-        $mainSourceKey = $this->bxData->addMainCSVItemFile($files->getPath('products.csv'), 'id');
-        $this->bxData->addSourceStringField($mainSourceKey, 'bx_purchasable', 'purchasable');
-        $this->bxData->addSourceStringField($mainSourceKey, 'immediate_delivery', 'immediate_delivery');
-        $this->bxData->addSourceStringField($mainSourceKey, 'bx_type', 'id');
-        $pc_field = $this->_config->isVoucherExportEnabled($account) ?
-            'CASE WHEN group_id IS NULL THEN CASE WHEN %%LEFTJOINfield_products_voucher_id%% IS NULL THEN "blog" ELSE "voucher" END ELSE "product" END AS final_value' :
-            'CASE WHEN group_id IS NULL THEN "blog" ELSE "product" END AS final_value';
-        $this->bxData->addFieldParameter($mainSourceKey, 'bx_type', 'pc_fields', $pc_field);
-        $this->bxData->addFieldParameter($mainSourceKey, 'bx_type', 'multiValued', 'false');
-
-        foreach ($main_properties as $property) {
-
-            if ($property == 'id') {
-                continue;
+            if(sizeof($data)) {
+                $files->savePartToCsv('voucher.csv', $data);
             }
-            if ($property == 'sales') {
-                $this->bxData->addSourceNumberField($mainSourceKey, $property, $property);
-                $this->bxData->addFieldParameter($mainSourceKey, $property, 'multiValued', 'false');
-                continue;
-            }
-            $this->bxData->addSourceStringField($mainSourceKey, $property, $property);
-            if ($property == 'group_id' || $property == 'releasedate' || $property == 'datum' || $property == 'changetime') {
-                $this->bxData->addFieldParameter($mainSourceKey, $property, 'multiValued', 'false');
-            }
+            $vouchers = null;
         }
 
-        $data[] = ["id", "shop_id"];
-        foreach ($this->shopProductIds as $id => $shopIds) {
-            $data[] = [$id, $shopIds];
-            $this->shopProductIds[$id] = true;
+        if($header) {
+            $data = ['id','description','vouchercode','numberofunits','value','minimumcharge','shippingfree',
+                'bindtosupplier','valid_from','valid_to','ordercode','modus','percental','numorder','customergroup',
+                'restrictarticles','strict','subshopID','taxconfig','customer_stream_ids','used_codes'];
+            $files->savePartToCsv('voucher.csv', $data);
         }
-        $files->savePartToCsv('product_shop.csv', $data);
-        $data = null;
-        $sourceKey = $this->bxData->addCSVItemFile($files->getPath('product_shop.csv'), 'id');
-        $this->bxData->addSourceStringField($sourceKey, 'shop_id', 'shop_id');
-        $this->bxData->addFieldParameter($sourceKey,'shop_id', 'splitValues', '|');
-        return true;
+        $attributeSourceKey = $this->bxData->addCSVItemFile($files->getPath('voucher.csv'), 'id');
+        $this->bxData->addSourceParameter($attributeSourceKey, 'additional_item_source', 'true');
+        foreach ($headers as $header){
+            $this->bxData->addSourceStringField($attributeSourceKey, 'voucher_'.$header, $header);
+        }
+        $data = array();
+        $header = true;
+        $sql = $db->select()->from(array('v_c' => 's_emarketing_voucher_codes'));
+        $voucherCodes = $db->fetchAll($sql);
+        foreach($voucherCodes as $row)
+        {
+            if(isset($doneCases[$row['voucherID']])){
+                if($header){
+                    $data[] = array_keys($row);
+                    $header = false;
+                }
+                $row['voucherID'] = 'voucher_' . $row['voucherID'];
+                $data[] = $row;
+            }
+        }
+        $doneCases = array();
+        $files->savePartToCsv('voucher_codes.csv', $data);
+        $this->bxData->addCSVItemFile($files->getPath('voucher_codes.csv'), 'id');
     }
 
     /**
-     * @param $account
-     * @return mixed
+     * Getting the customer attributes list
+     * @return array
      */
-    private function getCustomerAttributes($account) {
-
+    public function getCustomerAttributes()
+    {
+        $account = $this->getAccount();
         $all_attributes = array();
         $this->log->info('BxIndexLog: get all customer attributes for account: ' . $account);
         $db = $this->db;
@@ -1293,15 +1404,19 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
 
         $requiredProperties = array('id', 'birthday', 'salutation');
         $filteredAttributes = $this->_config->getAccountCustomersProperties($account, $all_attributes, $requiredProperties);
+
         return $filteredAttributes;
     }
 
     /**
-     * @param $account
-     * @return mixed
+     * Getting a list of transaction attributes and the table it comes from
+     * To be used in the general SQL select
+     *
+     * @return array
      */
-    private function getTransactionAttributes($account) {
-
+    public function getTransactionAttributes()
+    {
+        $account = $this->getAccount();
         $all_attributes = array();
         $this->log->info('BxIndexLog: get all transaction attributes for account: ' . $account);
         $db = $this->db;
@@ -1329,12 +1444,16 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
         return $filteredAttributes;
     }
 
-    /**
-     * @param $account
-     * @return mixed
-     */
-    private function getProductAttributes($account) {
 
+    /**
+     * Getting a list of product attributes and the table it comes from
+     * To be used in the general SQL select
+     *
+     * @return array
+     */
+    public function getProductAttributes()
+    {
+        $account = $this->getAccount();
         $all_attributes = array();
         $exclude = array_merge($this->translationFields, array('articleID','id','active', 'articledetailsID'));
         $db = $this->db;
@@ -1363,14 +1482,21 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
         $requiredProperties = array('id','articleID');
         $filteredAttributes = $this->_config->getAccountProductsProperties($account, $all_attributes, $requiredProperties);
         $filteredAttributes['s_articles.active'] = 'bx_parent_active';
+
         return $filteredAttributes;
     }
 
+
     /**
-     * @param $account
-     * @param $files
+     * Customers export
+     *
+     * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
      */
-    private function exportCustomers($account, $files) {
+    public function exportCustomers()
+    {
+        $account = $this->getAccount();
+        $files = $this->getFiles();
         $this->log->debug("start collecting customers for account {$account}");
         $db = $this->db;
         $customer_attributes = $this->getCustomerAttributes($account);
@@ -1400,7 +1526,6 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
                     ->limit($limit, ($page - 1) * $limit);
 
                 $stmt = $db->query($sql);
-
                 if ($stmt->rowCount()) {
                     while ($row = $stmt->fetch()) {
                         $data[] = $row;
@@ -1430,18 +1555,22 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
         }
 
         $this->log->info("BxIndexLog: Customers - exporting additional tables for account: {$account}");
-        $this->exportExtraTables('customers', $files, $this->_config->getAccountExtraTablesByEntityType($account,'customers'));
+        $this->exportExtraTables('customers', $this->_config->getAccountExtraTablesByEntityType($account,'customers'));
 
         $this->log->info('BxIndexLog: Customer export finished for account: ' . $account);
     }
 
     /**
-     * @param $account
-     * @param $files
+     * Transactions export
+     *
+     * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
      */
-    private function exportTransactions($account, $files) {
-
+    public function exportTransactions()
+    {
         $db = $this->db;
+        $account = $this->getAccount();
+        $files = $this->getFiles();
         $transaction_attributes = $this->getTransactionAttributes($account);
         $transaction_properties = array_flip($transaction_attributes);
 
@@ -1530,22 +1659,22 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
         $this->bxData->addSourceCustomerGuestProperty($sourceKey,'guest_id');
 
         $this->log->info("BxIndexLog: Transactions - exporting additional tables for account: {$account}");
-        $this->exportExtraTables('transactions', $files, $this->_config->getAccountExtraTablesByEntityType($account,'transactions'));
+        $this->exportExtraTables('transactions', $this->_config->getAccountExtraTablesByEntityType($account,'transactions'));
     }
 
 
     /**
      * @return string
      */
-    protected function getLastDelta() {
+    public function getLastDelta()
+    {
         if (empty($this->deltaLast)) {
             $this->deltaLast = date("Y-m-d H:i:s", strtotime("-30 minutes"));
-            $db = $this->db;
-            $sql = $db->select()
+            $sql = $this->db->select()
                 ->from('boxalino_exports', array('export_date'))
                 ->order('export_date', "DESC")
                 ->limit(1);
-            $this->deltaLast = $db->fetchOne($sql);
+            $this->deltaLast = $this->db->fetchOne($sql);
         }
         return $this->deltaLast;
     }
@@ -1563,7 +1692,8 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
     /**
      * The export table is to be updated based on the flow (start or failed)
      */
-    protected function updateExportTable($start = false) {
+    protected function updateExportTable($start = false)
+    {
         if ($start)
         {
             $this->clearExportTable();
@@ -1575,7 +1705,8 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
     /**
      * The export table is truncated
      */
-    public function clearExportTable() {
+    public function clearExportTable()
+    {
         $this->db->query('TRUNCATE `boxalino_exports`');
         return true;
     }
@@ -1606,73 +1737,21 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
     }
 
     /**
-     * @param $account
-     * @param $files
+     * Get timeout for exporter
+     * @return bool|int
      */
-    private function exportVouchers($account, $files)
+    protected function getTimeoutForExporter()
     {
-        $db = Shopware()->Db();
-        $languages = $this->_config->getAccountLanguages($account);
-        $header = true;
-        $data = array();
-        $doneCases = array();
-        $headers = array();
-        foreach ($languages as $shop_id => $language) {
-            $sql = $db->select()->from(array('v' => 's_emarketing_vouchers'),
-                array('v.*',
-                    'used_codes' => new Zend_Db_Expr("IF( modus = '0',
-                (SELECT count(*) FROM s_order_details as d WHERE articleordernumber =v.ordercode AND d.ordernumber!='0'),
-                (SELECT count(*) FROM s_emarketing_voucher_codes WHERE voucherID =v.id AND cashed=1))")))
-                ->where('(v.subshopID IS NULL OR v.subshopID = ?)', $shop_id)
-                ->where('((CURDATE() BETWEEN v.valid_from AND v.valid_to) OR (v.valid_from IS NULL AND v.valid_to IS NULL) OR (DATE(NOW())<DATE(v.valid_to) AND v.valid_from IS NULL) OR (DATE(NOW())>DATE(v.valid_from) AND v.valid_to IS NULL))');
-            $vouchers = $db->fetchAll($sql);
-            foreach($vouchers as $row)
-            {
-                if($header) {
-                    $headers = array_keys($row);
-                    $data[] = $headers;
-                    $header = false;
-                }
-                if(isset($doneCases[$row['id']])) continue;
-                $doneCases[$row['id']] = true;
-                $row['id'] = 'voucher_' . $row['id'];
-                $data[] = $row;
-            }
-            if(sizeof($data)) {
-                $files->savePartToCsv('voucher.csv', $data);
-            }
-            $vouchers = null;
-        }
-
-        if($header) {
-            $data = ['id','description','vouchercode','numberofunits','value','minimumcharge','shippingfree',
-                'bindtosupplier','valid_from','valid_to','ordercode','modus','percental','numorder','customergroup',
-                'restrictarticles','strict','subshopID','taxconfig','customer_stream_ids','used_codes'];
-            $files->savePartToCsv('voucher.csv', $data);
-        }
-        $attributeSourceKey = $this->bxData->addCSVItemFile($files->getPath('voucher.csv'), 'id');
-        $this->bxData->addSourceParameter($attributeSourceKey, 'additional_item_source', 'true');
-        foreach ($headers as $header){
-            $this->bxData->addSourceStringField($attributeSourceKey, 'voucher_'.$header, $header);
-        }
-        $data = array();
-        $header = true;
-        $sql = $db->select()->from(array('v_c' => 's_emarketing_voucher_codes'));
-        $voucherCodes = $db->fetchAll($sql);
-        foreach($voucherCodes as $row)
+        if($this->delta)
         {
-            if(isset($doneCases[$row['voucherID']])){
-                if($header){
-                    $data[] = array_keys($row);
-                    $header = false;
-                }
-                $row['voucherID'] = 'voucher_' . $row['voucherID'];
-                $data[] = $row;
-            }
+            return 120;
         }
-        $doneCases = array();
-        $files->savePartToCsv('voucher_codes.csv', $data);
-        $this->bxData->addCSVItemFile($files->getPath('voucher_codes.csv'), 'id');
+        $customTimeout = $this->_config->getExporterTimeout($this->getAccount());
+        if($customTimeout)
+        {
+            return (int)$customTimeout;
+        }
+        return 3000;
     }
 
     /**
@@ -1685,8 +1764,9 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
      * @param array $tables
      * @return $this
      */
-    public function exportExtraTables($entity, $files, $tables = [])
+    public function exportExtraTables($entity, $tables = [])
     {
+        $files = $this->getFiles();
         if(empty($tables))
         {
             $this->log->info("BxIndexLog: {$entity} no additional tables have been found.");
@@ -1745,15 +1825,96 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
         }
     }
 
+    /**
+     * Product purchasable logic depending on the default filter
+     *
+     * @param $row
+     * @return int
+     */
+    public function getProductPurchasableValue($row)
+    {
+        if($row['laststock'] == 1 && $row['instock'] == 0)
+        {
+            return 0;
+        }
+
+        return 1;
+    }
+
+    /**
+     * Product immediate delivery logic as per default facet handler logic
+     *
+     * @see Shopware\Bundle\SearchBundleDBAL\FacetHandler\ImmediateDeliveryFacetHandler
+     * @param $row
+     * @return int
+     */
+    public function getProductImmediateDeliveryValue($row)
+    {
+        if($row['instock'] >= $row['minpurchase'])
+        {
+            return 1;
+        }
+
+        return 0;
+    }
+
+    /**
+     * Group product value per solr logic
+     *
+     * @param $row
+     * @return mixed
+     */
+    public function getProductGroupValue($row)
+    {
+        return $row['articleID'];
+    }
+
+
     public function setAccount($account)
     {
         $this->account = $account;
         return $this;
     }
 
+    /**
+     * @return string|null
+     */
     public function getAccount()
     {
         return $this->account;
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getDirPath()
+    {
+        return $this->dirPath;
+    }
+
+    public function setDirPath($dirPath)
+    {
+        $this->dirPath = $dirPath;
+        return $this;
+    }
+
+    public function setDelta($delta)
+    {
+        $this->delta = $delta;
+        return $this;
+    }
+
+    /**
+     * @return bool
+     */
+    public function getDelta()
+    {
+        return $this->delta;
+    }
+
+    public function getFiles()
+    {
+        return $this->files;
     }
 
 }

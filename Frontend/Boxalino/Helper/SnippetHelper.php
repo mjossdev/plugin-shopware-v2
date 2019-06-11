@@ -19,16 +19,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_SnippetHelper {
     }
 
     public function add($name, $value) {
-        if (isset($this->snippets[$name])) {
-            if($this->snippets[$name]['value'] == $value){
-                return;
-            }
-            $sql = "UPDATE s_core_snippets 
-                set value=?
-                where id=?";
-            Shopware()->Db()->query($sql, array($value, $this->snippets[$name]['id']));
-            return;
-        } else {
+        if (!isset($this->snippets[$name])) {
             $sql = "INSERT INTO s_core_snippets 
                 (namespace, shopID, localeID, name, value)
                 VALUES 
@@ -36,6 +27,8 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_SnippetHelper {
 
             Shopware()->Db()->query($sql, array($this->namespace, $this->shopID, $this->localeID, $name, $value));
         }
+
+        return;
     }
 
     public static function removeAll($namespace) {

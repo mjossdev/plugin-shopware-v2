@@ -60,6 +60,20 @@
                 <p class="bx-finder-configurator-notice">{s namespace='boxalino/intelligence' name='productfinder/configuratormessage'}Please go to the product page for more options{/s}</p>
             </div>
         {/block}
+        {block name="frontend_product_finder_script_templates_notification"}
+            <div class="bx-finder-template-notification" style="display:none">
+                <p class="bx-finder-notification">
+                <div class="alert is--info is--rounded">
+                    <div class="alert--icon">
+                        <i class="icon--element icon--check"></i>
+                    </div>
+                    <div class="alert--content">
+                        {s namespace='boxalino/intelligence' name='productfinder/notification'}Scroll down to discover more products{/s}
+                    </div>
+                </div>
+                </p>
+            </div>
+        {/block}
     {/block}
 
     {block name="frontend_product_finder_content"}
@@ -72,6 +86,7 @@
 
             <div class="cpo-finder-center">
                 <div class="cpo-finder-center-content">
+                    <div class="cpo-finder-center-content-notification"></div>
                     <div class="cpo-finder-center-content-header"></div>
                     <div class="cpo-finder-center-content-header-question cpo-finder-center-content-header-question-first"></div>
                     <div class="cpo-finder-center-content-container"></div>

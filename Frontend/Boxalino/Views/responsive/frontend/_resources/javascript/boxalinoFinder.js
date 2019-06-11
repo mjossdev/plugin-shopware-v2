@@ -7,6 +7,7 @@
             facets = {},
             max_score = 0,
             currentFacet = null,
+            previousFacet = null,
             highlighted = false,
             questions = {},
             selectedValues = {},
@@ -85,6 +86,7 @@
 
             questions = prepareQuestions();
             currentFacet = getCurrentFacet();
+            previousFacet = getPreviousFacet();
             selects = facets.getCurrentSelects();
 
             prepareSelectionHistory();
@@ -92,7 +94,7 @@
 
             expertFieldName = facets.getDataOwnerFacet();
             expertFacetValues = facets.getFacetValues(expertFieldName)[expertFieldName];
-            expertFieldOrder = questions.findIndex(isExpertQuestion);
+            expertFieldOrder = getExpertFieldOrder();
             selectedExpert = defaultExpert = getDefaultExpert();
         }
 
@@ -185,10 +187,15 @@
                         }
                     })
                 } else if(forceAnswer){
-                    proceedToNextQuestion = false;
+                    if(facets.getCurrentSelects(currentFacet) == null){
+                        proceedToNextQuestion = false;
+                    } else {
+                        proceedToNextQuestion = true;
+                    }
                 } else{
                     proceedToNextQuestion = true;
                 }
+
                 if (proceedToNextQuestion == false){
                     window.alert(alertString);
                 } else {
@@ -219,6 +226,11 @@
                 toggleProducts();
             } else {}
 
+            var previousFacetDisabledProducts = facets.getFacetExtraInfo(previousFacet, 'finderShowProductsDisable');
+            if(previousFacetDisabledProducts!=null) {
+                jQuery('.cpo-finder-center-content-notification').append($(".bx-finder-template-notification").show());
+            }
+
             jQuery('.cpo-finder-listing-comment-button').on('click', function() {
                 if (jQuery(this).hasClass('comment-active') ){
                     jQuery(this).removeClass('comment-active');
@@ -233,10 +245,13 @@
 
             //delete the article configurator options action
             $(".configurator--form").removeAttr("action");
-            $(".configurator--form").click(function(event){
+            $(".configurator--form").click(function(e){
+                var event = e.originalEvent;
                 event.preventDefault();
-                var selectedOptionEl = event.target;
-                var selectedOptionForm = selectedOptionEl.closest('form');
+                event.returnValue = false;
+
+                var selectedOptionEl = e.target;
+                var selectedOptionForm = $(selectedOptionEl).closest('form');
                 var messageElement = $(".bx-finder-template-configuratorMessage");
                 if(selectedOptionEl.getAttribute("checked")=="checked") {
                     messageElement.fadeOut("fast");
@@ -683,7 +698,7 @@
                     if (selects[key] =='*' || key == 'bxi_data_owner_expert') { emptyValues = emptyValues + 1; }
                     if (key != 'bxi_data_owner_expert' && selects[key] != '*') {
                         bxUrlParams.forEach(function(param) {
-                            if (param.includes(key)) {
+                            if (param.indexOf(key) > -1) {
                                 bxNewUrl = bxUrl.substring(0, bxUrl.indexOf(param));
                             }
                         });
@@ -736,6 +751,26 @@
             }
 
             return null;
+        }
+
+        function getPreviousFacet(){
+            var currentFacetOrder = questions.indexOf(currentFacet);
+            if(currentFacetOrder>0){
+                return questions[currentFacetOrder-1];
+            }
+            return null;
+        }
+
+        function getExpertFieldOrder(){
+            var index = -1;
+            for (var i = 0; i < questions.length; ++i) {
+                if (questions[i] == expertFieldName) {
+                    index = i;
+                    break;
+                }
+            }
+
+            return index;
         }
 
         return {
