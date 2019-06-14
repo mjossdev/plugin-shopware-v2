@@ -1,4 +1,4 @@
-(function($) {
+(function($, window) {
     'use strict';
 
     function BoxalinoFinder(el) {
@@ -57,8 +57,11 @@
     $(function () {
         var el = $('*[data-bx-finder="true"]');
         if(el.length > 0) {
+            window.StateManager.removePlugin('*[data-ajax-variants-container="true"]', 'swAjaxVariant');
+            window.StateManager.removePlugin('*[data-auto-submit="true"]', 'swAutoSubmit');
+
             el.bxFinder();
         }
     });
 
-})(jQuery);
+})(jQuery, window);

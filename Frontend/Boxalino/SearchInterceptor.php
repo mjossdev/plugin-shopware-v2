@@ -394,12 +394,6 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
 
         $viewData = $this->View()->getAssign();
         $this->prepareNarrativeCase($viewData);
-        if($this->isNarrative && $this->replaceMain){
-            return $this->processNarrativeRequest(
-                $viewData['sCategoryContent']['attribute']['narrative_choice'],
-                $viewData['sCategoryContent']['attribute']['narrative_additional_choice']
-            );
-        }
 
         if(!$this->Config()->get('boxalino_navigation_activate_cache')) {
             $this->Bootstrap()->disableHttpCache();
@@ -418,6 +412,15 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         } catch(\Exception $exception) {
             Shopware()->Container()->get('pluginlogger')->error($exception);
             throwException($exception);
+        }
+
+        if($this->isNarrative && $this->replaceMain){
+            return $this->processNarrativeRequest(
+                $viewData['sCategoryContent']['attribute']['narrative_choice'],
+                $viewData['sCategoryContent']['attribute']['narrative_additional_choice'],
+                true,
+                $searchBundle->getSearchBundle()->getFilters()
+            );
         }
 
         if($this->isNarrative && !$this->replaceMain){

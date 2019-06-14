@@ -84,6 +84,10 @@
             facets = new bxFacets();
             facets.init(facetsJson);
 
+            $.unsubscribe('plugin/swAutoSubmit/onChangeSelection');
+            $.unsubscribe('plugin/swAjaxVariant/onChange');
+            $.unsubscribe('plugin/swAutoSubmit/onRegisterEvents');
+
             questions = prepareQuestions();
             currentFacet = getCurrentFacet();
             previousFacet = getPreviousFacet();
@@ -175,6 +179,8 @@
                 createButton();
             }
 
+            disableVariantSwitcher();
+
             $('#cpo-finder-results').on('click', function (e) {
                 var proceedToNextQuestion;
                 var forceAnswer = facets.getFacetExtraInfo(currentFacet, 'finderForceAnswer');
@@ -227,7 +233,9 @@
             } else {}
 
             var previousFacetDisabledProducts = facets.getFacetExtraInfo(previousFacet, 'finderShowProductsDisable');
-            if(previousFacetDisabledProducts!=null) {
+            var currentFacetDisabledProducts = facets.getFacetExtraInfo(currentFacet, 'finderShowProductsDisable');
+            var currentFacetNotification = facets.getFacetExtraInfo(currentFacet, 'finderShowNotification');
+            if((previousFacetDisabledProducts!=null && currentFacetDisabledProducts==null) || currentFacetNotification!=null) {
                 jQuery('.cpo-finder-center-content-notification').append($(".bx-finder-template-notification").show());
             }
 
@@ -243,24 +251,31 @@
                 }
             });
 
-            //delete the article configurator options action
-            $(".configurator--form").removeAttr("action");
-            $(".configurator--form").click(function(e){
-                var event = e.originalEvent;
-                event.preventDefault();
-                event.returnValue = false;
+            $(".cpo-finder-wrapper").fadeIn(100);
+        }
 
-                var selectedOptionEl = e.target;
-                var selectedOptionForm = $(selectedOptionEl).closest('form');
-                var messageElement = $(".bx-finder-template-configuratorMessage");
+        function disableVariantSwitcher(){
+            jQuery(".variant--option").each(function(i, obj) {
+                obj.getElementsByTagName('input')[0].removeAttribute("data-auto-submit");
+                var optionView = obj.cloneNode(true);
+                obj.parentNode.replaceChild(optionView, obj);
+            });
+
+            $(".configurator--form").removeAttr("action");
+            var messageElement = $(".bx-finder-template-configuratorMessage");
+            $(".configurator--form").click(function(event) {
+                $.unsubscribe('plugin/swAjaxVariant/onChange');
+                event.preventDefault();
+
+                var selectedOptionEl = event.target;
+                var selectedOptionForm = selectedOptionEl.closest('form');
                 if(selectedOptionEl.getAttribute("checked")=="checked") {
                     messageElement.fadeOut("fast");
                 } else {
                     messageElement.insertAfter(selectedOptionForm).fadeIn(50);
                 }
+                return false;
             });
-
-            $(".cpo-finder-wrapper").fadeIn(100);
         }
 
         function createFallbackView(){
@@ -703,6 +718,7 @@
                             }
                         });
                         bxNewUrl = bxNewUrl.replace(url, '');
+                        if(bxNewUrl.length == 1) { bxNewUrl = url;}
                         facetLabel = facets.getFacetLabel(key, lang);
                         jQuery(classLine).append('<b class="bx-finder-filter-label">' + facetLabel + '</b><br>');
                         // if there is additional info, use that

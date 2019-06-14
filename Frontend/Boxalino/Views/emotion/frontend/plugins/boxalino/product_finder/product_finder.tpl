@@ -99,7 +99,7 @@
                 <div class="listingBlock cpo-finder-listing-container">
                     <div class="cpo-finder-listing-wrapper">
                         {block name="frontend_cpo_finder_listing_present"}
-                            <div class="cpo-finder-listing bx-present product--details" data-ajax-wishlist="true" data-compare-ajax="true"{if $theme.ajaxVariantSwitch} data-ajax-variants-container="true"{/if}>
+                            <div class="cpo-finder-listing bx-present product--details" data-ajax-wishlist="true" data-compare-ajax="true">
                                 {foreach $Data.highlighted_articles as $sArticle}
                                     {include file="frontend/detail/content/header.tpl" isFinder='true'}
                                     {* Variable for tracking active user variant selection *}
@@ -113,7 +113,7 @@
                                         {/foreach}
                                     {/if}
 
-                                    <div class="content product--details product--detail-upper block-group" data-ajax-wishlist="true" data-compare-ajax="true"{if $theme.ajaxVariantSwitch} data-ajax-variants-container="true"  data-ajax-bx-product-finder={$sArticle.articleID}{/if}>
+                                    <div class="content product--details product--detail-upper block-group" data-ajax-wishlist="true" data-compare-ajax="true"{if $theme.ajaxVariantSwitch} data-ajax-bx-product-finder={$sArticle.articleID}{/if}>
                                         {* Product image *}
                                         {block name='frontend_detail_index_image_container'}
                                             <div class="product--image-container">
