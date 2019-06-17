@@ -29,7 +29,11 @@
                     this.$finderJs.init(this.$validatedJson, this.$finderLanguage, this.$finderUrl, this.$finderMaxScore, this.$finderHighlighted, this.$finderAlert);
                     this.$finderJs.createView();
                 } else {
-                    location.reload();
+                    if(document.URL.indexOf("#")==-1){
+                        window.location = window.location.origin + window.location.pathname +"#";
+                    } else {
+                        throw "The product finder JSON content is not valid.";
+                    }
                 }
             } catch(err) {
                 console.log("Please contact us." + err.name);

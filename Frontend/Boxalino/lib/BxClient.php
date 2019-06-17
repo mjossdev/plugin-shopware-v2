@@ -37,9 +37,10 @@ class BxClient
 
     private $sessionId = null;
     private $profileId = null;
-    protected $uuid = null;
 
     private $requestMap = array();
+    protected $sendRequestId = false;
+    protected $uuid = null;
 
     private $socketHost = null;
     private $socketPort = null;
@@ -56,11 +57,11 @@ class BxClient
             $this->requestMap = $_REQUEST;
         }
         $this->isDev = $isDev;
-        $this->apiKey = trim($apiKey);
+        $this->apiKey = $apiKey;
         if (empty($apiKey)) {
             $this->apiKey = null;
         }
-        $this->apiSecret = trim($apiSecret);
+        $this->apiSecret = $apiSecret;
         if (empty($apiSecret)) {
             $this->apiSecret = null;
         }
@@ -86,11 +87,8 @@ class BxClient
             $this->p13n_password = "tkZ8EXfzeZc6SdXZntCU";
         }
         $this->domain = $domain;
-
-        if(function_exists("random_bytes")) {
-            $this->addRequestContextParameter(self::BXL_UUID_REQUEST, $this->uuid());
-        }
     }
+
     /**
      * Setting the host based on configurations
      *
@@ -103,18 +101,21 @@ class BxClient
         {
             return $host;
         }
+
         if($this->apiSecret == null && $this->apiKey == null)
         {
             return "cdn.bx-cloud.com";
         }
+
         if($this->isDev)
         {
             return "r-st.bx-cloud.com";
         }
+
         return "main.bx-cloud.com";
     }
 
-    public function setApiKey($apiKey) {
+    public function setApiKey($apiKey){
         $this->apiKey = $apiKey;
     }
 
@@ -204,8 +205,8 @@ class BxClient
         $this->profileId = $profileId;
     }
 
-    public function getSessionAndProfile() {
-
+    public function getSessionAndProfile()
+    {
         if($this->sessionId != null && $this->profileId != null) {
             return array($this->sessionId, $this->profileId);
         }
@@ -289,12 +290,11 @@ class BxClient
         return $client;
     }
 
-    public function getChoiceRequest($inquiries, $requestContext = null) {
-
+    public function getChoiceRequest($inquiries, $requestContext = null)
+    {
         $choiceRequest = new \com\boxalino\p13n\api\thrift\ChoiceRequest();
 
         list($sessionid, $profileid) = $this->getSessionAndProfile();
-
         $choiceRequest->userRecord = $this->getUserRecord();
         $choiceRequest->profileId = $profileid;
         $choiceRequest->inquiries = $inquiries;
@@ -360,14 +360,12 @@ class BxClient
     protected function getBasicRequestContextParameters()
     {
         list($sessionid, $profileid) = $this->getSessionAndProfile();
-
         return array(
             'User-Agent'	 => array(@$_SERVER['HTTP_USER_AGENT']),
             'User-Host'	  => array($this->getIP()),
             'User-SessionId' => array($sessionid),
             'User-Referer'   => array(@$_SERVER['HTTP_REFERER']),
-            'User-URL'	   => array($this->getCurrentURL()),
-            'X-BX-PROFILEID' => array($profileid)
+            'User-URL'	   => array($this->getCurrentURL())
         );
     }
 
@@ -388,15 +386,20 @@ class BxClient
     {
         $requestContext = new \com\boxalino\p13n\api\thrift\RequestContext();
         $requestContext->parameters = $this->getBasicRequestContextParameters();
-        foreach($this->getRequestContextParameters() as $k => $v) {
+
+        if(function_exists("random_bytes") && $this->sendRequestId)
+        {
+            $this->addRequestContextParameter(self::BXL_UUID_REQUEST, $this->uuid());
+        }
+
+        foreach($this->getRequestContextParameters() as $k => $v)
+        {
             $requestContext->parameters[$k] = $v;
         }
 
-        if (isset($this->requestMap['p13nRequestContext']) && is_array($this->requestMap['p13nRequestContext'])) {
-            $requestContext->parameters = array_merge(
-                $this->requestMap['p13nRequestContext'],
-                $requestContext->parameters
-            );
+        if (isset($this->requestMap['p13nRequestContext']) && is_array($this->requestMap['p13nRequestContext']))
+        {
+            $requestContext->parameters = array_merge($this->requestMap['p13nRequestContext'],$requestContext->parameters);
         }
 
         return $requestContext;
@@ -404,34 +407,37 @@ class BxClient
 
     private function throwCorrectP13nException($e) {
         if(strpos($e->getMessage(), 'Could not connect ') !== false) {
-            throw new \Exception('The connection to our server failed even before checking your credentials. This might be typically caused by 2 possible things: wrong values in host, port, schema or uri (typical value should be host=cdn.bx-cloud.com, port=443, uri =/p13n.web/p13n and schema=https, your values are : host=' . $this->host . ', port=' . $this->port . ', schema=' . $this->schema . ', uri=' . $this->uri .  ', request: ' . $this->getRequestId() . '). Another possibility, is that your server environment has a problem with ssl certificate (peer certificate cannot be authenticated with given ca certificates), which you can either fix, or avoid the problem by adding the line "curl_setopt(self::$curlHandle, CURLOPT_SSL_VERIFYPEER, false);" in the file "lib\Thrift\Transport\P13nTCurlClient" after the call to curl_init in the function flush. Full error message=' . $e->getMessage());
+            throw new \Exception('The connection to our server failed before checking your credentials. This might be typically caused by 2 possible things: wrong values in host/schema/port (for exports), api key or api secret (your values are : host=' . $this->host . ', port=' . $this->port . ', schema=' . $this->schema . ', uri=' . $this->uri .  ', api key =' . $this->getApiKey() .', request: ' . $this->getRequestId() . '). Another possibility, is that your server environment has a problem with ssl certificate (peer certificate cannot be authenticated with given ca certificates) which can be fixed. Full error message=' . $e->getMessage());
         }
 
         if(strpos($e->getMessage(), 'Bad protocol id in TCompact message') !== false) {
-            throw new \Exception('The connection to our server has worked, but your credentials were refused. Provided credentials username=' . $this->p13n_username. ', password=' . $this->p13n_password . ', request: ' . $this->getRequestId() .'. Full error message=' . $e->getMessage());
+            throw new \Exception('The connection to our server has worked, but your credentials were refused. Provided credentials username=' . $this->p13n_username. ', password=' . $this->p13n_password . ', account=' . $this->account . ', host=' . $this->host .  ', api key =' . $this->getApiKey() . ', request: ' . $this->getRequestId() . '. Full error message=' . $e->getMessage());
         }
 
         if(strpos($e->getMessage(), 'choice not found') !== false) {
             $parts = explode('choice not found', $e->getMessage());
             $pieces = explode('	at ', $parts[1]);
             $choiceId = str_replace(':', '', trim($pieces[0]));
-            throw new \Exception("Configuration not live on account " . $this->getAccount() . ": choice $choiceId doesn't exist. NB: If you get a message indicating that the choice doesn't exist, go to http://intelligence.bx-cloud.com, log in your account and make sure that the choice id you want to use is published.");
+            throw new \Exception("Configuration IS not live on account " . $this->getAccount() . ": choice/widget $choiceId doesn't exist. NB: If you get a message indicating that the choice doesn't exist, go to http://intelligence.bx-cloud.com, log in your account and make sure that the choice ID you want to use is published.");
         }
         if(strpos($e->getMessage(), 'Solr returned status 404') !== false) {
-            throw new \Exception("Data not live on account " . $this->getAccount() . ": index returns status 404. Please publish your data first, like in example backend_data_basic.php.");
+            throw new \Exception("Data is not live on account " . $this->getAccount() . ": index returns status 404. Please publish your data first, like in example backend_data_basic.php.");
         }
+
         if(strpos($e->getMessage(), 'undefined field') !== false) {
             $parts = explode('undefined field', $e->getMessage());
             $pieces = explode('	at ', $parts[1]);
             $field = str_replace(':', '', trim($pieces[0]));
-            throw new \Exception("You request in your filter or facets a non-existing field of your account " . $this->getAccount() . ": field $field doesn't exist. Request: " . $this->getRequestId());
-        }
-        if(strpos($e->getMessage(), 'All choice variants are excluded') !== false) {
-            throw new \Exception("You have an invalid configuration for with a choice defined, but having no defined strategies. This is a quite unusual case, please contact support@boxalino.com to get support.");
+            throw new \Exception("The request is done on a filter or facets of a non-existing field of your account " . $this->getAccount() . ": field $field doesn't exist. Request: " . $this->getRequestId());
         }
 
-        $message = $e->getMessage() . " BxRequest: " . $this->getRequestId();
+        if(strpos($e->getMessage(), 'All choice variants are excluded') !== false) {
+            throw new \Exception("You have an invalid configuration for a choice defined. This is a quite unusual case, please contact support@boxalino.com to get support. Request: " . $this->getRequestId());
+        }
+
+        $message = "BxRequest: " . $this->getRequestId() . $e->getMessage();
         $e->message = $message;
+
         throw $e;
     }
 
@@ -517,8 +523,8 @@ class BxClient
         return $requests;
     }
 
-    public function getThriftChoiceRequest($size=0) {
-
+    public function getThriftChoiceRequest($size=0)
+    {
         if(sizeof($this->chooseRequests) == 0 && sizeof($this->autocompleteRequests) > 0) {
             list($sessionid, $profileid) = $this->getSessionAndProfile();
             $userRecord = $this->getUserRecord();
@@ -531,7 +537,6 @@ class BxClient
         $choiceInquiries = array();
         $requests = $size === 0 ? $this->chooseRequests : array_slice($this->chooseRequests, -$size);
         foreach($requests as $request) {
-
             $choiceInquiry = new \com\boxalino\p13n\api\thrift\ChoiceInquiry();
             $choiceInquiry->choiceId = $request->getChoiceId();
             if(sizeof($choiceInquiries) == 0 && $this->getChoiceIdOverwrite()) {
@@ -552,8 +557,8 @@ class BxClient
         return $choiceRequest;
     }
 
-    public function getBundleChoiceRequest($inquiries, $requestContext = null) {
-
+    public function getBundleChoiceRequest($inquiries, $requestContext = null)
+    {
         $choiceRequest = new \com\boxalino\p13n\api\thrift\ChoiceRequest();
         list($sessionid, $profileid) = $this->getSessionAndProfile();
 
@@ -567,8 +572,8 @@ class BxClient
         return $choiceRequest;
     }
 
-    public function getThriftBundleChoiceRequest() {
-
+    public function getThriftBundleChoiceRequest()
+    {
         $bundleRequest = array();
         foreach($this->bundleChooseRequests as $bundleChooseRequest) {
             $choiceInquiries = array();
@@ -702,6 +707,7 @@ class BxClient
         {
             $this->choose($chooseAll);
         }
+
         $this->flushResponses();
         $this->resetRequests();
         $this->resetRequestContextParameter();
@@ -793,6 +799,12 @@ class BxClient
         return $request;
     }
 
+    public function setSendRequestId($value)
+    {
+        $this->sendRequestId = $value;
+        return $this;
+    }
+
     protected function uuid()
     {
         $uuid = bin2hex(random_bytes(16));
@@ -804,7 +816,10 @@ class BxClient
             .substr($uuid,20,12);
     }
 
-    protected function getRequestId()
+    /**
+     * @return string
+     */
+    public function getRequestId()
     {
         if(isset($this->requestContextParameters[self::BXL_UUID_REQUEST]))
         {
@@ -813,5 +828,4 @@ class BxClient
 
         return "undefined";
     }
-
 }

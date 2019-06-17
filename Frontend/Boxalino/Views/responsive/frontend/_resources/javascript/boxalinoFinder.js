@@ -255,6 +255,7 @@
         }
 
         function disableVariantSwitcher(){
+            var messageElement = $(".bx-finder-template-configuratorMessage");
             jQuery(".variant--option").each(function(i, obj) {
                 obj.getElementsByTagName('input')[0].removeAttribute("data-auto-submit");
                 var optionView = obj.cloneNode(true);
@@ -262,19 +263,21 @@
             });
 
             $(".configurator--form").removeAttr("action");
-            var messageElement = $(".bx-finder-template-configuratorMessage");
             $(".configurator--form").click(function(event) {
                 $.unsubscribe('plugin/swAjaxVariant/onChange');
                 event.preventDefault();
+                return false;
+            });
 
+            $(".variant--option").click(function(event) {
                 var selectedOptionEl = event.target;
-                var selectedOptionForm = selectedOptionEl.closest('form');
+                var selectedOptionForm = $(selectedOptionEl).closest('form');
                 if(selectedOptionEl.getAttribute("checked")=="checked") {
                     messageElement.fadeOut("fast");
                 } else {
                     messageElement.insertAfter(selectedOptionForm).fadeIn(50);
+                    setTimeout(function(){messageElement.hide();},5000);
                 }
-                return false;
             });
         }
 

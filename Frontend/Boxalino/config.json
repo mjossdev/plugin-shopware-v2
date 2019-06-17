@@ -82,6 +82,22 @@
     "description": "Optional: uses default value \"main.bx-cloud.com\" if left empty; If dev flag is set to TRUE - use \"r-st.bx-cloud.com\" "
   },
   {
+    "name": "send_request_id",
+    "label": "General - Send request ID",
+    "store": [
+      [
+        0,
+        "No"
+      ],
+      [
+        1,
+        "Yes"
+      ]
+    ],
+    "value": 0,
+    "description": "Optional: Sending a request UUID allows tracking on our server if the request arrived. To only be used when an issue has been identified. Constraint: only for PHP 7.0 or more."
+  },
+  {
     "name": "p13_user_name",
     "label": "General - P13n Username",
     "description": "Optional: uses default credentials if left empty."
