@@ -84,8 +84,14 @@
   {
     "name": "timeout",
     "label": "General - Timeout",
+    "value": 5,
+    "description": "Optional: configure a response timeout - CURLOPT_TIMEOUT -  to allow your store display a fallback strategy in case of long waiting times from our service. "
+  },
+  {
+    "name": "timeout",
+    "label": "General - Connection Timeout",
     "value": 2,
-    "description": "Optional: configure a response timeout to allow your store display a fallback strategy in case of long waiting times from our service. "
+    "description": "Optional: configure a connection timeout - CURLOPT_CONNECTTIMEOUT - to allow your store display a fallback strategy in case of long waiting times from our service. "
   },
   {
     "name": "send_request_id",
