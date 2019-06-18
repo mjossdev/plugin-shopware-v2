@@ -82,6 +82,12 @@
     "description": "Optional: uses default value \"main.bx-cloud.com\" if left empty; If dev flag is set to TRUE - use \"r-st.bx-cloud.com\" "
   },
   {
+    "name": "timeout",
+    "label": "General - Timeout",
+    "value": 2,
+    "description": "Optional: configure a response timeout to allow your store display a fallback strategy in case of long waiting times from our service. "
+  },
+  {
     "name": "send_request_id",
     "label": "General - Send request ID",
     "store": [
