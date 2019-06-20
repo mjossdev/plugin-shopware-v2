@@ -5,6 +5,31 @@ On every plugin update - please check the file and what needs to be tested on yo
 
 If you have any question, just contact us at support@boxalino.com
 
+### v1.3.4 - 2019-06-20
+* *post-deploy steps* : clear cache; update the Transactions export mode to "Full" overnight;
+* *post-deploy tests* : product stream pages, listing sorting, ajax listing, navigation
+
+##### 1. Configurations for Connection Timeout 
+* *description* : Added 2 new configurable properties for connection timeout. If exceeded - the fallback view is triggered.
+* *commits* : 
+https://github.com/boxalino/plugin-shopware-v2/commit/3032233ccd9debc5ff66f72e27bb78085bbe247e
+
+##### 2. Product Finder JS updates
+* *description* : IE compatibility on variant switcher; history reload strategy
+* *commits* :
+https://github.com/boxalino/plugin-shopware-v2/commit/e238f4bbb1a236d73f2c42daee639a8472befd4e
+https://github.com/boxalino/plugin-shopware-v2/commit/24e39924b9c50ea9e647ceab715fab0f41868b3c
+https://github.com/boxalino/plugin-shopware-v2/commit/96ba7abeb5f18232a29198265aa1d991162462b9
+
+##### 3. Transaction Addresses export 
+* *description* : Updates on transactions export
+* *commits* :
+https://github.com/boxalino/plugin-shopware-v2/commit/32f8d3feeebebbee181a2a9188cb70455b92832f
+
+##### 4. Added Search Bundle component
+* *description* : Allows custom sorting definitions
+* *commits* :
+https://github.com/boxalino/plugin-shopware-v2/commit/7c3c94ea99e214349e321f1942da4324d8a1e4df
 
 ### v1.3.3 - 2019-05-31
 * *post-deploy steps* : clear cache
