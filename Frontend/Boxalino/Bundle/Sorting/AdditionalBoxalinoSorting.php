@@ -1,6 +1,5 @@
 <?php
 class Shopware_Plugins_Frontend_Boxalino_Bundle_Sorting_AdditionalBoxalinoSorting
-    extends \Shopware\Bundle\SearchBundle\Sorting
     implements Shopware_Plugins_Frontend_Boxalino_Bundle_Sorting_BoxalinoSortingInterface
 {
     const BOXALINO_SORT_FIELD = "products_changetime";
@@ -16,6 +15,11 @@ class Shopware_Plugins_Frontend_Boxalino_Bundle_Sorting_AdditionalBoxalinoSortin
     }
 
     public function getSortField()
+    {
+        return self::BOXALINO_SORT_FIELD;
+    }
+
+    public function getName()
     {
         return self::BOXALINO_SORT_FIELD;
     }
