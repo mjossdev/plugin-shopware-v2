@@ -99,13 +99,6 @@ class Shopware_Plugins_Frontend_Boxalino_Bundle_Search_Listing
             $filter['products_brand'] = [$this->viewData['manufacturer']->getName()];
         }
 
-        if($supplier = $this->getRequest()->getParam('sSupplier')) {
-            if(strpos($supplier, '|') === false){
-                $supplier_name = $this->dataHelper->getSupplierName($supplier);
-                $filter['products_brand'] = [$supplier_name];
-            }
-        }
-
         return $filter;
     }
 
