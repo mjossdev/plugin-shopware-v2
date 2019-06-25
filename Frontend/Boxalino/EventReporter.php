@@ -69,14 +69,6 @@ SCRIPT;
         return self::buildScript();
     }
 
-    public static function reportLogin($userId)
-    {
-        $script = <<<SCRIPT
-                _bxq.push(['trackLogin', '$userId']);
-SCRIPT;
-        return self::buildScript($script);
-    }
-
     public static function reportSearch($request)
     {
         $logTerm = addslashes(trim(stripslashes(html_entity_decode($request->sSearch))));
@@ -113,6 +105,20 @@ SCRIPT;
                 'p'  => $price,
                 'c'  => $currency,
             )
+        );
+        return $event->track();
+    }
+
+    /**
+     * Tracking User ID server-side
+     *
+     * @param $userId
+     * @return bool|string
+     */
+    public static function reportTrackLogin($userId)
+    {
+        $event = new Shopware_Plugins_Frontend_Boxalino_Event(
+            'login', ['id'=>$userId]
         );
         return $event->track();
     }

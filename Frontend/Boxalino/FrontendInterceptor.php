@@ -119,9 +119,10 @@ class Shopware_Plugins_Frontend_Boxalino_FrontendInterceptor
                 $script = $script = Shopware_Plugins_Frontend_Boxalino_EventReporter::reportPageView();
                 break;
             case 'account':
-                if ($_SESSION['Shopware']['sUserId'] != null) {
-                    $script = Shopware_Plugins_Frontend_Boxalino_EventReporter::reportLogin($_SESSION['Shopware']['sUserId']);
+                if ($_SESSION['Shopware']['sUserId'] != null && $this->Request()->getActionName() == "login") {
+                    Shopware_Plugins_Frontend_Boxalino_EventReporter::reportTrackLogin($_SESSION['Shopware']['sUserId']);
                 }
+                $script = $script = Shopware_Plugins_Frontend_Boxalino_EventReporter::reportPageView();
             default:
                 $param = $this->Request()->getParam('callback');
                 // skip ajax calls

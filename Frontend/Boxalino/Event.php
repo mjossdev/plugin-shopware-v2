@@ -37,6 +37,7 @@ class Shopware_Plugins_Frontend_Boxalino_Event
         } else {
             $this->referer = array_key_exists('HTTP_REFERER', $_SERVER) ? $_SERVER['HTTP_REFERER'] : '';
         }
+        $params["_rf"] = $this->referer;
         $this->params = $params;
     }
 
