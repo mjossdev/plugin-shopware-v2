@@ -428,7 +428,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                 $viewData['sCategoryContent']['attribute']['narrative_choice'],
                 $viewData['sCategoryContent']['attribute']['narrative_additional_choice'],
                 false,
-                $searchBundle->getSearchBundle()->getFilters()
+                array_merge(['stream' => $searchBundle->getSearchBundle()->getIsStream()], $searchBundle->getSearchBundle()->getFilters())
             );
         }
         if($this->Helper()->getResponse()->getRedirectLink() != '') {

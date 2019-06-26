@@ -435,9 +435,14 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         return false;
     }
 
-    protected function addNarrativeRequest($choice, $hitCount, $pageOffset, $sort, $options = array(), $filters = array()) {
-
+    protected function addNarrativeRequest($choice, $hitCount, $pageOffset, $sort, $options = array(), $filters = array())
+    {
         $lang = $this->getShortLocale();
+        $stream = false;
+        if(isset($filters['stream'])) {
+            $stream = $filters['stream'];
+            unset($filters['stream']);
+        }
         if(strpos($choice, 'banner') !== FALSE) {
             $type = 'bxi_content';
             $returnFields = $this->getReturnFields($type);
@@ -449,7 +454,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
             $bxRequest->setOffset(0);
         }elseif(strpos($choice, 'read') !== FALSE || strpos($choice, 'blog') !== FALSE){
             $bxRequest = new \com\boxalino\bxclient\v1\BxRequest($lang, $choice, $hitCount);
-            $requestFilters = $this->getSystemFilters("blog");
+            $requestFilters = $this->getSystemFilters('blog', '', false, $stream);
             $requestFilters = array_merge($requestFilters, $this->extractFilter($filters));
             $bxRequest->setFilters($requestFilters);
             $bxRequest->setGroupBy($this->getEntityIdFieldName("blog"));
@@ -462,7 +467,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
             }
         } else {
             $bxRequest = new \com\boxalino\bxclient\v1\BxRequest($lang, $choice, $hitCount);
-            $requestFilters = $this->getSystemFilters();
+            $requestFilters = $this->getSystemFilters('product', '', false, $stream);
             $requestFilters = array_merge($requestFilters, $this->extractFilter($filters));
             $bxRequest->setFilters($requestFilters);
             $bxRequest->setOffset($pageOffset);
