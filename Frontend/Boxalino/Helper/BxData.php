@@ -382,7 +382,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxData {
                     $filter['di_new'] = [1];
                     break;
                 default:
-                    $filter["missing_condition"] = null;
+                    $filter["missing_condition"] = true;
                     break;
             }
         }
