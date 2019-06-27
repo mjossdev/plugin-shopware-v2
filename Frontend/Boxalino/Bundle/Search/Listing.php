@@ -80,10 +80,20 @@ class Shopware_Plugins_Frontend_Boxalino_Bundle_Search_Listing
         {
             $streamConfig = $this->dataHelper->getStreamById($this->stream);
             if($streamConfig[$this->stream]['conditions']) {
-                $conditions = $this->dataHelper->unserialize(json_decode($streamConfig[$this->stream]['conditions'], true));
+                $conditions = $this->dataHelper->unserialize(json_decode($streamConfig[$this->stream]['conditions'], true, 10, JSON_OBJECT_AS_ARRAY));
                 $filter = $this->dataHelper->getConditionFilter($conditions);
                 if(is_null($filter)) {
-                    throw new Shopware_Plugins_Frontend_Boxalino_Bundle_NullException("BxListingError: the filter is corrupt.");
+                    throw new Shopware_Plugins_Frontend_Boxalino_Bundle_NullException(
+                        "BxListingError: the streaming filter is corrupt or missing integration scenario. Stream ID: " .$this->stream . "; conditions:" . $streamConfig[$this->stream]['conditions']
+                    );
+                }
+
+                if(isset($filter['missing_condition']))
+                {
+                    unset($filter['missing_condition']);
+                    Shopware()->Container()->get('pluginlogger')->warning(
+                        "BxListingError: the requested stream is not fully integrated. Please contact Boxalino. Stream ID: " .$this->stream . "; conditions:" . $streamConfig[$this->stream]['conditions']
+                    );
                 }
             } else {
                 $filter['products_stream_id'] = [$this->stream];

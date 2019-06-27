@@ -435,9 +435,6 @@ class BxClient
             throw new \Exception("You have an invalid configuration for a choice defined. This is a quite unusual case, please contact support@boxalino.com to get support. Request: " . $this->getRequestId());
         }
 
-        $message = "BxRequest: " . $this->getRequestId() . $e->getMessage();
-        $e->message = $message;
-
         throw $e;
     }
 

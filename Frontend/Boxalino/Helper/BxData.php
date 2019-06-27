@@ -378,11 +378,15 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxData {
                     $filterValues = $condition->getManufacturerIds();
                     $filter['products_brand'] = $this->getManufacturerById($filterValues);
                     break;
+                case 'Shopware\Bundle\SearchBundle\Condition\IsNewCondition':
+                    $filter['di_new'] = [1];
+                    break;
                 default:
-                    return null;
+                    $filter["missing_condition"] = true;
                     break;
             }
         }
+
         return $filter;
     }
 
@@ -444,7 +448,13 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxData {
         foreach ($serialized as $className => $arguments) {
             $className = explode('|', $className);
             $className = $className[0];
-            $sortings[] = $reflector->createInstanceFromNamedArguments($className, $arguments);
+            if(is_array($arguments))
+            {
+                $sortings[] = $reflector->createInstanceFromNamedArguments($className, $arguments);
+            } else {
+                $reflectionClass = new \ReflectionClass($className);
+                $sortings[] = $reflectionClass->newInstanceWithoutConstructor();
+            }
         }
 
         return $sortings;
