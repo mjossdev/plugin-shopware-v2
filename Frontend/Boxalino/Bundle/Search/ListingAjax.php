@@ -75,11 +75,20 @@ class Shopware_Plugins_Frontend_Boxalino_Bundle_Search_ListingAjax
         {
             $streamConfig = $this->dataHelper->getStreamById($this->stream);
             if($streamConfig[$this->stream]['conditions']) {
-                $conditions = $this->dataHelper->unserialize(json_decode($streamConfig[$this->stream]['conditions'], true));
+                $conditions = $this->dataHelper->unserialize(json_decode($streamConfig[$this->stream]['conditions'], true, 10, JSON_OBJECT_AS_ARRAY));
                 $filter = $this->dataHelper->getConditionFilter($conditions);
                 if(is_null($filter)) {
-                    throw new Shopware_Plugins_Frontend_Boxalino_Bundle_NullException("BxListingError: the stream {$this->stream} can not be used. Please enable Boxalino Search - Navigatio -Product-Stream");
+                    throw new Shopware_Plugins_Frontend_Boxalino_Bundle_NullException("BxListingAjaxError: the stream {$this->stream} can not be used. Please enable Boxalino Search - Navigatio -Product-Stream");
                 }
+
+                if(isset($filter['missing_condition']))
+                {
+                    unset($filter['missing_condition']);
+                    Shopware()->Container()->get('pluginlogger')->warning(
+                        "BxListingAjaxError: the requested stream is not fully integrated. Please contact Boxalino. Stream ID: " .$this->stream . "; conditions:" . $streamConfig[$this->stream]['conditions']
+                    );
+                }
+
             } else {
                 $filter['products_stream_id'] = [$this->stream];
             }

@@ -312,6 +312,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             $searchBundle->execute();
             $request = $searchBundle->getRequest();
         } catch (Shopware_Plugins_Frontend_Boxalino_Bundle_NullException $exception){
+            Shopware()->Container()->get('pluginlogger')->warning($exception);
             return null;
         } catch(\Exception $exception) {
             Shopware()->Container()->get('pluginlogger')->error($exception);
@@ -408,6 +409,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             $searchBundle->execute();
             $request= $searchBundle->getRequest();
         } catch (Shopware_Plugins_Frontend_Boxalino_Bundle_NullException $exception){
+            Shopware()->Container()->get('pluginlogger')->warning($exception);
             return null;
         } catch(\Exception $exception) {
             Shopware()->Container()->get('pluginlogger')->error($exception);
@@ -796,6 +798,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
 
             $request = $searchBundle->getRequest();
         } catch (Shopware_Plugins_Frontend_Boxalino_Bundle_NullException $exception){
+            Shopware()->Container()->get('pluginlogger')->warning($exception);
             return null;
         } catch(\Exception $exception) {
             Shopware()->Container()->get('pluginlogger')->error($exception);
