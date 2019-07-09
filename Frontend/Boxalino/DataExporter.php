@@ -7,6 +7,14 @@
  */
 class Shopware_Plugins_Frontend_Boxalino_DataExporter
 {
+
+    CONST BOXALINO_EXPORTER_TYPE_DELTA = "delta";
+    CONST BOXALINO_EXPORTER_TYPE_FULL = "full";
+
+    CONST BOXALINO_EXPORTER_STATUS_SUCCESS = "success";
+    CONST BOXALINO_EXPORTER_STATUS_FAIL = "fail";
+    CONST BOXALINO_EXPORTER_STATUS_PROCESSING = "processing";
+
     protected $request;
     protected $manager;
 
@@ -66,9 +74,9 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
     {
         set_time_limit(7000);
 
-        $data = array();
-        $systemMessages = array();
-        $type = $this->delta ? 'delta' : 'full';
+        $data = [];
+        $systemMessages = [];
+        $type = $this->delta ? self::BOXALINO_EXPORTER_TYPE_DELTA : self::BOXALINO_EXPORTER_TYPE_FULL;
         try {
             $account = $this->getAccount();
             $dirPath = $this->getDirPath();
@@ -95,7 +103,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
                 $this->log->info("BxIndexLog: Exporting products updated since {$this->deltaLast} data sync.");
             }
 
-            $this->updateExportTable(true);
+            $this->updateScheduler(date("Y-m-d H:i:s"), $type, self::BOXALINO_EXPORTER_STATUS_PROCESSING);
             $this->_config = new Shopware_Plugins_Frontend_Boxalino_Helper_BxIndexConfig();
 
             $this->log->info("BxIndexLog: Exporting store ID : {$this->_config->getAccountStoreId($account)}");
@@ -174,15 +182,14 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
             }
 
             $this->log->info("BxIndexLog: End of Boxalino $type data sync on account {$account}");
-            $this->updateExportTable();
+            $this->updateScheduler(date("Y-m-d H:i:s"), $type, self::BOXALINO_EXPORTER_STATUS_SUCCESS);
             $this->log->info("BxIndexLog: Log boxalino_exports $type data sync end for account {$account}");
         } catch(\Throwable $e) {
-            error_log("BxIndexLog: failed with exception: " .$e->getMessage());
+            error_log("BxIndexLog: failed with exception: " .$e->getMessage(), 0);
             $this->log->info("BxIndexLog: failed with exception: " . $e->getMessage());
 
-            $this->updateExportTable();
             $this->log->info("BxIndexLog: Log boxalino_exports $type data sync end for account {$account}");
-
+            $this->updateScheduler(date("Y-m-d H:i:s"), $type, self::BOXALINO_EXPORTER_STATUS_FAIL);
             $systemMessages[] = "BxIndexLog: failed with exception: ". $e->getMessage();
             return implode("\n", $systemMessages);
         }
@@ -1780,12 +1787,20 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
             $this->deltaLast = date("Y-m-d H:i:s", strtotime("-30 minutes"));
             $sql = $this->db->select()
                 ->from('boxalino_exports', array('export_date'))
+                ->where('account = ?', $this->getAccount())
+                ->where('status = ?', self::BOXALINO_EXPORTER_STATUS_SUCCESS)
                 ->order('export_date', "DESC")
                 ->limit(1);
-            $this->deltaLast = $this->db->fetchOne($sql);
+            $latestRecord = $this->db->fetchOne($sql);
+            if($latestRecord)
+            {
+                $this->deltaLast = $latestRecord;
+            }
         }
+
         return $this->deltaLast;
     }
+
 
     /**
      * wrapper to quote database identifiers
@@ -1798,42 +1813,104 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
     }
 
     /**
-     * The export table is to be updated based on the flow (start or failed)
+     * The export table is truncated
+     * @param string $type
+     * @return bool
      */
-    protected function updateExportTable($start = false)
+    public function clearExportTable($type = self::BOXALINO_EXPORTER_TYPE_FULL)
     {
-        if ($start)
+        if(is_null($type))
         {
-            $this->clearExportTable();
+            $this->db->query('DELETE FROM `boxalino_exports` WHERE ' . $this->db->quoteInto("account = ?", $this->getAccount()) . ';');
+            return true;
         }
 
-        $this->db->query('INSERT INTO `boxalino_exports` values(NOW())');
-    }
-
-    /**
-     * The export table is truncated
-     */
-    public function clearExportTable()
-    {
-        $this->db->query('TRUNCATE `boxalino_exports`');
+        $this->db->query('DELETE FROM `boxalino_exports` WHERE '
+            . $this->db->quoteInto("account = ?", $this->getAccount()) . ' AND '
+            . $this->db->quoteInto("type = ?", $type) . ';'
+        );
         return true;
     }
 
-    /**
-     * If there is an actively running process
-     * For a prior successfull export, there must be 2 logged in dates - start and end
-     * If there is only 1 - the prior export crashed
-     */
-    public function canStartExport()
-    {
-        $existingRecordsSql =  $this->db->select()
-            ->from('boxalino_exports', array('export_date'));
 
-        $trackedExports = $this->db->fetchCol($existingRecordsSql);
-        if(count($trackedExports) == 1)
+    /**
+     * The export table is displayed
+     * @return bool
+     */
+    public function viewExportTable()
+    {
+        $select = $this->db->select()
+            ->from("boxalino_exports");
+
+        return $this->db->fetchAll($select);
+    }
+
+
+    /**
+     * 1. Check if there is any active running process with status PROCESSING
+     * 1.1 If there is none - the full export can start regardless; if it is a delta export - it is allowed to be run at least 30min after a full one
+     * 2. When there are processes with "PROCESSING" state:
+     * 2.1 if the time difference is less than 15 min - stop store export
+     * 2.2 if it is an older process which got stuck - allow the process to start if it does not block a prior full export on the account
+     *
+     * @param string $type
+     * @return bool
+     */
+    public function canStartExport($type = self::BOXALINO_EXPORTER_TYPE_FULL)
+    {
+        $allowedHour = date("Y-m-d H:i:s", strtotime("-30min"));
+        $runningProcesses =  $this->db->select()
+            ->from('boxalino_exports', ['export_date', 'account'])
+            ->where('account <> ?', $this->getAccount())
+            ->where('status = ?', self::BOXALINO_EXPORTER_STATUS_PROCESSING);
+
+        $processes = $this->db->fetchAll($runningProcesses);
+        if(empty($processes))
         {
-            $allowedHour = date("Y-m-d H:i:s", strtotime("-30min"));
-            if($trackedExports[0] === min($allowedHour, $trackedExports[0]))
+            if($type == self::BOXALINO_EXPORTER_TYPE_FULL)
+            {
+                return true;
+            }
+
+            $latestFull = $this->db->select()
+                ->from('boxalino_exports', ['export_date'])
+                ->where('account = ?', $this->getAccount())
+                ->where('type = ?', self::BOXALINO_EXPORTER_TYPE_FULL);
+
+            $date = $this->db->fetchOne($latestFull);
+            if($date === min($allowedHour, $date))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        $canNotRun = false;
+        foreach($processes as $process)
+        {
+            if($process['export_date'] === min(date("Y-m-d H:i:s", strtotime("-15min")), $process['export_date']))
+            {
+                continue;
+            }
+
+            $canNotRun = true;
+        }
+
+        if($canNotRun)
+        {
+            return false;
+        }
+
+        $latestRunOnAccount =  $this->db->select()
+            ->from('boxalino_exports', ['export_date', 'status', 'type'])
+            ->where('account = ?', $this->getAccount())
+            ->where('type = ?', self::BOXALINO_EXPORTER_TYPE_FULL);
+
+        $accountProcesses = $this->db->fetchAll($latestRunOnAccount);
+        if($type==self::BOXALINO_EXPORTER_TYPE_DELTA)
+        {
+            if($accountProcesses['export_date'] == min($allowedHour, $accountProcesses['export_date']))
             {
                 return true;
             }
@@ -1842,6 +1919,26 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
         }
 
         return true;
+    }
+
+    public function updateScheduler($date, $type, $status)
+    {
+        $dataBind = [
+            $this->getAccount(),
+            $type,
+            $date,
+            $status
+        ];
+
+        $query='INSERT INTO boxalino_exports (account, type, export_date, status) VALUES (?, ?, ?, ?) '.
+            'ON DUPLICATE KEY UPDATE '
+            . $this->db->quoteInto("export_date = ?", $date) . ', '
+            . $this->db->quoteInto("status = ?", $status) . ';';
+
+        return $this->db->executeUpdate(
+            $query,
+            $dataBind
+        );
     }
 
     /**

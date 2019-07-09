@@ -16,6 +16,8 @@ class Shopware_Controllers_Frontend_RecommendationSlider extends Enlight_Control
         ];
     }
 
+    protected $emotionSliderParams = ['bxChoiceId', 'bxCount', 'category_id'];
+
     /**
      * @var sMarketing
      */
@@ -134,19 +136,19 @@ class Shopware_Controllers_Frontend_RecommendationSlider extends Enlight_Control
         $choiceId = $this->Request()->getQuery('bxChoiceId');
         $count = $this->Request()->getQuery('bxCount');
         $context = $this->Request()->getQuery('category_id');
-        $context = Shopware()->Shop()->getCategory()->getId() == $context ? null : $context;
-        $helper->getRecommendation($choiceId, $count, $count, 0, $context, 'category', false);
+        if(is_null($context))
+        {
+            $context = Shopware()->Shop()->getCategory()->getId();
+        }
+        $requestContextParams = array_diff($this->Request()->getParams(), $this->emotionSliderParams);
+        $helper->getRecommendation($choiceId, $count, $count, 0, $context, 'category', false, [], false, $requestContextParams);
         if ($_REQUEST['dev_bx_debug'] == 'true') {
             $helper->addNotification("Recommendation Slider before response took: " . (microtime(true) - $t1) * 1000 . "ms.");
-        }
-        if ($_REQUEST['dev_bx_debug'] == 'true') {
             $t2 = microtime(true);
         }
         $hitsIds = $helper->getRecommendation($choiceId);
         if ($_REQUEST['dev_bx_debug'] == 'true') {
             $helper->addNotification("Recommendation Slider response took: " . (microtime(true) - $t2) * 1000 . "ms.");
-        }
-        if ($_REQUEST['dev_bx_debug'] == 'true') {
             $t3 = microtime(true);
         }
 

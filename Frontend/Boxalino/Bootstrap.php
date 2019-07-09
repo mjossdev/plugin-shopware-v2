@@ -45,7 +45,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
     }
 
     public function getVersion() {
-        return '1.6.29';
+        return '1.6.30';
     }
 
     public function getInfo() {
@@ -281,6 +281,10 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
         return $this->getDataExporter();
     }
 
+    /**
+     * a delta can only run if it`s been at least 1h after a full data sync
+     * @return bool
+     */
     private function canRunDelta() {
         $db = Shopware()->Db();
         $sql = $db->select()
@@ -333,17 +337,28 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
         throw new \Exception("Boxalino Export failed with messages: %s", implode(",", $errorMessages));
     }
 
-    private function createDatabase()
+    /**
+     * Creates boxalino_exports, boxalino_cronexports
+     */
+    protected function createDatabase()
     {
-        $tableNames = ["boxalino_exports", "boxalino_cronexports"];
         $db = Shopware()->Db();
-        foreach($tableNames as $table)
-        {
-            $db->query(
-                'CREATE TABLE IF NOT EXISTS ' . $db->quoteIdentifier($table) .
-                ' ( ' . $db->quoteIdentifier('export_date') . ' DATETIME)'
-            );
-        }
+        $db->query(
+            'CREATE TABLE IF NOT EXISTS ' . $db->quoteIdentifier("boxalino_exports")
+            . '('
+                . $db->quoteIdentifier('account') . ' VARCHAR(128) NOT NULL, '
+                . $db->quoteIdentifier('type') . ' VARCHAR(128) NOT NULL, '
+                . $db->quoteIdentifier('export_date') . ' DATETIME, '
+                . $db->quoteIdentifier('status') . ' VARCHAR(128) NOT NULL '
+            .')'
+        );
+
+        $db->query('CREATE UNIQUE INDEX boxalino_exports_account_type_indx ON boxalino_exports (account, type);');
+
+        $db->query(
+            'CREATE TABLE IF NOT EXISTS ' . $db->quoteIdentifier("boxalino_cronexports") .
+            ' ( ' . $db->quoteIdentifier('export_date') . ' DATETIME)'
+        );
     }
 
     private function removeDatabase($version)
@@ -1262,12 +1277,20 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
      *
      * @param $component
      * @param $fieldName
+     * @return bool
      */
     protected function checkFieldExistsForEmotion($component, $fieldName)
     {
-        $component->getFields()->exists(function($key, $element) use ($fieldName){
-            return $fieldName === $element->getName();
-        });
+        $fields = $component->getFields()->getSnapshot();
+        foreach($fields as $field)
+        {
+            if ($field->getName()==$fieldName)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

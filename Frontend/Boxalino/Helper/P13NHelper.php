@@ -228,8 +228,8 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
      * @param array $options
      * @param array $filters
      */
-    public function addSearch($queryText = "", $pageOffset = 0, $hitCount = 10, $type = "product", $sort = null, $options = array(), $filters = array(), $stream = false, $overrideChoice = null) {
-
+    public function addSearch($queryText = "", $pageOffset = 0, $hitCount = 10, $type = "product", $sort = null, $options = array(), $filters = array(), $stream = false, $overrideChoice = null)
+    {
         $choiceId = is_null($overrideChoice) ? $this->getSearchChoice($queryText) : $overrideChoice;
         $returnFields = $this->getReturnFields($type);
         $lang = $this->getShortLocale();
@@ -255,8 +255,8 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         self::$choiceContexts[$choiceId][] = $type;
     }
 
-    private function getVoucherData($voucher_id) {
-
+    private function getVoucherData($voucher_id)
+    {
         $data = array();
         $db = Shopware()->Db();
         $sql = $db->select()->from('s_emarketing_vouchers')
@@ -268,8 +268,8 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         return $data;
     }
 
-    public function addVoucher($choiceId) {
-
+    public function addVoucher($choiceId)
+    {
         $lang = $this->getShortLocale();
         $bxRequest = new \com\boxalino\bxclient\v1\BxRequest($lang, $choiceId, 1);
         $bxRequest->setReturnFields(['products_voucher_id']);
@@ -280,7 +280,8 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         return $data;
     }
 
-    public function getVoucherResponse($choice_id, $variant_index = 0) {
+    public function getVoucherResponse($choice_id, $variant_index = 0)
+    {
         $bxResponse = $this->getResponse();
         $voucherIdFromHits = $bxResponse->getHitFieldValues(['products_voucher_id'], $choice_id, true, $variant_index);
         $data = [];
@@ -295,10 +296,8 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         return $data;
     }
 
-    public function addBanner($config){
-//      $this->flushResponses();
-//      $this->resetRequests();
-
+    public function addBanner($config)
+    {
         $type = 'bxi_content';
         $returnFields = $this->getReturnFields($type);
         $lang = $this->getShortLocale();
@@ -311,13 +310,13 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         $bxRequest->setGroupBy($this->getEntityIdFieldName($type));
         $bxRequest->setReturnFields($returnFields);
         $bxRequest->setOffset(0);
-
         self::$bxClient->addRequest($bxRequest);
         self::$choiceContexts[$choiceId][] = $type;
         return $this->getBannerData($choiceId);
     }
 
-    public function getBannerData($choiceId, $variant_index = 0) {
+    public function getBannerData($choiceId, $variant_index = 0)
+    {
         $bxResponse = $this->getResponse();
         $hitCount = $bxResponse->getTotalHitCount($choiceId);
         $bannerData = [
@@ -340,8 +339,8 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         return $bannerData;
     }
 
-    public function getBannerSlides($choiceId, $variant_index = 0) {
-
+    public function getBannerSlides($choiceId, $variant_index = 0)
+    {
         $slides = $this->getResponse()->getHitFieldValues(array('products_bxi_bxi_jssor_slide', 'products_bxi_bxi_name'), $choiceId, true, $variant_index);
         $counters = array();
         foreach($slides as $id => $vals) {
@@ -506,7 +505,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
                 }
             }
 
-            if ($additional_choices != '') {
+            if (!empty($additional_choices)) {
                 $choice_ids = explode(',', $additional_choices);
                 if (is_array($choice_ids)) {
                     foreach ($choice_ids as $choice) {
@@ -1049,10 +1048,11 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
      * @param array $requestContextParams
      * @param bool $isPortfolio
      * @return array|mixed
+     * @throws Exception
      */
     public function getRecommendation($choiceId, $max = 5, $min = 5, $offset = 0, $context = array(), $type = '',
-                                      $execute = true, $excludes = array(), $isBlog = false, $requestContextParams = array(), $isPortfolio = false) {
-
+                                      $execute = true, $excludes = array(), $isBlog = false, $requestContextParams = array(), $isPortfolio = false)
+    {
         if(!$execute){
             if ($max >= 0) {
                 $articleType = $isBlog ? 'blog' : 'product';
