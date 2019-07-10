@@ -1108,8 +1108,15 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
                 }
 
                 foreach ($requestContextParams as $key => $requestContextParam) {
+                    if(strpos($key, 'bxs_') === 0) {
+                        if(!is_array($requestContextParam)) {
+                            $requestContextParam = [$requestContextParam];
+                        }
+                        $filters[$key] = new \com\boxalino\bxclient\v1\BxFilter(substr($key, 4), $requestContextParam);
+                    }
                     self::$bxClient->addRequestContextParameter($key, $requestContextParam);
                 }
+
                 $bxRequest->setFilters($filters);
                 if($isPortfolio) {
                     $bxRequest->setHitsGroupsAsHits(true);
