@@ -5,6 +5,24 @@ On every plugin update - please check the file and what needs to be tested on yo
 
 If you have any question, just contact us at support@boxalino.com
 
+### v1.3.5 - 2019-07-10
+* *setup version* : 1.6.30
+* *post-deploy tests* : run <store>/backend/boxalino_export/check to see the contents of the boxalino_exports table
+
+##### 1. Exporter tracker per account and type
+* *description* : The tracking boxalino_exports table has been updated to follow the account, export type, run date and status of each export process.
+* *commits* : 
+https://github.com/boxalino/plugin-shopware-v2/commit/34bf81d299f15c8ca4bf784a53ec1b91a2e3c80b
+##### 2. Backend action to check export status
+* *description* : On each export cron/manual job, the boxalino_exports logs relevant information (account, export type, export date and status - fail, success or processing).
+ The view is accessible via URL: <store>/backend/boxalino_export/check
+* *commits* : 
+https://github.com/boxalino/plugin-shopware-v2/commit/34bf81d299f15c8ca4bf784a53ec1b91a2e3c80b
+##### 3. Setting filters on emotion sliders
+* *description* : If you need custom logic for the product slider, define the fields in the "Additional Slider Filters" row in your emotion. Use "category_id-X" to set/change the category filter, and for other fields - set "bxs_" prefix for the boxalino field.
+* *commits* : 
+https://github.com/boxalino/plugin-shopware-v2/commit/13bb463173fcd74ce2411ff1ae9f4522fb9a5d2b
+
 ### v1.3.4 - 2019-06-20
 * *post-deploy steps* : clear cache; update the Transactions export mode to "Full" overnight;
 * *post-deploy tests* : product stream pages, listing sorting, ajax listing, navigation
