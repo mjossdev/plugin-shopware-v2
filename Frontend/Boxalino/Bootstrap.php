@@ -5,21 +5,27 @@ use Shopware\Bundle\AttributeBundle\Service\TypeMapping;
  * Class Shopware_Plugins_Frontend_Boxalino_Bootstrap
  */
 class Shopware_Plugins_Frontend_Boxalino_Bootstrap
-    extends Shopware_Components_Plugin_Bootstrap {
+    extends Shopware_Components_Plugin_Bootstrap
+{
 
     /**
      * @var Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
      */
-    private $searchInterceptor;
+    protected $searchInterceptor;
     /**
      * @var Shopware_Plugins_Frontend_Boxalino_FrontendInterceptor
      */
-    private $frontendInterceptor;
+    protected $frontendInterceptor;
 
     /**
      * @var Shopware_Plugins_Frontend_Boxalino_DataExporter
      */
     protected $dataExporter;
+
+    /**
+     * @var Shopware_Plugins_Frontend_Boxalino_Bundle_Narrative_NarrativeRendererInterface
+     */
+    protected $narrativeRenderer;
 
     public function __construct($name, $info = null) {
         parent::__construct($name, $info);
@@ -279,6 +285,17 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
         Shopware()->Container()->set("boxalino_intelligence.service_exporter", $this->getDataExporter());
 
         return $this->getDataExporter();
+    }
+
+    public function getNarrativeRendererService()
+    {
+        $this->narrativeRenderer = new Shopware_Plugins_Frontend_Boxalino_Bundle_Narrative_NarrativeRenderer();
+        Shopware()->Container()->get("events")->notify(
+            'Enlight_Bootstrap_BeforeSetResource_boxalino_intelligence.service_narrative_renderer', ['subject' => $this]
+        );
+        Shopware()->Container()->set("boxalino_intelligence.service_narrative_renderer", $this->getNarrativeRenderer());
+
+        return $this->getNarrativeRenderer();
     }
 
     /**
@@ -930,7 +947,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
 
     public function onCPOFinder($data) {
         try {
-            return $this->searchInterceptor->CPOFinder($data);
+            return $this->searchInterceptor->onEmotionFinder($data);
         } catch (\Exception $e) {
             $this->logException($e, __FUNCTION__);
         }
@@ -1322,4 +1339,16 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
         $this->dataExporter  = $dataExporter;
         return $this;
     }
+
+    public function getNarrativeRenderer()
+    {
+        return $this->narrativeRenderer;
+    }
+
+    public function setNarrativeRenderer($narrativeRenderer)
+    {
+        $this->narrativeRenderer  = $narrativeRenderer;
+        return $this;
+    }
+
 }

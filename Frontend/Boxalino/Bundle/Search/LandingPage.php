@@ -9,6 +9,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bundle_Search_LandingPage
 
     public function _request()
     {
+        $this->setRequestWithRefererParams();
         $requestOrder = $this->getRequest()->getParam($this->getOrderParam());
         $defaultListingSort = $this->getDefaultListingSorting();
         if(is_null($requestOrder))

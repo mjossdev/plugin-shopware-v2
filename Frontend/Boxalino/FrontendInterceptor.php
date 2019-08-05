@@ -139,20 +139,6 @@ class Shopware_Plugins_Frontend_Boxalino_FrontendInterceptor
     }
 
     /**
-     * @return mixed|string
-     */
-    protected function getSearchTerm() {
-        $term = $this->Request()->get('sSearch', '');
-
-        $term = trim(strip_tags(htmlspecialchars_decode(stripslashes($term))));
-
-        // we have to strip the / otherwise broken urls would be created e.g. wrong pager urls
-        $term = str_replace('/', '', $term);
-
-        return $term;
-    }
-
-    /**
      * @param Enlight_Event_EventArgs $arguments
      * @return array
      */

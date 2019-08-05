@@ -1,16 +1,28 @@
 <?php
 
-class Shopware_Plugins_Frontend_Boxalino_Helper_SnippetHelper {
+/**
+ * Class Shopware_Plugins_Frontend_Boxalino_Helper_SnippetHelper
+ *
+ * @author Boxalino AG
+ */
+class Shopware_Plugins_Frontend_Boxalino_Helper_SnippetHelper
+{
 
     protected $namespace;
-    
+
     protected $shopID;
-    
+
     protected $localeID;
-    
+
     protected $snippets;
 
-    function __construct($namespace, $shopID = null, $localeID = null)
+    /**
+     * Shopware_Plugins_Frontend_Boxalino_Helper_SnippetHelper constructor.
+     * @param $namespace
+     * @param null $shopID
+     * @param null $localeID
+     */
+    public function __construct($namespace, $shopID = null, $localeID = null)
     {
         $this->namespace    = $namespace;
         $this->shopID       = $shopID;
@@ -18,7 +30,12 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_SnippetHelper {
         $this->snippets     = $this->getAllSnippets();
     }
 
-    public function add($name, $value) {
+    /**
+     * @param $name
+     * @param $value
+     */
+    public function add($name, $value)
+    {
         if (!isset($this->snippets[$name])) {
             $sql = "INSERT INTO s_core_snippets 
                 (namespace, shopID, localeID, name, value)
@@ -31,14 +48,22 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_SnippetHelper {
         return;
     }
 
-    public static function removeAll($namespace) {
+    /**
+     * @param string $namespace
+     */
+    public static function removeAll($namespace)
+    {
         $sql = "DELETE FROM s_core_snippets 
                 WHERE namespace=?";
 
         Shopware()->Db()->query($sql, array($namespace));
     }
-    
-    private function getAllSnippets() {
+
+    /**
+     * @return array
+     */
+    protected function getAllSnippets()
+    {
         $sql = "SELECT * FROM s_core_snippets 
                 WHERE namespace=? AND shopID=? AND localeID=?";
 

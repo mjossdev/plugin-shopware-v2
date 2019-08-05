@@ -20,5 +20,6 @@ interface Shopware_Plugins_Frontend_Boxalino_Bundle_Search_BoxalinoSearchInterfa
     public function setViewData($data=array());
     public function showFacets();
     public function getRequest();
+    public function getStoreSortings();
     public function init();
 }

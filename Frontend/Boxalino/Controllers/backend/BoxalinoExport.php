@@ -84,7 +84,7 @@ class Shopware_Controllers_Backend_BoxalinoExport extends Shopware_Controllers_B
     }
 
 
-    private function exportData($delta = false)
+    protected function exportData($delta = false)
     {
         $this->container->get('front')->Plugins()->ViewRenderer()->setNoRender();
 

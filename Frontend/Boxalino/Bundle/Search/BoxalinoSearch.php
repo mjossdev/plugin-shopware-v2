@@ -38,6 +38,20 @@ abstract class Shopware_Plugins_Frontend_Boxalino_Bundle_Search_BoxalinoSearch
         $this->setShowFacets($this->checkFacetsVisibilityOnCategory());
     }
 
+    /**
+     * Accessing the store configured sortings list
+     *
+     * @return mixed
+     */
+    public function getStoreSortings()
+    {
+        $service = $this->get('shopware_storefront.custom_sorting_service');
+        $sortingIds = $this->container->get('config')->get('searchSortings');
+        $sortingIds = array_filter(explode('|', $sortingIds));
+
+        return $service->getList($sortingIds, $this->getContext());
+    }
+
     public function getCriteria()
     {
         if(is_null($this->criteria))
@@ -48,6 +62,41 @@ abstract class Shopware_Plugins_Frontend_Boxalino_Bundle_Search_BoxalinoSearch
         }
 
         return $this->criteria;
+    }
+
+    /**
+     * @return Shopware_Plugins_Frontend_Boxalino_Bundle_Search_BoxalinoSearch
+     */
+    public function setRequestWithRefererParams()
+    {
+        $request = $this->getRequest();
+        if(empty($request))
+        {
+            return $this;
+        }
+
+        $address = $_SERVER['HTTP_REFERER'];
+        $basePath = $request->getBasePath();
+        $start = strpos($address, $basePath) + strlen($basePath);
+        $end = strpos($address, '?');
+        $length = $end ? $end - $start : strlen($address);
+        $pathInfo = substr($address, $start, $length);
+        $request->setPathInfo($pathInfo);
+        $params = explode('&', substr ($address,strpos($address, '?')+1, strlen($address)));
+        foreach ($params as $index => $param){
+            $keyValue = explode("=", $param);
+            $params[$keyValue[0]] = $keyValue[1];
+            unset($params[$index]);
+        }
+        foreach ($params as $key => $value) {
+            $request->setParam($key, $value);
+            if($key == 'p') {
+                $request->setParam('sPage', (int) $value);
+            }
+        }
+
+        $this->setRequest($request);
+        return $this;
     }
 
     public function getSort()
@@ -97,7 +146,7 @@ abstract class Shopware_Plugins_Frontend_Boxalino_Bundle_Search_BoxalinoSearch
 
     public function checkStreamIdOnCategory()
     {
-        return $this->dataHelper->findStreamIdByCategoryId($this->getRequest()->getParam('sCategory', null));;
+        return $this->dataHelper->findStreamIdByCategoryId($this->getRequest()->getParam('sCategory', null));
     }
 
     public function setShowFacets($value)
@@ -161,8 +210,8 @@ abstract class Shopware_Plugins_Frontend_Boxalino_Bundle_Search_BoxalinoSearch
 
     public function setViewData($data=array())
     {
-       $this->viewData = $data;
-       return $this;
+        $this->viewData = $data;
+        return $this;
     }
 
 }
