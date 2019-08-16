@@ -5,6 +5,10 @@ On every plugin update - please check the file and what needs to be tested on yo
 
 If you have any question, just contact us at support@boxalino.com
 
+
+
+
+
 ### v1.3.5 - 2019-07-10
 * *setup version* : 1.6.30
 * *post-deploy tests* : run <store>/backend/boxalino_export/check to see the contents of the boxalino_exports table
