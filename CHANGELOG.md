@@ -6,7 +6,14 @@ On every plugin update - please check the file and what needs to be tested on yo
 If you have any question, just contact us at support@boxalino.com
 
 
+### v1.4.0 - 2019-08-05
+* *setup version* : 1.6.31
+* *post-deploy tests* : test search, navigation, filters and narratives (product finder, etc)
 
+##### 1. Added Narrative Bundle component
+* *description* : All narrative logic exported in Bundle (prototype); a facet bundle has been created as well;
+* *commits* : 
+https://github.com/boxalino/plugin-shopware-v2/commit/1dd3c4468f1321d545e8f330e8211d65fd19a50d
 
 
 ### v1.3.5 - 2019-07-10
