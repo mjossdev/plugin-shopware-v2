@@ -210,7 +210,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxData {
             ->where('f_o.filterable = 1');
         $shop_id = $this->getShopId();
 
-        $useTranslation = $this->useTranslation($shop_id, 'propertyoption');
+        $useTranslation = $this->useTranslation('propertyoption');
         if($useTranslation) {
             $sql
                 ->joinLeft(array('t' => 's_core_translations'),
