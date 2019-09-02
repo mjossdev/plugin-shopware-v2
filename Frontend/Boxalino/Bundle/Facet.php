@@ -478,6 +478,14 @@ class Shopware_Plugins_Frontend_Boxalino_Bundle_Facet
                 $media
             );
         }
+
+        $systemOrder = $bxFacets->getFacetExtraInfo($fieldName, 'valueorderEnums') == 2 ? true : false;
+        if($systemOrder)
+        {
+            $positionSort = array_column($result, "position");
+            array_multisort($positionSort, SORT_ASC, $values);
+        }
+
         if($_REQUEST['dev_bx_debug'] == 'true'){
             $t1 = (microtime(true) - $t1) * 1000 ;
             $this->getSearchBundle()->addNotification("Search generateListItem for $fieldName: " . $t1 . "ms.");
