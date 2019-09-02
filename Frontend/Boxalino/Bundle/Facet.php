@@ -475,15 +475,18 @@ class Shopware_Plugins_Frontend_Boxalino_Bundle_Facet
                 (int)$r['id'],
                 $label,
                 (boolean)$selected,
-                $media
+                $media,
+                ['position' => $r['position']]
             );
         }
 
         $systemOrder = $bxFacets->getFacetExtraInfo($fieldName, 'valueorderEnums') == 2 ? true : false;
         if($systemOrder)
         {
-            $positionSort = array_column($result, "position");
-            array_multisort($positionSort, SORT_ASC, $values);
+            usort($values, function($a, $b){
+                if($a->getAttribute("position") == $b->getAttribute("position")){ return 0 ; }
+                return ($a->getAttribute("position") < $b->getAttribute("position")) ? -1 : 1;
+            });
         }
 
         if($_REQUEST['dev_bx_debug'] == 'true'){
