@@ -15,6 +15,14 @@ If you have any question, just contact us at support@boxalino.com
 * *commits* : 
 https://github.com/boxalino/plugin-shopware-v2/commit/1dd3c4468f1321d545e8f330e8211d65fd19a50d
 
+##### 2. Added Option to sort facet values by system definition
+* *description* : If configured in the Boxalino Intelligence Admin, the facet options will follow the rules defined in the Shopware store.
+* *commits* : 
+https://github.com/boxalino/plugin-shopware-v2/commit/d5d5577d2e819565d11017a1f0c72f26d4d9c582
+
+##### 3. BxClient update to show content on page as JSON
+* *description* : For developers - use &boxalino_response=true as an URL parameter to see the content returned by the SOLR index as JSON.
+
 
 ### v1.3.5 - 2019-07-10
 * *setup version* : 1.6.30

@@ -3,6 +3,24 @@ namespace com\boxalino\bxclient\v1;
 
 class BxClient
 {
+    CONST BOXALINO_DEBUG_REQUEST = "boxalino_request";
+    CONST BOXALINO_DEBUG_RESPONSE = "boxalino_response";
+    CONST BOXALINO_TECH_DEBUG = "dev_bx_disp";
+    CONST BOXALINO_TECH_SOCKET = "dev_bx_socket";
+    CONST BOXALINO_TECH_CHOICE = "dev_bx_choice";
+    CONST BOXALINO_TECH_TEST = "dev_bx_test_mode";
+    CONST BOXALINO_TECH_NOTIFICATIONS = "dev_bx_notifications";
+    CONST BOXALINO_TECH_BENCHMARK = "dev_bx_debug";
+
+    protected $nondebugableChoices = ['autocomplete'];
+
+    protected $debugContext = [
+        self::BOXALINO_TECH_BENCHMARK,
+        self::BOXALINO_DEBUG_REQUEST,
+        self::BOXALINO_DEBUG_RESPONSE,
+        self::BOXALINO_TECH_DEBUG
+    ];
+
     private $account;
     private $password;
     private $isDev;
@@ -262,8 +280,8 @@ class BxClient
     {
         list($sessionId, $profileId) = $this->getSessionAndProfile();
 
-        if (isset($this->requestMap['dev_bx_socket'])) {
-            $this->setSocket($this->requestMap['dev_bx_socket']);
+        if (isset($this->requestMap[self::BOXALINO_TECH_SOCKET])) {
+            $this->setSocket($this->requestMap[self::BOXALINO_TECH_SOCKET]);
         }
 
         if($this->socketHost != null) {
@@ -441,12 +459,12 @@ class BxClient
     private function p13nchoose($choiceRequest) {
         try {
             $choiceResponse = $this->getP13n($this->_timeout)->choose($choiceRequest);
-            if(isset($this->requestMap['dev_bx_disp']) && $this->requestMap['dev_bx_disp'] == 'true') {
+            if($this->debugContextAvailable()) {
                 $debug = true;
-                if (isset($this->requestMap['dev_bx_choice'])) {
+                if (isset($this->requestMap[self::BOXALINO_TECH_CHOICE])) {
                     $debug = false;
                     foreach ($choiceRequest->inquiries as $inquiry) {
-                        if ($inquiry->choiceId == $this->requestMap['dev_bx_choice']) {
+                        if ($inquiry->choiceId == $this->requestMap[self::BOXALINO_TECH_CHOICE]) {
                             $debug = true;
                             break;
                         }
@@ -627,7 +645,7 @@ class BxClient
     }
 
     public function getNotificationMode() {
-        return isset($this->requestMap['dev_bx_notifications']) && $this->requestMap['dev_bx_notifications'] == 'true';
+        return isset($this->requestMap[self::BOXALINO_TECH_NOTIFICATIONS]) && $this->requestMap[self::BOXALINO_TECH_NOTIFICATIONS] == 'true';
     }
 
     public function setAutocompleteRequest($request) {
@@ -740,7 +758,7 @@ class BxClient
         return $final;
     }
 
-    public function finalNotificationCheck($force=false, $requestMapKey = 'dev_bx_notifications')
+    public function finalNotificationCheck($force=false, $requestMapKey = self::BOXALINO_TECH_NOTIFICATIONS)
     {
         if ($force || (isset($this->requestMap[$requestMapKey]) && $this->requestMap[$requestMapKey] == 'true')) {
             $value = "<pre><h1>Notifications</h1>" .  var_export($this->notifications, true) . "</pre>";
@@ -752,24 +770,131 @@ class BxClient
         }
     }
 
+    protected function debugContextAvailable()
+    {
+        $context = array_intersect(array_keys($this->requestMap), $this->debugContext);
+        if(empty($context))
+        {
+            return false;
+        }
+
+        foreach($context as $param)
+        {
+            if($this->requestMap[$param] == 'true')
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     protected function debug($request, $response, $type, $checkNotifications=true, $checkDebug=true)
     {
         $request = $this->excludeCredentials($request);
-        if(isset($this->requestMap['dev_bx_disp']) && $this->requestMap['dev_bx_disp'] == 'true' && $checkDebug) {
+        if($this->debugContextAvailable() && $checkDebug)
+        {
             ini_set('xdebug.var_display_max_children', -1);
             ini_set('xdebug.var_display_max_data', -1);
             ini_set('xdebug.var_display_max_depth', -1);
-            $this->debugOutput = "<pre><h1>Request {$type}</h1>" . var_export($request, true) .  "<br><h1>Choice Response</h1>" . var_export($response, true) . "</pre>";
+            $this->debugOutput = $this->preparedebugOutput($request, $response, $type);
             if(!$this->debugOutputActive) {
                 echo $this->debugOutput;
                 exit;
             }
         }
 
-        if(isset($this->requestMap['dev_bx_debug']) && $this->requestMap['dev_bx_debug'] == 'true' && $checkNotifications) {
+        if(isset($this->requestMap[self::BOXALINO_TECH_BENCHMARK]) && $this->requestMap[self::BOXALINO_TECH_BENCHMARK] == 'true' && $checkNotifications) {
             $this->addNotification('bxRequest', $request);
             $this->addNotification('bxResponse', $response);
         }
+    }
+
+    protected function prepareDebugOutput($request, $response, $type)
+    {
+        if(isset($this->requestMap[self::BOXALINO_TECH_DEBUG]) && $this->requestMap[self::BOXALINO_TECH_DEBUG] == 'true')
+        {
+            if(isset($this->requestMap['format']))
+            {
+                $debugOutput = [
+                    json_encode($request, true),
+                    json_encode($response, true)
+                ];
+
+                return implode("<br><br><br><br>", $debugOutput);
+            }
+            return "<pre><h1>Request {$type}</h1>" . var_export($request, true) .  "<br><h1>Choice Response</h1>" . var_export($response, true) . "</pre>";
+        }
+
+        if(isset($this->requestMap[self::BOXALINO_DEBUG_REQUEST]) && $this->requestMap[self::BOXALINO_DEBUG_REQUEST] == 'true')
+        {
+            return json_encode($request, true);
+        }
+
+        if(isset($this->requestMap[self::BOXALINO_DEBUG_RESPONSE]) && $this->requestMap[self::BOXALINO_DEBUG_RESPONSE] == 'true')
+        {
+            $logs = [];
+            $bxChooseResponse = new \com\boxalino\bxclient\v1\BxChooseResponse($response, $this->chooseRequests);
+            $logs[] = 'REQUEST ID - ' . $this->getRequestId() ;
+            $logs[] = 'SESSION ID : PROFILE ID = ' . implode(" : ", $this->getSessionAndProfile()) . "<br><br>";
+            foreach($this->chooseRequests as $inquiredRequest)
+            {
+                $inquiredChoice = $inquiredRequest->getChoiceId();
+                if(in_array($inquiredChoice, $this->nondebugableChoices))
+                {
+                    continue;
+                }
+                $inquiredFields = $inquiredRequest->getReturnFields();
+                $matchingProducts = $bxChooseResponse->getHitFieldValues($inquiredFields, $inquiredChoice, true);
+
+                $logs[]="==============<i>Debug of Boxalino Response on <b>{$inquiredChoice}</b></i>===================";
+                $logs[]= "COUNT: {$bxChooseResponse->getTotalHitCount($inquiredChoice)}";
+                $logs[]="======<i><b>PRODUCTS</b></i>=====";
+                foreach($matchingProducts as $id => $fieldValueMap) {
+                    foreach($fieldValueMap as $fieldName => $fieldValues) {
+                        $logs[] = " $fieldName: " . implode(',', $fieldValues) . "";
+                    }
+                    $logs[] = "</div>";
+                }
+                $logs[] = "</div>\n";
+
+                if(in_array($inquiredChoice, ['search', 'navigation']))
+                {
+                    $logs[]="=====<i><b>FACETS</b></i>====";
+                    $bxFacets = $bxChooseResponse->getFacets();
+                    $fieldNames = $bxFacets->getFieldNames();
+                    foreach($fieldNames as $facetField)
+                    {
+                        if($facetField == 'discountedPrice')
+                        {
+                            $logs[] = "<b>{$facetField}</b>";
+                            foreach($bxFacets->getPriceRanges() as $fieldValue) {
+                                $log = "value - {$bxFacets->getPriceValueParameterValue($fieldValue)}; label - {$bxFacets->getPriceValueLabel($fieldValue)}; products count - {$bxFacets->getPriceValueCount($fieldValue)}";
+                                if($bxFacets->isPriceValueSelected($fieldValue)){$log .= " <b>is selected</b>";}
+                                $logs[] = $log;
+                            }
+                            $logs[] = "<br>";
+                            continue;
+                        }
+                        $logs[] = "facet - <b>{$facetField}</b>";
+                        foreach($bxFacets->getFacetValues($facetField) as $fieldValue) {
+                            $log = "value: <i>{$bxFacets->getFacetValueParameterValue($facetField, $fieldValue)}</i>; label - <i>{$bxFacets->getFacetValueLabel($facetField, $fieldValue)}</i>; count - <i>{$bxFacets->getFacetValueCount($facetField, $fieldValue)}</i>";
+                            if($bxFacets->isFacetValueSelected($facetField, $fieldValue))
+                            {
+                                $log.= " <b>is selected</b>";
+                            }
+                            $logs[] = $log;
+                        }
+                        $extraInfo = json_encode($bxFacets->getAllFacetExtraInfo($facetField), true);
+                        $logs[] = "extra info - {$extraInfo}";
+                        $logs[] = "<br>";
+                    }
+                }
+            }
+
+            return implode("<br>", $logs);
+        }
+
     }
 
     protected function excludeCredentials($request)
@@ -825,4 +950,5 @@ class BxClient
 
         return "undefined";
     }
+
 }
