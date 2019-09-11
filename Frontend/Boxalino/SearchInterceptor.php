@@ -866,7 +866,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             'ajaxCountUrlParams' =>  [],
             'sSearchResults' => [
                 'sArticles' => $articles,
-                'sArticesCount' => $totalHitCount
+                'sArticlesCount' => $totalHitCount
             ],
             'productBoxLayout' => $config->get('searchProductBoxLayout'),
             'bxHasOtherItemTypes' => false,
