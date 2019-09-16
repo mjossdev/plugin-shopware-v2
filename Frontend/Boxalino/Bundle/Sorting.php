@@ -46,6 +46,18 @@ class Shopware_Plugins_Frontend_Boxalino_Bundle_Sorting
             $sort = $this->getDefaultBoxalinoSort();
         }
 
+        if(!$sort instanceof Shopware\Bundle\SearchBundle\Sorting\Sorting)
+        {
+            Shopware()->Container()->get('pluginlogger')->error("Boxalino Sorting: The required sort class  "
+                . get_class($sort) . " /  " . get_parent_class($sort)
+                . " is not implementing the required Shopware interface Shopware\Bundle\SearchBundle\SortingInterface"
+            );
+            if ($this->useBoxalinoSort)
+            {
+                $sort = $this->getDefaultBoxalinoSort();
+            }
+        }
+
         if($sort instanceof Shopware\Bundle\SearchBundle\Sorting\Sorting)
         {
             $sort = $this->getBoxalinoSortType(get_class($sort), $sort);
@@ -119,15 +131,25 @@ class Shopware_Plugins_Frontend_Boxalino_Bundle_Sorting
     protected function getBoxalinoSortType($shpwSortClass, $default = null)
     {
         $type = array_pop(explode("\\", $shpwSortClass));
-        $boxalinoSortDI = "Shopware_Plugins_Frontend_Boxalino_Bundle_Sorting_" . $type;
-        if(class_exists($boxalinoSortDI))
+        $customDIsources = explode(",", Shopware()->Config()->get('navigation_sorting_class_suffix'));
+        $sortingDIsources = array_filter(array_merge(["Shopware_Plugins_Frontend_Boxalino_Bundle_Sorting_" . $type], $customDIsources));
+
+        foreach($sortingDIsources as $boxalinoSortDI)
         {
-            $sortingDI = new $boxalinoSortDI();
-            if(!is_null($default))
+            if(class_exists($boxalinoSortDI))
             {
-                $sortingDI->setDirection($default->getDirection());
+                $sortingDI = new $boxalinoSortDI();
+                if(!$sortingDI instanceof Shopware_Plugins_Frontend_Boxalino_Bundle_Sorting_BoxalinoSortingInterface)
+                {
+                    continue;
+                }
+
+                if(!is_null($default))
+                {
+                    $sortingDI->setDirection($default->getDirection());
+                }
+                return $sortingDI;
             }
-            return $sortingDI;
         }
 
         if(is_null($default))

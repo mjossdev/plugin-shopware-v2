@@ -314,6 +314,11 @@
     "description": "If active, the cache will not be disabled."
   },
   {
+    "name": "navigation_sorting_class_suffix",
+    "label": "Navigation - Sorting - Custom Classes",
+    "description": "Optional: in case you add extra sorting options, provide a plugin/path to load them from. ex: in Boxalino is Shopware_Plugins_Frontend_Boxalino_Bundle_Sorting_."
+  },
+  {
     "name": "navigation_narrative_enabled",
     "label": "Navigation - Enable Narrative Call",
     "type": "select",

@@ -713,6 +713,12 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             return $this->Controller()->redirect($location);
         }
 
+        if(empty($term))
+        {
+            Shopware()->Container()->get('pluginlogger')->warning("Boxalino Search: Invalid request; the search term must be provided. Trigger fallback.");
+            throw new \Exception("Boxalino Search: Fallback trigger due to missing search term on search request");
+        }
+
         $templateBlogSearchProperties = array();
         $config = $this->get('config');
         $searchBundle = new Shopware_Plugins_Frontend_Boxalino_Bundle_Search($this->Helper(), 'search');
