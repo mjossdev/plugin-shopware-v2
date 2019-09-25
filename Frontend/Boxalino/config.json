@@ -769,6 +769,23 @@
     "description": "Optional: default value is \"noresults\" and should normally not be changed."
   },
   {
+    "name": "allow_duplicate_on_pdp",
+    "label": "PDP - Recommendations - Allow product duplication ",
+    "type": "select",
+    "store": [
+      [
+        0,
+        "No"
+      ],
+      [
+        1,
+        "Yes"
+      ]
+    ],
+    "value": 0,
+    "description": "No by default."
+  },
+  {
     "name": "export",
     "label": "Exporter - Export",
     "type": "select",

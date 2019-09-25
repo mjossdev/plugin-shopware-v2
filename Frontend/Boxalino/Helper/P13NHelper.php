@@ -1047,11 +1047,12 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
      * @param bool $isBlog
      * @param array $requestContextParams
      * @param bool $isPortfolio
+     * @param bool $allowDuplicates
      * @return array|mixed
      * @throws Exception
      */
     public function getRecommendation($choiceId, $max = 5, $min = 5, $offset = 0, $context = array(), $type = '',
-                                      $execute = true, $excludes = array(), $isBlog = false, $requestContextParams = array(), $isPortfolio = false)
+                                      $execute = true, $excludes = array(), $isBlog = false, $requestContextParams = array(), $isPortfolio = false, $allowDuplicates = false)
     {
         if(!$execute){
             if ($max >= 0) {
@@ -1121,15 +1122,27 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
                 if($isPortfolio) {
                     $bxRequest->setHitsGroupsAsHits(true);
                 }
-                self::$bxClient->addRequest($bxRequest);
+                if($allowDuplicates)
+                {
+                    self::$bxClient->addBundleRequest([$bxRequest]);
+                } else {
+                    self::$bxClient->addRequest($bxRequest);
+                }
             }
             return array();
         }
 
-        $values = $isBlog ? $this->getEntitiesIds('blog') : $this->convertToFieldArray(
+        if($allowDuplicates)
+        {
+            return $this->convertToFieldArray(
+                $this->getResponse(true)->getHitFieldValues(['products_ordernumber'], $choiceId, true, 0),
+                'products_ordernumber');
+        }
+
+        return  $isBlog ? $this->getEntitiesIds('blog') : $this->convertToFieldArray(
             $this->getResponse()->getHitFieldValues(['products_ordernumber'], $choiceId, true, 0),
             'products_ordernumber');
-        return $values;
+
     }
 
     /**

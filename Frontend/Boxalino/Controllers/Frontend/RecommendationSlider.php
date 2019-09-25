@@ -78,20 +78,21 @@ class Shopware_Controllers_Frontend_RecommendationSlider extends Enlight_Control
         $helper = Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper::instance();
         $helper->setRequest($this->Request());
 
+        $allowDuplicatesOnPDPRecommendations = (bool) $this->config->get("boxalino_allow_duplicate_on_pdp");
         $contextParams = $this->prepareContextParams($sArticles);
         foreach ($this->_productRecommendations as $var_name => $recommendation) {
             if ($this->config->get("{$recommendation}_enabled")) {
                 $choiceId = $this->config->get("{$recommendation}_name");
                 $max = $this->config->get("{$recommendation}_max");
                 $min = $this->config->get("{$recommendation}_min");
-                $helper->getRecommendation($choiceId, $max, $min, 0, $id, 'product', false, [], false, $contextParams);
+                $helper->getRecommendation($choiceId, $max, $min, 0, $id, 'product', false, [], false, $contextParams, false, $allowDuplicatesOnPDPRecommendations);
                 $choiceIds[$recommendation] = $choiceId;
             }
         }
 
         foreach ($this->_productRecommendations as $var_name => $recommendation) {
             if (isset($choiceIds[$recommendation])) {
-                $hitIds = $helper->getRecommendation($choiceIds[$recommendation]);
+                $hitIds = $helper->getRecommendation($choiceIds[$recommendation], 0, 0, 0, 0, null, true, [], false, [], false, $allowDuplicatesOnPDPRecommendations);
                 $sArticles[$var_name] = $helper->getLocalArticles($hitIds);
             }
         }
