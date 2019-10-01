@@ -360,6 +360,8 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
     protected function createDatabase()
     {
         $db = Shopware()->Db();
+        $db->query('DROP INDEX boxalino_exports_account_type_indx ON boxalino_exports;');
+
         $db->query(
             'CREATE TABLE IF NOT EXISTS ' . $db->quoteIdentifier("boxalino_exports")
             . '('
@@ -391,6 +393,9 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
         {
             $db->query('DROP TABLE IF EXISTS ' . $db->quoteIdentifier($table));
         }
+
+        $db->query('DELETE FROM s_crontab WHERE action="BoxalinoExportCron";');
+        $db->query('DELETE FROM s_crontab WHERE action="BoxalinoExportCronDelta";');
     }
 
     private function registerEvents() {
