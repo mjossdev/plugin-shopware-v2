@@ -92,6 +92,8 @@ class Shopware_Plugins_Frontend_Boxalino_Bundle_Search_Parametrized
             } else {
                 $filter['products_stream_id'] = [$this->stream];
             }
+
+            $filter['stream'] = true;
         }
 
         if(empty($this->viewData))
