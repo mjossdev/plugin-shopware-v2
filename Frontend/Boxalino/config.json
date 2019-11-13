@@ -13,7 +13,7 @@
         "Enable"
       ]
     ],
-    "value": 1,
+    "value": 0,
     "description": "Is the overall Boxalino plugin active (global switch)?"
   },
   {
@@ -158,7 +158,7 @@
         "Enable"
       ]
     ],
-    "value": 1,
+    "value": 0,
     "description": "Is Boxalino search active?"
   },
   {
@@ -231,7 +231,7 @@
         "Enable"
       ]
     ],
-    "value": 1,
+    "value": 0,
     "description": "Is Boxalino navigation active?"
   },
   {
@@ -355,7 +355,7 @@
         "Enable"
       ]
     ],
-    "value": 1,
+    "value": 0,
     "description": "Is Boxalino search as you type (autocomplete) active?"
   },
   {
@@ -497,7 +497,7 @@
         "Enable"
       ]
     ],
-    "value": 1,
+    "value": 0,
     "description": "Enable widget for recommendation on basket page."
   },
   {
@@ -553,7 +553,7 @@
         "Enable"
       ]
     ],
-    "value": 1,
+    "value": 0,
     "description": "Enable widget for accessories recommendation on product page."
   },
   {
@@ -592,7 +592,7 @@
         "Enable"
       ]
     ],
-    "value": 1,
+    "value": 0,
     "description": "Enable widget for similar recommendation on product page."
   },
   {
@@ -631,7 +631,7 @@
         "Enable"
       ]
     ],
-    "value": 1,
+    "value": 0,
     "description": "Enable widget for \"customers also bought\" recommendation on product page."
   },
   {
@@ -687,7 +687,7 @@
         "Enable"
       ]
     ],
-    "value": 1,
+    "value": 0,
     "description": "Enable widget for \"customers also viewed\" recommendation on product page."
   },
   {
@@ -743,7 +743,7 @@
         "Enable"
       ]
     ],
-    "value": 1,
+    "value": 0,
     "description": "Enable recommendation for no results on the search page."
   },
   {
@@ -799,7 +799,7 @@
         "Enable"
       ]
     ],
-    "value": 1,
+    "value": 0,
     "description": "Enable exporter."
   },
   {
