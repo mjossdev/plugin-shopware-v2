@@ -51,7 +51,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
     }
 
     public function getVersion() {
-        return '1.6.33';
+        return '1.6.34';
     }
 
     public function getInfo() {
@@ -274,6 +274,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
     public function addCustomPluginEvents()
     {
         $this->subscribeEvent("Enlight_Bootstrap_InitResource_boxalino_intelligence.service_exporter", "getExporterService");
+        $this->subscribeEvent("Enlight_Bootstrap_InitResource_boxalino_intelligence.service_narrative_renderer", "getNarrativeRenderer");
     }
 
     public function getExporterService()
@@ -360,8 +361,6 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
     protected function createDatabase()
     {
         $db = Shopware()->Db();
-        $db->query('DROP INDEX boxalino_exports_account_type_indx ON boxalino_exports;');
-
         $db->query(
             'CREATE TABLE IF NOT EXISTS ' . $db->quoteIdentifier("boxalino_exports")
             . '('
@@ -389,6 +388,11 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
         }
 
         $db = Shopware()->Db();
+        if(version_compare($version, '1.6.23', '>'))
+        {
+            $db->query('DROP INDEX boxalino_exports_account_type_indx ON boxalino_exports;');
+        }
+
         foreach($tableNames as $table)
         {
             $db->query('DROP TABLE IF EXISTS ' . $db->quoteIdentifier($table));

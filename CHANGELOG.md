@@ -5,6 +5,22 @@ On every plugin update - please check the file and what needs to be tested on yo
 
 If you have any question, just contact us at support@boxalino.com
 
+### v1.4.1 - 2019-12-11
+* *setup version* : 1.6.34
+* *post-deploy tests* : test navigation sorting options, requests that require HTTPS
+
+##### 1. Disabled all plugin features by default
+* *commits* : 
+https://github.com/boxalino/plugin-shopware-v2/commit/e1d24c2213ae03c687a599a98efe06cbcea1fd81
+
+##### 2. Extended the logic for checking if your server is secure
+* *commits* : 
+https://github.com/boxalino/plugin-shopware-v2/commit/1e215a69270be36c9bbff0308a8ab1577b774f95
+
+##### 3. Allowing duplicate products on PDP widgets
+* *description* : On the PDP view, if configured, the products returned can duplicate among different type of sections (complimentary, similar, related)
+* *commits* : https://github.com/boxalino/plugin-shopware-v2/commit/880115252b68d53763e17200658548647148826f
+
 
 ### v1.4.0 - 2019-08-05
 * *setup version* : 1.6.31
