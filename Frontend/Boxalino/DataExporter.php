@@ -1542,6 +1542,19 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
         $customer_properties = array_flip($customer_attributes);
         $header = true;
         $firstShop = true;
+
+        $latestAddressSQL = $db->select()
+            ->from(array('s_user_billingaddress'), array("max_id"=> new Zend_Db_Expr("MAX(id)")))
+            ->group("userID");
+
+        $latestOrderSQL = $db->select()
+            ->from(["latest_address" => new Zend_Db_Expr("(" . $latestAddressSQL->__toString() .")")], ["*"])
+            ->join(
+                array('s_user_billingaddress'),
+                $this->qi('s_user_billingaddress.id') . ' = ' . $this->qi('latest_address.max_id'),
+                array("*")
+            );
+
         foreach ($this->_config->getAccountLanguages($account) as $shop_id => $language) {
             $data = array();
             $countMax = 1000000;
@@ -1555,7 +1568,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
                         $customer_properties
                     )
                     ->joinLeft(
-                        array('s_user_billingaddress'),
+                        array('s_user_billingaddress' => new Zend_Db_Expr("(" . $latestOrderSQL->__toString() .")") ),
                         $this->qi('s_user_billingaddress.userID') . ' = ' . $this->qi('s_user.id'),
                         array()
                     )
