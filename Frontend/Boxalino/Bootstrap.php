@@ -364,10 +364,10 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
         $db->query(
             'CREATE TABLE IF NOT EXISTS ' . $db->quoteIdentifier("boxalino_exports")
             . '('
-                . $db->quoteIdentifier('account') . ' VARCHAR(128) NOT NULL, '
-                . $db->quoteIdentifier('type') . ' VARCHAR(128) NOT NULL, '
-                . $db->quoteIdentifier('export_date') . ' DATETIME, '
-                . $db->quoteIdentifier('status') . ' VARCHAR(128) NOT NULL '
+            . $db->quoteIdentifier('account') . ' VARCHAR(128) NOT NULL, '
+            . $db->quoteIdentifier('type') . ' VARCHAR(128) NOT NULL, '
+            . $db->quoteIdentifier('export_date') . ' DATETIME, '
+            . $db->quoteIdentifier('status') . ' VARCHAR(128) NOT NULL '
             .')'
         );
 
@@ -388,7 +388,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
         }
 
         $db = Shopware()->Db();
-        if(version_compare($version, '1.6.23', '>'))
+        if(version_compare($version, '1.6.29', '>'))
         {
             $db->query('DROP INDEX boxalino_exports_account_type_indx ON boxalino_exports;');
         }
@@ -634,8 +634,6 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
             ));
         }
     }
-
-
 
     /**
      * Banner Emotion

@@ -390,7 +390,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         }
 
         $catId = $request->getParam('sCategory');
-        $viewData['sCategoryContent']['productBoxLayout'] = $catId ? Shopware()->Modules()->Categories()->getProductBoxLayout($catId) : $this->get('searchProductBoxLayout');
+        $viewData['sCategoryContent']['productBoxLayout'] = $catId ? Shopware()->Modules()->Categories()->getProductBoxLayout($catId) : $this->get('config')->get('searchProductBoxLayout');
         if ($request->has('productBoxLayout')) {
             $viewData['sCategoryContent']['productBoxLayout'] = $request->get('productBoxLayout');
         }

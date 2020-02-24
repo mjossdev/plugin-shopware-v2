@@ -964,7 +964,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
             foreach ($hitIds as $index => $id){
                 $blog_ids[$index] = str_replace('blog_', '', $id);
             }
-            $router =  Shopware()->Router();
+            $router =  Shopware()->Front()->Router();
             if($_REQUEST['dev_bx_debug'] == 'true'){
                 $t4 = microtime(true);
             }
