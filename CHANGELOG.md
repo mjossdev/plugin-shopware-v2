@@ -5,6 +5,17 @@ On every plugin update - please check the file and what needs to be tested on yo
 
 If you have any question, just contact us at support@boxalino.com
 
+### v1.4.2 - 2020-02-25
+
+##### 1. Fixes for upgrade from v1.6.29
+* *commits* : 
+https://github.com/boxalino/plugin-shopware-v2/commit/c9202d59bffe1d17cfaf91391158c75d0e6a7a22
+
+##### 2. Update on customer data export 
+* *commits* : 
+https://github.com/boxalino/plugin-shopware-v2/commit/4df7075aae7d4ee654b1ade9c27cbf66af2e20eb
+
+
 ### v1.4.1 - 2019-12-11
 * *setup version* : 1.6.34
 * *post-deploy tests* : test navigation sorting options, requests that require HTTPS
