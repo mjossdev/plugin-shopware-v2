@@ -8,12 +8,13 @@ If you have any question, just contact us at support@boxalino.com
 ### v1.4.2 - 2020-02-25
 
 ##### 1. Fixes for upgrade from v1.6.29
-* *commits* : 
-https://github.com/boxalino/plugin-shopware-v2/commit/c9202d59bffe1d17cfaf91391158c75d0e6a7a22
+* *commits* : https://github.com/boxalino/plugin-shopware-v2/commit/c9202d59bffe1d17cfaf91391158c75d0e6a7a22
 
 ##### 2. Update on customer data export 
-* *commits* : 
-https://github.com/boxalino/plugin-shopware-v2/commit/4df7075aae7d4ee654b1ade9c27cbf66af2e20eb
+* *commits* : https://github.com/boxalino/plugin-shopware-v2/commit/4df7075aae7d4ee654b1ade9c27cbf66af2e20eb
+
+##### 3. Fixes for autocomplete blog SEO URL
+* *commits* : https://github.com/boxalino/plugin-shopware-v2/commit/5194b1653f35b46152996bb10274effa5e59b411
 
 
 ### v1.4.1 - 2019-12-11
@@ -21,12 +22,10 @@ https://github.com/boxalino/plugin-shopware-v2/commit/4df7075aae7d4ee654b1ade9c2
 * *post-deploy tests* : test navigation sorting options, requests that require HTTPS
 
 ##### 1. Disabled all plugin features by default
-* *commits* : 
-https://github.com/boxalino/plugin-shopware-v2/commit/e1d24c2213ae03c687a599a98efe06cbcea1fd81
+* *commits* : https://github.com/boxalino/plugin-shopware-v2/commit/e1d24c2213ae03c687a599a98efe06cbcea1fd81
 
 ##### 2. Extended the logic for checking if your server is secure
-* *commits* : 
-https://github.com/boxalino/plugin-shopware-v2/commit/1e215a69270be36c9bbff0308a8ab1577b774f95
+* *commits* : https://github.com/boxalino/plugin-shopware-v2/commit/1e215a69270be36c9bbff0308a8ab1577b774f95
 
 ##### 3. Allowing duplicate products on PDP widgets
 * *description* : On the PDP view, if configured, the products returned can duplicate among different type of sections (complimentary, similar, related)
