@@ -978,7 +978,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
                     'id' => $blog['id'],
                     'title' => $blog['title'],
                     'link' => $router->assemble(array(
-                        'sViewport' => 'blog', 'action' => 'detail', 'blogArticle' => $blog['id']
+                        'sViewport' => 'blog', 'action' => 'detail', 'blogArticle' => $blog['id'], 'sCategory' => $blog['categoryId']
                     ))
                 );
             }, $blogEntries);
