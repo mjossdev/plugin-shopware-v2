@@ -1400,11 +1400,12 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
 
         $attributes = $db->fetchAll($select);
         foreach ($attributes as $attribute) {
-            if ($attribute['COLUMN_NAME'] == 'userID' || $attribute['COLUMN_NAME'] == 'id') {
-                if ($attribute['TABLE_NAME'] == 's_user_billingaddress') {
-                    continue;
-                }
+            if(in_array($attribute['COLUMN_NAME'], ["userID", "id", "firstname", "lastname", "salutation", "title"])
+                && $attribute['TABLE_NAME'] == 's_user_billingaddress'
+            ){
+                continue;
             }
+
             $key = "{$attribute['TABLE_NAME']}.{$attribute['COLUMN_NAME']}";
             $all_attributes[$key] = $attribute['COLUMN_NAME'];
         }
@@ -1538,7 +1539,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
         $files = $this->getFiles();
         $this->log->debug("start collecting customers for account {$account}");
         $db = $this->db;
-        $customer_attributes = $this->getCustomerAttributes($account);
+        $customer_attributes = $this->getCustomerAttributes();
         $customer_properties = array_flip($customer_attributes);
         $header = true;
         $firstShop = true;
