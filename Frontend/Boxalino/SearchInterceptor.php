@@ -154,6 +154,8 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             'showListing' => true,
             'shortParameters' => $this->get('query_alias_mapper')->getQueryAliases(),
             'bx_request_id' => $this->Helper()->getRequestId(),
+            'bx_request_uuid' => $this->Helper()->getRequestUuid(),
+            'bx_request_groupby' => $this->Helper()->getRequestGroupBy(),
             'baseUrl' => $request->getBaseUrl() . $request->getPathInfo(),
         );
         $view->assign($templateProperties);
@@ -169,9 +171,6 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         if (!$this->Config()->get('boxalino_active') || !$this->Config()->get('boxalino_search_enabled') || !$this->Config()->get('boxalino_autocomplete_enabled')) {
             return null;
         }
-        if($_REQUEST['dev_bx_debug'] == 'true'){
-            $t1 = microtime(true);
-        }
         $this->init($arguments);
         Shopware()->Plugins()->Controller()->Json()->setPadding();
 
@@ -180,22 +179,11 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             return;
         }
         $with_blog = $this->Config()->get('boxalino_blog_search_enabled');
-        if($_REQUEST['dev_bx_debug'] == 'true'){
-            $this->Helper()->addNotification("Ajax Search pre autocomplete took: " . (microtime(true) - $t1) * 1000 . "ms");
-        }
         $templateProperties = $this->Helper()->autocomplete($term, $with_blog);
-        if($_REQUEST['dev_bx_debug'] == 'true'){
-            $t2 = microtime(true);
-        }
         $this->View()->loadTemplate('frontend/search/ajax.tpl');
         $this->View()->addTemplateDir($this->Bootstrap()->Path() . 'Views/emotion/');
         $this->View()->extendsTemplate('frontend/plugins/boxalino/ajax.tpl');
         $this->View()->assign($templateProperties);
-        if($_REQUEST['dev_bx_debug'] == 'true'){
-            $this->Helper()->addNotification("Ajax Search post autocomplete took: " . (microtime(true) - $t2) * 1000 . "ms");
-            $this->Helper()->addNotification("Ajax Search took in total: " . (microtime(true) - $t1) * 1000 . "ms");
-            $this->Helper()->callNotification(true);
-        }
 
         return false;
     }
@@ -280,6 +268,8 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                     'pageIndex' => $this->Request()->getParam('sPage'),
                     'productBoxLayout' => $boxLayout,
                     'sCategoryCurrent' => $catId,
+                    'bx_request_uuid' => $this->Helper()->getRequestUuid(),
+                    'bx_request_groupby' => $this->Helper()->getRequestGroupBy(),
                 ]);
                 $body['listing'] = '<div style="display:none;">'.$this->Helper()->getRequestId().'</div>' . $this->View()->fetch('frontend/listing/listing_ajax.tpl');
                 $sPerPage = $this->Request()->getParam('sPerPage');
@@ -317,10 +307,6 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
      * @throws Exception
      */
     public function listing(Enlight_Event_EventArgs $arguments) {
-        if($_REQUEST['dev_bx_debug'] == 'true'){
-            $start = microtime(true);
-            $this->Helper()->addNotification("Navigation start: " . $start);
-        }
         if (!$this->Config()->get('boxalino_active') || !$this->Config()->get('boxalino_navigation_enabled'))
         {
             return null;
@@ -365,11 +351,6 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             $this->Controller()->redirect($redirectLink);
         }
 
-        if($_REQUEST['dev_bx_debug'] == 'true'){
-            $afterStart = microtime(true);
-            $this->Helper()->addNotification("Navigation after response: " . $afterStart);
-        }
-
         $facets = [];
         $showFacets = $searchBundle->getSearchBundle()->showFacets();
         if ($showFacets) {
@@ -412,6 +393,8 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             'showListing' => true,
             'shortParameters' => $this->get('query_alias_mapper')->getQueryAliases(),
             'bx_request_id' => $this->Helper()->getRequestId(),
+            'bx_request_uuid' => $this->Helper()->getRequestUuid(),
+            'bx_request_group_by' => $this->Helper()->getRequestGroupBy(),
             'isNarrative' => $this->isNarrative
         );
         $narrativeTemplateData = [];
@@ -421,12 +404,6 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
 
         $templateProperties = array_merge($viewData, $templateProperties, $narrativeTemplateData);
         $this->View()->assign($templateProperties);
-
-        if($_REQUEST['dev_bx_debug'] == 'true'){
-            $afterStart = microtime(true);
-            $this->Helper()->addNotification("Search after response took in total: " . (microtime(true) - $afterStart) * 1000 . "ms.");
-            $this->Helper()->addNotification("Navigation time took in total: " . (microtime(true) - $start) * 1000 . "ms.");
-        }
 
         return true;
     }
@@ -686,6 +663,8 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         $articles = $this->BxData()->getLocalArticles($ids);
         $blog['bxProductRecommendation'] = $articles;
         $blog['bxRecTitle'] = $this->Helper()->getSearchResultTitle($choiceId);
+        $blog['bx_request_uuid'] = $this->Helper()->getRequestUuid($choiceId);
+        $blog['bx_request_groupby'] = $this->Helper()->getRequestGroupBy($choiceId);
         $this->View()->addTemplateDir($this->Bootstrap()->Path() . 'Views/emotion/');
         $this->View()->extendsTemplate('frontend/plugins/boxalino/blog/detail.tpl');
         $this->View()->assign($blog);
@@ -698,11 +677,6 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
      */
     public function search(Enlight_Event_EventArgs $arguments)
     {
-        $debug = $_REQUEST['dev_bx_debug'] == 'true';
-        if($debug){
-            $start = microtime(true);
-            $this->Helper()->addNotification("Search start: " . $start);
-        }
         if (!$this->Config()->get('boxalino_active') || !$this->Config()->get('boxalino_search_enabled')) {
             return null;
         }
@@ -741,10 +715,6 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             throw new \Exception($exception);
         }
 
-        if($debug){
-            $this->Helper()->addNotification("Search before response took in total: " . (microtime(true)- $start) * 1000 . "ms.");
-        }
-
         $redirectLink = $searchBundle->getRedirectLink();
         if(!empty($redirectLink) && $this->Request()->getParam('bxActiveTab') !== 'blog') {
             $this->Controller()->redirect($redirectLink);
@@ -757,12 +727,6 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             if (!empty($location)) {
                 return $this->Controller()->redirect($location);
             }
-        }
-
-        if($debug){
-            $afterStart = microtime(true);
-            $this->Helper()->addNotification("Search after response: " . $afterStart);
-            $beforeUpdate = microtime(true);
         }
 
         $corrected = false;
@@ -794,20 +758,8 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                     $term = $this->Helper()->getCorrectedQuery();
                 }
                 $ids = $this->Helper()->getHitFieldValues(self::BOXALINO_PRODUCT_VARIANT_ATTRIBUTE);
-                if ($debug) {
-                    $localTime = microtime(true);
-                }
                 $articles = $this->BxData()->getLocalArticles($ids);
-                if ($debug) {
-                    $this->Helper()->addNotification("Search getLocalArticles took: " . (microtime(true) - $localTime) * 1000 . "ms");
-                    $this->Helper()->addNotification("Search beforeUpdateFacets took: " . (microtime(true) - $beforeUpdate) * 1000 . "ms");
-                    $updateFacets = microtime(true);
-                }
                 $facets = $searchBundle->getFacetBundle()->updateFacetsWithResult();
-                if ($debug) {
-                    $this->Helper()->addNotification("Search updateFacetsWithResult took: " . (microtime(true) - $updateFacets) * 1000 . "ms");
-                    $afterUpdate = microtime(true);
-                }
             } else {
                 if ($config->get('boxalino_noresults_recommendation_enabled')) {
                     $this->Helper()->resetRequests();
@@ -857,7 +809,9 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                 'article_slider_type' => 'selected_article',
                 'values' => $no_result_articles,
                 'article_slider_max_number' => count($no_result_articles),
-                'article_slider_arrows' => 1
+                'article_slider_arrows' => 1,
+                'bx_request_uuid' => $this->Helper()->getRequestUuid($config->get('boxalino_noresults_recommendation_name')),
+                'bx_request_groupby' => $this->Helper()->getRequestGroupBy($config->get('boxalino_noresults_recommendation_name')),
             ],
             'criteria' => $searchBundle->getCriteria(),
             'sortings' => $searchBundle->getStoreSortings(),
@@ -878,16 +832,11 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
             'bxHasOtherItemTypes' => false,
             'bxActiveTab' => (count($no_result_articles) > 0) ? $request->getParam('bxActiveTab', 'blog'): $request->getParam('bxActiveTab', 'article'),
             'bxSubPhraseResults' => $sub_phrases,
-            'facetOptions' => $searchBundle->getFacetBundle()->getFacetOptions()
+            'facetOptions' => $searchBundle->getFacetBundle()->getFacetOptions(),
+            'bx_request_uuid' => $this->Helper()->getRequestUuid(),
+            'bx_request_groupby' => $this->Helper()->getRequestGroupBy(),
         ), $templateBlogSearchProperties);
         $this->View()->assign($templateProperties);
-
-        if($debug){
-            $this->Helper()->addNotification("Search afterUpdateFacets took: " . (microtime(true) - $afterUpdate) * 1000 . "ms");
-            $this->Helper()->addNotification("Search after response took in total: " . (microtime(true) - $afterStart) * 1000 . "ms.");
-            $this->Helper()->addNotification("Search time took in total: " . (microtime(true) - $start) * 1000 . "ms.");
-            $this->Helper()->callNotification(true);
-        }
 
         return false;
     }

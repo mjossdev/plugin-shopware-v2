@@ -113,6 +113,17 @@ class BxAutocompleteResponse
 		$searchResult = $textualSuggestion == null ? $this->getResponse()->prefixSearchResult : $this->getTextualSuggestionHit($textualSuggestion)->searchResult;
 		return new \com\boxalino\bxclient\v1\BxChooseResponse($searchResult, $this->bxAutocompleteRequest->getBxSearchRequest());
 	}
+
+    public function getExtraInfo($key, $default=null)
+    {
+        $extraInfo = $this->getResponse()->extraInfo;
+        if(isset($extraInfo[$key]))
+        {
+            return $extraInfo[$key];
+        }
+
+        return $default;
+    }
 	
 	public function getPropertyHits($field) {
 		foreach ($this->getResponse()->propertyResults as $propertyResult) {

@@ -5,6 +5,33 @@ On every plugin update - please check the file and what needs to be tested on yo
 
 If you have any question, just contact us at support@boxalino.com
 
+### v3.0.0
+* *setup version* : 3.0
+* *requirements* : the templates must be updated to include the required HTML attributes as documented [in the JS Tracker API HTML Requirements](https://boxalino.atlassian.net/wiki/spaces/BPKB/pages/8716641/JS+Tracker+API#Narrative-HTML-markup-requirements)
+
+Template updates must be applied on :
+  * for category listing: 
+     1. (if ajax load is disabled) themes/Frontend/Bare/frontend/listing/index.tpl (line 63)
+        `<div class="listing--container {if $bx_request_uuid}bx-narrative" data-bx-variant-uuid="{$bx_request_uuid}" data-bx-narrative-name="products-list" data-bx-narrative-group-by="{$bx_request_groupby}{/if}">`
+     2. themes/Frontend/Bare/frontend/listing/product-box/box-basic.tpl & box-emotion.tpl
+        `<div class="product--box box--{$productBoxLayout} bx-narrative-item" data-bx-item-id="{$sArticle.articleID}"`
+     3. (if ajax load is enabled) themes/Frontend/Bare/frontend/listing/product-box/box-basic.tpl & box-emotion.tpl (wrap the template in this div)
+        `{if $bx_request_uuid} <div class="bx-narrative" data-bx-variant-uuid="{$bx_request_uuid}" data-bx-narrative-name="products-list" data-bx-narrative-group-by="{$bx_request_groupby}">{/if}`
+        `{if $bx_request_uuid}</div>{/if}`
+  * for autocomplete:
+    1. themes/Frontend/Bare/frontend/search/ajax.tpl (line 13)
+        ` <ul class="results--list bx-narrative" {if $bx_request_uuid} data-bx-variant-uuid="{$bx_request_uuid}" data-bx-narrative-name="products-list"{/if}
+                         {if $bx_request_groupby} data-bx-narrative-group-by="{$bx_request_groupby}"{/if}>`
+    2. themes/Frontend/Bare/frontend/search/ajax.tpl (line 19)
+        `<li class="list--entry block-group result--item bx-narrative-item" data-bx-item-id="{$search_result.articleID}">`
+  * for product sliders:
+    1. themes/Frontend/Bare/frontend/_includes/product_slider.tpl (line 68)
+        `<div class="product-slider--container {if $bx_request_uuid}bx-narrative" data-bx-variant-uuid="{$bx_request_uuid}" data-bx-narrative-name="products-list"
+                     data-bx-narrative-group-by="{$bx_request_groupby}{/if}">`
+  
+
+
+
 ### v1.4.2 - 2020-02-25
 
 ##### 1. Fixes for upgrade from v1.6.29

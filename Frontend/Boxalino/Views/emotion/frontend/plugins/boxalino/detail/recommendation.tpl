@@ -63,7 +63,7 @@
                     {*Accessory articles*}
                     {block name="frontend_detail_index_tabs_related"}
                         {if $sArticle.sRelatedArticles && !$sArticle.crossbundlelook}
-                            <div class="tab--container" data-tab-id="related">
+                            <div class="tab--container bx-narrative" data-bx-variant-uuid="{$sArticle.sRelatedArticlesTracking.bx_request_uuid}" data-bx-narrative-group-by="{$sArticle.sRelatedArticlesTracking.bx_request_groupby}" data-bx-narrative-name="products-list" data-tab-id="related">
                                 {block name="frontend_detail_index_tabs_related_inner"}
                                     <div class="tab--header">
                                         <a href="#" class="tab--title" title="{s namespace="frontend/detail/tabs" name='DetailTabsAccessories'}{/s}">
@@ -82,7 +82,7 @@
                     {*Similar products slider*}
                     {if $sArticle.sSimilarArticles}
                         {block name="frontend_detail_index_tabs_similar"}
-                            <div class="tab--container" data-tab-id="similar">
+                            <div class="tab--container bx-narrative" data-bx-variant-uuid="{$sArticle.sSimilarArticlesTracking.bx_request_uuid}" data-bx-narrative-group-by="{$sArticle.sSimilarArticlesTracking.bx_request_groupby}" data-bx-narrative-name="products-list" data-tab-id="similar">
                                 {block name="frontend_detail_index_tabs_similar_inner"}
                                     <div class="tab--header">
                                         <a href="#" class="tab--title" title="{s namespace="frontend/detail/index" name="DetailRecommendationSimilarLabel"}{/s}">{s namespace="frontend/detail/index" name="DetailRecommendationSimilarLabel"}{/s}</a>
@@ -96,7 +96,7 @@
                     {*"Customers bought also" slider*}
                     {if $sArticle.boughtArticles}
                         {block name="frontend_detail_index_tabs_also_bought"}
-                            <div class="tab--container" data-tab-id="alsobought">
+                            <div class="tab--container bx-narrative" data-bx-variant-uuid="{$sArticle.boughtArticlesTracking.bx_request_uuid}" data-bx-narrative-group-by="{$sArticle.boughtArticlesTracking.bx_request_groupby}" data-bx-narrative-name="products-list" data-tab-id="alsobought">
                                 {block name="frontend_detail_index_tabs_also_bought_inner"}
                                     <div class="tab--header">
                                         <a href="#" class="tab--title" title="{s namespace="frontend/detail/index" name='DetailRecommendationAlsoBoughtLabel'}{/s}">{s namespace="frontend/detail/index" name='DetailRecommendationAlsoBoughtLabel'}{/s}</a>
@@ -110,7 +110,7 @@
                     {*"Customers similar viewed" slider*}
                     {if $sArticle.viewedArticles}
                         {block name="frontend_detail_index_tabs_also_viewed"}
-                            <div class="tab--container" data-tab-id="alsoviewed">
+                            <div class="tab--container bx-narrative" data-bx-variant-uuid="{$sArticle.viewedArticlesTracking.bx_request_uuid}" data-bx-narrative-group-by="{$sArticle.viewedArticlesTracking.bx_request_groupby}" data-bx-narrative-name="products-list" data-tab-id="alsoviewed">
                                 {block name="frontend_detail_index_tabs_also_viewed_inner"}
                                     <div class="tab--header">
                                         <a href="#" class="tab--title" title="{s namespace="frontend/detail/index" name='DetailRecommendationAlsoViewedLabel'}{/s}">{s namespace="frontend/detail/index" name='DetailRecommendationAlsoViewedLabel'}{/s}</a>
@@ -124,7 +124,7 @@
                     {*Related product streams*}
                     {foreach $sArticle.relatedProductStreams as $key => $relatedProductStream}
                         {block name="frontend_detail_index_tabs_related_product_streams"}
-                            <div class="tab--container" data-tab-id="productStreamSliderId-{$relatedProductStream.id}">
+                            <div class="tab--container bx-narrative" data-tab-id="productStreamSliderId-{$relatedProductStream.id}">
                                 {block name="frontend_detail_index_tabs_related_product_streams_inner"}
                                     <div class="tab--header">
                                         <a href="#" class="tab--title" title="{$relatedProductStream.name}">{$relatedProductStream.name}</a>

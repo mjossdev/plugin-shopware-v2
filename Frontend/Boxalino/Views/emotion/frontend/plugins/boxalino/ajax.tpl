@@ -1,12 +1,12 @@
 {block name='search_ajax_inner' prepend}
     {if $bxNoResult === true}
-        <ul class="results--list suggestion--no-result">
+        <ul class="results--list suggestion--no-result bx-narrative" data-bx-variant-uuid="variant-uuid" data-bx-narrative-name="products-list" data-bx-narrative-group-by="group-by">
             <li class="list--entry block-group result--item">
                 <strong class="search-result--link" style="text-align: center;">{s namespace="boxalino/intelligence" name="search/noresult"}{/s}</strong>
             </li>
             {foreach $sSearchResults.sResults as $search_result}
                 {block name="search_ajax_list_entry"}
-                    <li class="list--entry block-group result--item">
+                    <li class="list--entry block-group result--item bx-narrative-item" data-bx-item-id="{$search_result.id}">
                         <a class="search-result--link" href="{$search_result.link}" title="{$search_result.name|escape}">
                             {block name="search_ajax_list_entry_media"}
                                 <span class="entry--media block">

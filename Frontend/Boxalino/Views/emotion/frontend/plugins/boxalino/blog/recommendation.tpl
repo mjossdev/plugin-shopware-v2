@@ -1,8 +1,9 @@
 {block name="frontend_blog_recommendation"}
-    <a href="{url controller=blog action=detail sCategory=$sArticle.category_id blogArticle=$sArticle.id}" title="{$sArticle.title|escape}">
-        <div class="box--content">
-            <div class="product--info">
-                <div class="product--box box--{$productBoxLayout}">
+    <div class="bx-narrative-item" data-bx-item-id="{$sArticle.id}">
+        <a href="{url controller=blog action=detail sCategory=$sArticle.category_id blogArticle=$sArticle.id}" title="{$sArticle.title|escape}">
+            <div class="box--content">
+                <div class="product--info">
+                    <div class="product--box box--{$productBoxLayout}">
             <span class="image--element">
                 <span class="image--media">
                     {if isset($sArticle.media.thumbnails)}
@@ -52,21 +53,22 @@
                     {/if}
                 </span>
             </span>
-                    <div class="blog--box-title">
-                        <h3>{$sArticle.title}</h3>
-                    </div>
-                    <div class="blog-box content">
-                        <div class="blog--box-description{if !$sArticle.media} is--fluid{/if}">
+                        <div class="blog--box-title">
+                            <h3>{$sArticle.title}</h3>
+                        </div>
+                        <div class="blog-box content">
+                            <div class="blog--box-description{if !$sArticle.media} is--fluid{/if}">
 
-                            {block name='frontend_blog_col_description_short'}
-                                <div class="blog--box-description-short">
-                                    {$sArticle.shortDescription|nl2br|truncate:100}
-                                </div>
-                            {/block}
+                                {block name='frontend_blog_col_description_short'}
+                                    <div class="blog--box-description-short">
+                                        {$sArticle.shortDescription|nl2br|truncate:100}
+                                    </div>
+                                {/block}
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
-    </a>
+        </a>
+    </div>
 {/block}

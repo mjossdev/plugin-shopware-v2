@@ -93,7 +93,9 @@ class Shopware_Controllers_Frontend_RecommendationSlider extends Enlight_Control
         foreach ($this->_productRecommendations as $var_name => $recommendation) {
             if (isset($choiceIds[$recommendation])) {
                 $hitIds = $helper->getRecommendation($choiceIds[$recommendation], 0, 0, 0, 0, null, true, [], false, [], false, $allowDuplicatesOnPDPRecommendations);
-                $sArticles[$var_name] = $helper->getLocalArticles($hitIds);
+                $sArticles[$var_name] = array_merge($helper->getLocalArticles($hitIds));
+                $sArticles[$var_name."Tracking"] = $this->getTrackingHtmlAttributes($helper, $choiceIds[$recommendation]);
+                Shopware()->Container()->get("pluginlogger")->warning($var_name);
             }
         }
 
@@ -129,9 +131,6 @@ class Shopware_Controllers_Frontend_RecommendationSlider extends Enlight_Control
      */
     public function productStreamSliderRecommendationsAction()
     {
-        if ($_REQUEST['dev_bx_debug'] == 'true') {
-            $t1 = microtime(true);
-        }
         $helper = Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper::instance();
         $helper->setRequest($this->request);
         $choiceId = $this->Request()->getQuery('bxChoiceId');
@@ -143,35 +142,16 @@ class Shopware_Controllers_Frontend_RecommendationSlider extends Enlight_Control
         }
         $requestContextParams = array_diff($this->Request()->getParams(), $this->emotionSliderParams);
         $helper->getRecommendation($choiceId, $count, $count, 0, $context, 'category', false, [], false, $requestContextParams);
-        if ($_REQUEST['dev_bx_debug'] == 'true') {
-            $helper->addNotification("Recommendation Slider before response took: " . (microtime(true) - $t1) * 1000 . "ms.");
-            $t2 = microtime(true);
-        }
         $hitsIds = $helper->getRecommendation($choiceId);
-        if ($_REQUEST['dev_bx_debug'] == 'true') {
-            $helper->addNotification("Recommendation Slider response took: " . (microtime(true) - $t2) * 1000 . "ms.");
-            $t3 = microtime(true);
-        }
-
         $path = Shopware()->Plugins()->Frontend()->Boxalino()->Path();
         $this->View()->addTemplateDir($path . 'Views/emotion/');
         $this->View()->loadTemplate('frontend/plugins/boxalino/recommendation_slider/product_stream_slider_recommendations.tpl');
 
         if(!empty($hitsIds)) {
-            if ($_REQUEST['dev_bx_debug'] == 'true') {
-                $t4 = microtime(true);
-            }
             $this->View()->assign('articles', $helper->getLocalArticles($hitsIds));
             $this->View()->assign('title', $helper->getSearchResultTitle($choiceId));
-            if ($_REQUEST['dev_bx_debug'] == 'true') {
-                $helper->addNotification("Recommendation Slider getLocalArticles took: " . (microtime(true) - $t4) * 1000 . "ms. IDS: " .json_encode($hitsIds));
-            }
+            $this->View()->assign($this->getTrackingHtmlAttributes($helper, $choiceId));
             $this->View()->assign('productBoxLayout', "emotion");
-        }
-        if ($_REQUEST['dev_bx_debug'] == 'true') {
-            $helper->addNotification("Recommendation Slider after response took: " . (microtime(true) - $t3) * 1000 . "ms.");
-            $helper->addNotification("Recommendation Slider took in total:" . (microtime(true) - $t1) * 1000 . "ms.");
-            $helper->callNotification(true);
         }
     }
 
@@ -211,6 +191,7 @@ class Shopware_Controllers_Frontend_RecommendationSlider extends Enlight_Control
             $this->View()->addTemplateDir($path . 'Views/emotion/');
             $this->View()->extendsTemplate('frontend/plugins/boxalino/listing/product-box/box-emotion.tpl');
             $this->View()->assign('articles', $articles);
+            $this->View()->assign($this->getTrackingHtmlAttributes($helper, $choiceId));
             $this->View()->assign('withAddToBasket', true);
             $this->View()->assign('productBoxLayout', "emotion");
         } catch(\Exception $exception) {
@@ -237,6 +218,7 @@ class Shopware_Controllers_Frontend_RecommendationSlider extends Enlight_Control
             $this->View()->addTemplateDir($path . 'Views/emotion/');
             $this->View()->extendsTemplate('frontend/plugins/boxalino/_includes/product_slider_item.tpl');
             $this->View()->assign('articles', $blogArticles);
+            $this->View()->assign($this->getTrackingHtmlAttributes($helper, $choiceId));
             $this->View()->assign('bxBlogRecommendation', true);
         } catch(\Exception $exception) {
             Shopware()->Plugins()->Frontend()->Boxalino()->logException($exception, __FUNCTION__, $this->request->getRequestUri());
@@ -269,9 +251,18 @@ class Shopware_Controllers_Frontend_RecommendationSlider extends Enlight_Control
             $this->View()->assign('productBoxLayout', 'emotion');
             $this->View()->assign('Data', ['article_slider_arrows' => 1]);
             $this->View()->assign('sBlogTitle', $helper->getSearchResultTitle($choiceId));
+            $this->View()->assign($this->getTrackingHtmlAttributes($helper, $choiceId));
         } catch(\Exception $exception) {
             Shopware()->Plugins()->Frontend()->Boxalino()->logException($exception, __FUNCTION__, $this->request->getRequestUri());
         }
+    }
+
+    protected function getTrackingHtmlAttributes($helper, $choiceId=null)
+    {
+        return [
+            "bx_request_uuid" => $helper->getRequestUuid($choiceId),
+            "bx_request_groupby" => $helper->getRequestGroupBy($choiceId)
+        ];
     }
 
 }

@@ -3,8 +3,8 @@
 
 class Shopware_Plugins_Frontend_Boxalino_EventReporter
 {
-    CONST BXL_INTELLIGENCE_STAGE_SCRIPT="//r-st.bx-cloud.com/static/ba.min.js";
-    CONST BXL_INTELLIGENCE_PROD_SCRIPT="//track.bx-cloud.com/static/ba.min.js";
+    CONST BXL_INTELLIGENCE_STAGE_SCRIPT="//r-st.bx-cloud.com/static/bav2.min.js";
+    CONST BXL_INTELLIGENCE_PROD_SCRIPT="//track.bx-cloud.com/static/bav2.min.js";
     CONST BXL_INTELLIGENCE_SCRIPT = "//cdn.bx-cloud.com/frontend/rc/js/ba.min.js";
 
     private static $configPriceFilter = array(
@@ -192,12 +192,7 @@ SCRIPT;
             $filters->filter_supplier = self::returnSupplierValue($filtersTypes['supplier']);
             unset($filtersTypes['supplier']);
         }
-        if(count($filtersTypes) > 0) {
-//            foreach($filtersTypes as $key => $param) {
-//                $paramName = 'filter_' . $key;
-//                $filters->$paramName = self::returnfilterValue($key, $param);
-//            }
-        }
+
         return $filters;
     }
 
@@ -230,7 +225,5 @@ SCRIPT;
         return $supplierName;
     }
 
-    private static function returnfilterValue($paramName, $paramValue)
-    {
-    }
+
 }

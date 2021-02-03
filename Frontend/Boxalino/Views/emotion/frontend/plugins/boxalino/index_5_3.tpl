@@ -28,6 +28,14 @@
                         $(o.$el).prev('.panel--title.is--underline.product-slider--title').text(replace.text());
                         replace.remove();
                     }
+                    var bxAttributes = $(o.$el).find('.bx_attributes');
+                    if(bxAttributes.length > 0) {
+                        var el = $(o.$el).prev('.product-slider--container').prevObject[0];
+                        el.classList.add("bx-narrative");
+                        el.setAttribute("data-bx-variant-uuid", bxAttributes[0].dataset['bxVariantUuid']);
+                        el.setAttribute("data-bx-narative-group-by", bxAttributes[0].dataset['bxNarrativeGroupBy']);
+                        bxAttributes.remove();
+                    }
                 });
             });
         });

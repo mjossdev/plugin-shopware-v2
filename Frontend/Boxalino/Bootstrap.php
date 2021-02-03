@@ -51,7 +51,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
     }
 
     public function getVersion() {
-        return '1.6.34';
+        return '3.0';
     }
 
     public function getInfo() {
@@ -817,25 +817,8 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
         }
 
         if ($args['element']['component']['name'] == "Boxalino Portfolio Recommendations") {
-            if($_REQUEST['dev_bx_debug'] == 'true'){
-                $t1 = microtime(true);
-                $helper = Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper::instance();
-                $helper->addNotification("convertEmotion start at: " . $t1);
-            }
-
             $data['portfolio'] = $this->onPortfolioRecommendation($args);
-            if($_REQUEST['dev_bx_debug'] == 'true'){
-                $t3 = microtime(true);
-            }
             $data['lang'] = $this->getShortLocale();
-            if($_REQUEST['dev_bx_debug'] == 'true'){
-                $t1 = (microtime(true) - $t1) * 1000 ;
-                $t3 = (microtime(true) - $t3) * 1000 ;
-                $helper = Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper::instance();
-                $helper->addNotification("Post PortfolioRecommendation took: " . $t3 . "ms.");
-                $helper->addNotification("Total time of Portfolio: " . $t1 . "ms.");
-                $helper->callNotification(true);
-            }
             return $data;
         }
         if ($args['element']['component']['name'] != "Boxalino Slider Recommendations") {

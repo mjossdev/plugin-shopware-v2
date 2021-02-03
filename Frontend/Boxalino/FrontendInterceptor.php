@@ -82,6 +82,7 @@ class Shopware_Plugins_Frontend_Boxalino_FrontendInterceptor
                             if (array_key_exists($configOption, $choiceIds)) {
                                 $hitIds = $this->Helper()->getRecommendation($choiceIds[$configOption]);
                                 $sArticle[$articleKey] = array_merge($sArticle[$articleKey], $this->Helper()->getLocalArticles($hitIds));
+                                $sArticle[$articleKey."Tracking"]= $this->getTrackingHtmlAttributes($choiceIds[$configOption]);
                             }
                         }
                     }
@@ -100,6 +101,7 @@ class Shopware_Plugins_Frontend_Boxalino_FrontendInterceptor
                         $this->View()->extendsTemplate('frontend/plugins/boxalino/detail/content.tpl');
                         $this->View()->extendsTemplate('frontend/plugins/boxalino/_includes/product_slider_item.tpl');
                         $this->View()->assign('sBlogArticles', $blogArticles);
+                        $this->View()->assign('sBlogArticlesTracking', $this->getTrackingHtmlAttributes($choiceId));
                         $this->View()->assign('sBlogTitle', $this->Helper()->getSearchResultTitle($choiceId));
                     }
                 }
@@ -257,6 +259,10 @@ class Shopware_Plugins_Frontend_Boxalino_FrontendInterceptor
         $min = $this->Config()->get('boxalino_cart_recommendation_min');
         $this->Helper()->getRecommendation($choiceId, $max, $min, 0, $contextItems, 'basket', false, array(), false, $contextParams);
         $hitIds = $this->Helper()->getRecommendation($choiceId);
+        $trackingProperties = [
+            "bx_request_uuid" => $this->Helper()->getRequestUuid($choiceId),
+            'bx_request_groupby' => $this->Helper()->getRequestGroupBy($choiceId)
+        ];
 
         $this->View()->addTemplateDir($this->Bootstrap()->Path() . 'Views/emotion/');
         if($this->Request()->getActionName() == 'ajaxCart') {
@@ -265,6 +271,7 @@ class Shopware_Plugins_Frontend_Boxalino_FrontendInterceptor
             $this->View()->extendsTemplate('frontend/plugins/boxalino/checkout/cart.tpl');
         }
 
+        $this->View()->assign($trackingProperties);
         $this->View()->assign('sRecommendations', $this->Helper()->getLocalArticles($hitIds));
         $this->View()->assign('bxBasket', true);
 
@@ -346,12 +353,16 @@ class Shopware_Plugins_Frontend_Boxalino_FrontendInterceptor
         if ($script != null && $this->Config()->get('boxalino_tracking_enabled')) {
             $this->View()->assign('report_script', $script);
         }
-        $force = false;
-        if($_REQUEST['dev_bx_debug'] == 'true') {
-            $force = true;
-        }
-        $this->View()->assign('bxForce', $force);
+        $this->View()->assign('bxForce', false);
         $this->View()->assign('bxHelper', $this->Helper());
+    }
+
+    public function getTrackingHtmlAttributes($choiceId=null)
+    {
+        return [
+            "bx_request_uuid" => $this->Helper()->getRequestUuid($choiceId),
+            "bx_request_groupby" => $this->Helper()->getRequestGroupBy($choiceId)
+        ];
     }
 
 }

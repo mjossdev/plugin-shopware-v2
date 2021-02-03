@@ -4,7 +4,7 @@
     {$detailLink=$sArticle.linkDetails}
 {/if}
 
-<div class="cart--item">
+<div class="cart--item bx-narrative-item" data-bx-item-id="{$sArticle.articleID}">
     {* Article image *}
     {block name='frontend_checkout_ajax_cart_articleimage'}
         <div class="thumbnail--container">
@@ -27,7 +27,7 @@
                         {block name="frontend_detail_buy_button_container"}
                             {block name="frontend_detail_buy_button"}
                                     {if $sArticle.price > $BasketrulesConfig->productPriceLimitToAddToBasket}
-                                         <button class="btn is--icon-left is--large action--add" name="{s name="DetailBuyActionAdd"}{/s}"{if $buy_box_display} style="{$buy_box_display}"{/if}>
+                                         <button class="btn is--icon-left is--large action--add bx-basket-add" name="{s name="DetailBuyActionAdd"}{/s}"{if $buy_box_display} style="{$buy_box_display}"{/if}>
                                             <i class="icon--basket"></i>
                                          </button>
                                     {/if}
@@ -52,7 +52,7 @@
                 </span>
             {/block}
             {block name="frontend_checkout_ajax_cart_articlename_price"}
-                <span class="item--price">{$sArticle.price|currency}</span>
+                <span class="item--price bx-basket-price">{$sArticle.price|currency}</span>
             {/block}
         </a>
     {/block}

@@ -25,27 +25,29 @@
 
     {$smarty.block.parent}
     {if $withAddToBasket == 'true'}
-        <form name="sAddToBasket{$sArticle.ordernumber}" method="post" action="{url controller=checkout action=addArticle}" class="buybox--form" data-add-article="true" data-eventName="submit" {if $theme.offcanvasCart} data-showModal="false" data-addArticleUrl="{url controller=checkout action=ajaxAddArticleCart}"{/if}>
-            <input type="hidden" name="sAdd" value="{$sArticle.ordernumber}"/>
-            <div class="buybox--button-container block-group">
-                <div class="buybox--quantity block">
-                    {$maxQuantity=$sArticle.maxpurchase+1}
-                    {if $sArticle.laststock && $sArticle.instock < $sArticle.maxpurchase}
-                        {$maxQuantity=$sArticle.instock+1}
-                    {/if}
-                    <div class="select-field">
-                        <select id="sQuantity" name="sQuantity" class="quantity--select">
-                            {section name="i" start=$sArticle.minpurchase loop=$maxQuantity step=$sArticle.purchasesteps}
-                                <option value="{$smarty.section.i.index}">{$smarty.section.i.index}{if $sArticle.packunit} {$sArticle.packunit}{/if}</option>
-                            {/section}
-                        </select>
+        <div class="bx-narrative-item" data-bx-item-id="{$sArticle.ordernumber}">
+            <form name="sAddToBasket{$sArticle.ordernumber}" method="post" action="{url controller=checkout action=addArticle}" class="buybox--form" data-add-article="true" data-eventName="submit" {if $theme.offcanvasCart} data-showModal="false" data-addArticleUrl="{url controller=checkout action=ajaxAddArticleCart}"{/if}>
+                <input type="hidden" name="sAdd"  value="{$sArticle.ordernumber}"/>
+                <div class="buybox--button-container block-group">
+                    <div class="buybox--quantity block bx-basket-quantity">
+                        {$maxQuantity=$sArticle.maxpurchase+1}
+                        {if $sArticle.laststock && $sArticle.instock < $sArticle.maxpurchase}
+                            {$maxQuantity=$sArticle.instock+1}
+                        {/if}
+                        <div class="select-field">
+                            <select id="sQuantity" name="sQuantity" class="quantity--select">
+                                {section name="i" start=$sArticle.minpurchase loop=$maxQuantity step=$sArticle.purchasesteps}
+                                    <option value="{$smarty.section.i.index}">{$smarty.section.i.index}{if $sArticle.packunit} {$sArticle.packunit}{/if}</option>
+                                {/section}
+                            </select>
+                        </div>
                     </div>
+                    <button class="buybox--button block btn is--primary is--icon-right is--center is--large bx-basket-add" name="{s name="DetailBuyActionAdd"}{/s}"{if $buy_box_display} style="{$buy_box_display}"{/if}>
+                        <span class="bb-btn-text">In den Warenkorb</span>
+                    </button>
                 </div>
-                <button class="buybox--button block btn is--primary is--icon-right is--center is--large" name="{s name="DetailBuyActionAdd"}{/s}"{if $buy_box_display} style="{$buy_box_display}"{/if}>
-                    <span class="bb-btn-text">In den Warenkorb</span>
-                </button>
-            </div>
-        </form>
+            </form>
+        </div>
     {/if}
 {/block}
 

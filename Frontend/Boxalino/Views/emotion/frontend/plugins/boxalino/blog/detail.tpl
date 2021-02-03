@@ -3,7 +3,7 @@
 {block name='frontend_blog_detail_crossselling'}
     {$smarty.block.parent}
     {if $bxProductRecommendation}
-        <div class="bx-blog-product-rec block">
+        <div class="bx-blog-product-rec block bx-narrative" data-bx-narrative-name="products-list" data-bx-variant-uuid="{$bx_request_uuid}" data-bx-narrative-group-by="{$bx_request_groupby}">
             <div class="bx-blog-product-rec--title">
                 <h2 class="panel--title is--underline product-slider--title">{$bxRecTitle}</h2>
             </div>
@@ -21,12 +21,5 @@
             productBoxLayout="emotion"
             fixedImageSize="true"}
         </div>
-        <script>
-//            document.asyncReady(function() {
-//                $(document).ready(function () {
-//                    StateManager.updatePlugin('*[data-product-slider="true"]', 'swProductSlider');
-//                });
-//            });
-        </script>
     {/if}
 {/block}

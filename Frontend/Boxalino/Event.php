@@ -2,8 +2,8 @@
 
 class Shopware_Plugins_Frontend_Boxalino_Event
 {
-    CONST BXL_INTELLIGENCE_STAGE_TRACKER="https://r-st.bx-cloud.com/track";
-    CONST BXL_INTELLIGENCE_PROD_TRACKER="https://track.bx-cloud.com/track";
+    CONST BXL_INTELLIGENCE_STAGE_TRACKER="https://r-st.bx-cloud.com/track/v2";
+    CONST BXL_INTELLIGENCE_PROD_TRACKER="https://track.bx-cloud.com/track/v2";
     CONST BXL_INTELLIGENCE_TRACKER = 'https://cdn.bx-cloud.com/frontend/analytics/en/track';
 
     protected $params;
