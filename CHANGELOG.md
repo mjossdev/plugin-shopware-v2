@@ -5,7 +5,23 @@ On every plugin update - please check the file and what needs to be tested on yo
 
 If you have any question, just contact us at support@boxalino.com
 
-### v3.0.0
+
+### v3.1 
+* *setup version* : 3.1
+* *requirements* : review your ajax search (_autocomplete_) integration (templates).
+
+Use the "plugin/swSearch/onGetRtuxApiAcRenderer" to set a different API renderer **from your project** for the ajax search event.
+(ex: https://github.com/boxalino/plugin-shopware-v2/blob/master/Frontend/Boxalino/Views/responsive/frontend/_resources/javascript/boxalinoApiAcRenderer.js#L205)
+
+Use the "plugin/swSearch/onGetRtuxApiAcFilters" to set a different API renderer **from your project** for the ajax search event.
+(ex: https://github.com/boxalino/plugin-shopware-v2/blob/master/Frontend/Boxalino/Views/responsive/frontend/_resources/javascript/boxalinoApiAcRenderer.js#L219)
+
+As a narrative structure, the recommended one for Shopware6 can be used:
+1. [Layout Blocks](https://github.com/boxalino/rtux-integration-shopware/wiki/Autocomplete-(JS)#layout-blocks-json)
+2. [Narrative](https://github.com/boxalino/rtux-integration-shopware/wiki/Autocomplete-(JS)#narrative-layout-json)
+3. [Intelligence Admin guidelines](https://github.com/boxalino/rtux-integration-shopware/wiki/Boxalino-Intelligence-Admin)
+
+### v3.0
 * *setup version* : 3.0
 * *requirements* : the templates must be updated to include the required HTML attributes as documented [in the JS Tracker API HTML Requirements](https://boxalino.atlassian.net/wiki/spaces/BPKB/pages/8716641/JS+Tracker+API#Narrative-HTML-markup-requirements)
 

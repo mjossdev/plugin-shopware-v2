@@ -51,7 +51,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
     }
 
     public function getVersion() {
-        return '3.0';
+        return '3.1';
     }
 
     public function getInfo() {
@@ -224,6 +224,9 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
             __DIR__ . '/Views/responsive/frontend/_resources/javascript/jquery.bx_register_add_article.js',
             __DIR__ . '/Views/responsive/frontend/_resources/javascript/jquery.search_enhancements.js',
             __DIR__ . '/Views/responsive/frontend/_resources/javascript/boxalinoFacets.js',
+            __DIR__ . '/Views/responsive/frontend/_resources/javascript/boxalinoApiHelper.js',
+            __DIR__ . '/Views/responsive/frontend/_resources/javascript/boxalinoApiAcRenderer.js',
+            __DIR__ . '/Views/responsive/frontend/_resources/javascript/boxalinoApiAc.js',
             __DIR__ . '/Views/responsive/frontend/_resources/javascript/boxalinoFinder.js',
             __DIR__ . '/Views/responsive/frontend/_resources/javascript/boxalinoFinderFn.js',
             __DIR__ . '/Views/responsive/frontend/_resources/javascript/jssor.slider-26.2.0.min.js'
@@ -274,7 +277,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
     public function addCustomPluginEvents()
     {
         $this->subscribeEvent("Enlight_Bootstrap_InitResource_boxalino_intelligence.service_exporter", "getExporterService");
-        $this->subscribeEvent("Enlight_Bootstrap_InitResource_boxalino_intelligence.service_narrative_renderer", "getNarrativeRenderer");
+        $this->subscribeEvent("Enlight_Bootstrap_InitResource_boxalino_intelligence.service_narrative_renderer", "getNarrativeRendererService");
     }
 
     public function getExporterService()
@@ -290,7 +293,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
 
     public function getNarrativeRendererService()
     {
-        $this->narrativeRenderer = new Shopware_Plugins_Frontend_Boxalino_Bundle_Narrative_NarrativeRenderer();
+        $this->narrativeRenderer = new Shopware_Plugins_Frontend_Boxalino_Bundle_Narrative_Renderer();
         Shopware()->Container()->get("events")->notify(
             'Enlight_Bootstrap_BeforeSetResource_boxalino_intelligence.service_narrative_renderer', ['subject' => $this]
         );
@@ -298,6 +301,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
 
         return $this->getNarrativeRenderer();
     }
+
 
     /**
      * a delta can only run if it`s been at least 1h after a full data sync
@@ -797,7 +801,6 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
             $data['locale'] = $locale;
             $data = array_merge($data, $this->onCPOFinder($data));
 
-            Shopware()->Container()->get('pluginlogger')->info("=============================================================");
             return $data;
         }
 

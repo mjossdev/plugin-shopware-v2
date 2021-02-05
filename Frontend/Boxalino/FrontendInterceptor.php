@@ -340,6 +340,7 @@ class Shopware_Plugins_Frontend_Boxalino_FrontendInterceptor
 
     /**
      * add script if tracking enabled
+     *
      * @param string $script
      * @return void
      */
@@ -353,8 +354,25 @@ class Shopware_Plugins_Frontend_Boxalino_FrontendInterceptor
         if ($script != null && $this->Config()->get('boxalino_tracking_enabled')) {
             $this->View()->assign('report_script', $script);
         }
-        $this->View()->assign('bxForce', false);
-        $this->View()->assign('bxHelper', $this->Helper());
+        $this->View()->assign('bxApiConfig', $this->getBxApiConfigurations());
+    }
+
+    /**
+     * API configurations for front-end access
+     *
+     * @return array
+     */
+    protected function getBxApiConfigurations()
+    {
+        return [
+            "ac" => $this->Config()->get('boxalino_api_ac_enabled'),
+            "dev" => $this->Config()->get('boxalino_dev'),
+            "test" => $this->Config()->get('boxalino_test'),
+            "productsCount" => $this->Config()->get('boxalino_product_suggestion_limit'),
+            "suggestionsCount" => $this->Config()->get('boxalino_textual_suggestion_limit'),
+            "apiKeyJs" => $this->Config()->get('boxalino_api_key_js'),
+            "apiAccountJs" => $this->Config()->get('boxalino_account'),
+        ];
     }
 
     public function getTrackingHtmlAttributes($choiceId=null)

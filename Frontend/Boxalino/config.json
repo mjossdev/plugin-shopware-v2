@@ -51,12 +51,40 @@
   {
     "name": "api_key",
     "label": "General - API Key",
-    "description": "API Token (value for the new set-up)"
+    "description": "API Token (value for the new set-up & API requests)"
   },
   {
     "name": "api_secret",
     "label": "General - API Secret",
-    "description": "API Password (value for the new set-up)"
+    "description": "API Password (value for the new set-up & API requests)"
+  },
+  {
+    "name": "api_key_js",
+    "label": "General - API Key JS",
+    "description": "API Key (value for client-side API requests)"
+  },
+  {
+    "type": "select",
+    "name": "test",
+    "label": "General - Test Mode",
+    "store": [
+      [
+        0,
+        "No"
+      ],
+      [
+        1,
+        "Yes"
+      ]
+    ],
+    "value": 1,
+    "description": "Are the API requests done in test mode? (Yes=TEST, No=PROD)."
+  },
+  {
+    "name": "host",
+    "label": "General - Host",
+    "value": "main.bx-cloud.com",
+    "description": "Optional: uses default value \"main.bx-cloud.com\" if left empty; If dev flag is set to TRUE - use \"r-st.bx-cloud.com\" "
   },
   {
     "type": "select",
@@ -76,10 +104,21 @@
     "description": "Is the JavaScript tracker enabled?"
   },
   {
-    "name": "host",
-    "label": "General - Host",
-    "value": "main.bx-cloud.com",
-    "description": "Optional: uses default value \"main.bx-cloud.com\" if left empty; If dev flag is set to TRUE - use \"r-st.bx-cloud.com\" "
+    "type": "select",
+    "name": "api_ac_enabled",
+    "label": "General - API Autocomplete",
+    "store": [
+      [
+        0,
+        "Disable"
+      ],
+      [
+        1,
+        "Enable"
+      ]
+    ],
+    "value": 0,
+    "description": "Is the API autocomplete action enabled?"
   },
   {
     "name": "timeout",
