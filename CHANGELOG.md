@@ -5,6 +5,12 @@ On every plugin update - please check the file and what needs to be tested on yo
 
 If you have any question, just contact us at support@boxalino.com
 
+### v3.2
+* *setup version* : 3.2
+
+Adds a console command to run the Boxalino Full Data Sync on specific account. Can be used as part of server crons.
+
+`php bin/console boxalino:exporter:run <account>`
 
 ### v3.1 
 * *setup version* : 3.1

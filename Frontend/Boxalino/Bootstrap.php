@@ -1,4 +1,5 @@
 <?php
+use Doctrine\Common\Collections\ArrayCollection;
 use Shopware\Bundle\AttributeBundle\Service\TypeMapping;
 
 /**
@@ -51,7 +52,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
     }
 
     public function getVersion() {
-        return '3.1';
+        return '3.2';
     }
 
     public function getInfo() {
@@ -278,6 +279,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
     {
         $this->subscribeEvent("Enlight_Bootstrap_InitResource_boxalino_intelligence.service_exporter", "getExporterService");
         $this->subscribeEvent("Enlight_Bootstrap_InitResource_boxalino_intelligence.service_narrative_renderer", "getNarrativeRendererService");
+        $this->subscribeEvent('Shopware_Console_Add_Command','onAddConsoleCommand');
     }
 
     public function getExporterService()
@@ -302,6 +304,14 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
         return $this->getNarrativeRenderer();
     }
 
+    public function onAddConsoleCommand()
+    {
+        return new ArrayCollection(
+            [
+                new Shopware_Plugins_Frontend_Boxalino_Command_FullDataSync()
+            ]
+        );
+    }
 
     /**
      * a delta can only run if it`s been at least 1h after a full data sync
