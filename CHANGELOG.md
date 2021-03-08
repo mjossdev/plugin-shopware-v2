@@ -51,7 +51,9 @@ Template updates must be applied on :
         `<div class="product-slider--container {if $bx_request_uuid}bx-narrative" data-bx-variant-uuid="{$bx_request_uuid}" data-bx-narrative-name="products-list"
                      data-bx-narrative-group-by="{$bx_request_groupby}{/if}">`
   
+**If your theme has the "add to cart" button on the listing, update the apropriate templates as well with the CSS class bx-basket-add [as documented here](https://boxalino.atlassian.net/wiki/spaces/BPKB/pages/8716641/JS+Tracker+API#addToBasket-element)**
 
+**Once all templates have been updated, use the official [JS Tracker Check List](https://boxalino.atlassian.net/wiki/spaces/BPKB/pages/295141377/JS+Tracker+Check-List) to test the API tracking and validate that all templates are updated.**
 
 
 ### v1.4.2 - 2020-02-25
