@@ -185,11 +185,26 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxData {
         return $this->db->fetchOne($sql);
     }
 
-    public function getOptionFromValueId($id){
+    public function getOptionFromValueId($id) {
         $sql = $this->db->select()->from(array('f_v' => 's_filter_values'), array('value'))
             ->join(array('f_o' => 's_filter_options'), 'f_v.optionID = f_o.id', array('id','name'))
-            ->where('f_v.id = ?', $id);
-        return $this->db->fetchRow($sql);
+            ->joinLeft(
+                ['c_t' => 's_core_translations'],
+                '(f_v.id, :type, :shopId) = (c_t.objectkey, c_t.objecttype, c_t.objectlanguage)',
+                'objectdata'
+            )->bind([
+                'type' => Translation::TYPE_FILTER_OPTION,
+                'shopId' => $this->getShopId()
+            ])->where('f_v.id = ?', $id);
+        $option = $this->db->fetchRow($sql);
+
+        if (isset($option['objectdata'])) {
+            $translation = unserialize($option['objectdata']);
+            if (isset($translation['optionValue']) && $translation['optionValue'] != '') {
+                $option['value'] = $translation['optionValue'];
+            }
+        }
+        return $option;
     }
 
     public function useTranslation($objectType){
