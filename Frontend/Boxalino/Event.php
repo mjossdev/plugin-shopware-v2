@@ -2,8 +2,8 @@
 
 class Shopware_Plugins_Frontend_Boxalino_Event
 {
-    CONST BXL_INTELLIGENCE_STAGE_TRACKER="https://r-st.bx-cloud.com/track/v2";
-    CONST BXL_INTELLIGENCE_PROD_TRACKER="https://track.bx-cloud.com/track/v2";
+    CONST BXL_INTELLIGENCE_STAGE_TRACKER="https://r-st.bx-cloud.com/track";
+    CONST BXL_INTELLIGENCE_PROD_TRACKER="https://track.bx-cloud.com/track";
     CONST BXL_INTELLIGENCE_TRACKER = 'https://cdn.bx-cloud.com/frontend/analytics/en/track';
 
     protected $params;
@@ -60,19 +60,20 @@ class Shopware_Plugins_Frontend_Boxalino_Event
                     'User-Agent: ' . self::getUserAgent(),
                     'X-Forwarded-For: ' . self::getRemoteIp(),
                     'Referer: ' . $this->referer,
+                    'Content: text/plain'
                 ),
                 CURLOPT_URL => $finalUrl,
-                CURLOPT_RETURNTRANSFER => FALSE,
-                CURLOPT_CONNECTTIMEOUT => 1, // connection timeout
-                CURLOPT_TIMEOUT => 1, // request timeout
+                CURLOPT_RETURNTRANSFER => 1,
+                CURLOPT_CONNECTTIMEOUT => 1,
+                CURLOPT_TIMEOUT => 1,
                 CURLOPT_CUSTOMREQUEST => 'GET',
                 CURLOPT_ENCODING => 'identity',
-                CURLOPT_HEADER => FALSE, // don't return the headers in the output
+                CURLOPT_HEADER => FALSE
             )
         );
-        curl_setopt($s, CURLOPT_RETURNTRANSFER, true);
         $result = curl_exec($s);
         curl_close($s);
+
         return $result;
     }
 
@@ -105,7 +106,7 @@ class Shopware_Plugins_Frontend_Boxalino_Event
      * getting the upgraded script
      * @return string
      */
-    private static function getTrackerServer()
+    private function getTrackerServer()
     {
         $apiKey = Shopware()->Config()->get('boxalino_api_key');
         $apiSecret = Shopware()->Config()->get('boxalino_api_secret');
@@ -121,4 +122,6 @@ class Shopware_Plugins_Frontend_Boxalino_Event
 
         return self::BXL_INTELLIGENCE_PROD_TRACKER;
     }
+
+
 }
