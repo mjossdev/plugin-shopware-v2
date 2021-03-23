@@ -635,11 +635,6 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
                 'allowBlank' => false,
                 'defaultValue' => 5000
             ));
-        }
-
-        $sliderFiltersExists = $this->checkFieldExistsForEmotion($component, "slider_filters");
-        if(!$sliderFiltersExists)
-        {
             $component->createTextField(array(
                 'name' => 'slider_filters',
                 'fieldLabel' => 'Additional Slider Filters (if needed)',
@@ -1306,6 +1301,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
     /**
      * Used for updating emotion elements
      *
+     * @deprecated
      * @param $component
      * @param $fieldName
      * @return bool
