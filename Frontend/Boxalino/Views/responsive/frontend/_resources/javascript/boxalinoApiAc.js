@@ -53,6 +53,7 @@
                 data: JSON.stringify(apiRequestData),
                 contentType: "application/json",
                 dataType: "json",
+                ignoreCSRFHeader: true,
                 success: function (response) {
                     var htmlResponse = apiAcRenderer.getHtml(JSON.stringify(response), searchTerm);
                     if(apiRequestData.test) { console.log(JSON.stringify(response)); console.log(htmlResponse);}
