@@ -212,6 +212,7 @@
      */
     $.getRtuxApiAcFilters = function() {
         var filters = [
+            {"field": "products_bx_type","values": ["product"],"negative": false},
             {"field": "products_active","values": [1],"negative": false},
             {"field": "products_bx_parent_active", "values": [1],"negative": false},
             {"field": "products_shop_id", "values": [window.rtuxAutocomplete['filterById']],"negative": false}
