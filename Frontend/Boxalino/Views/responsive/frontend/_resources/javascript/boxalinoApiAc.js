@@ -64,7 +64,7 @@
                 error: function (response) {
                     //fallback to Shopware5 default ajaxSearch event
                     console.log(response.status + ": " + response.statusText + ": " + response.responseText);
-                    me.superclass.triggerSearchRequest.apply(me, arguments);
+                    me.superclass.triggerSearchRequest.call(me, searchTerm);
                 }
             });
         }
