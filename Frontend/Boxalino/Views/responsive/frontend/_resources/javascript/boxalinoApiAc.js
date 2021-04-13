@@ -40,7 +40,7 @@
             me.lastSearchTerm = $.trim(searchTerm);
 
             if (me.lastSearchAjax) {
-                me.lastSearchAjax.abort();
+                me.lastSearchAjax.abort('searchTermChanged');
             }
 
             var requestUrl = window.rtuxApiHelper.getApiRequestUrl();
@@ -61,7 +61,10 @@
                     me.showResult(htmlResponse);
                     $.publish('plugin/swSearch/onRtuxApiSearchResponse', [ this, searchTerm, response ]);
                 },
-                error: function (response) {
+                error: function (response, statusText) {
+                    if (statusText === 'searchTermChanged') {
+                        return;
+                    }
                     //fallback to Shopware5 default ajaxSearch event
                     console.log(response.status + ": " + response.statusText + ": " + response.responseText);
                     me.superclass.triggerSearchRequest.call(me, searchTerm);
