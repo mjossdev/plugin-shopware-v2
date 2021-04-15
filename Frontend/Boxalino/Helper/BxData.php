@@ -1,5 +1,6 @@
 <?php
 
+use Shopware\Components\Api\Resource\Translation;
 use Shopware\Components\ReflectionHelper;
 
 /**
