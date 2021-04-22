@@ -1,34 +1,37 @@
 {block name="frontend_listing_box_article"}
-    <div class="product--box box--minimal" data-ordernumber="{$sArticle.ordernumber}" style="width: 25%;">
+    <div class="product--box box--minimal bx-narrative" data-ordernumber="{$sArticle.ordernumber}" style="width: 25%;"
+            {if $narrative_bx_request_uuid} data-bx-variant-uuid="{$narrative_bx_request_uuid}" data-bx-narrative-name="products-list" data-bx-narrative-group-by="{$narrative_bx_request_groupby}{/if}">
 
-        {block name="frontend_listing_box_article_product_name"}
-            {$productName = $sArticle.articleName}
-            {if $sArticle.additionaltext}
-                {$productName = $productName|cat:' '|cat:$sArticle.additionaltext}
-            {/if}
-        {/block}
+        <div class="bx-narrative-item" data-bx-item-id="{$sArticle.articleID}">
 
-        {block name="frontend_listing_box_article_content"}
-            <div class="box--content">
+            {block name="frontend_listing_box_article_product_name"}
+                {$productName = $sArticle.articleName}
+                {if $sArticle.additionaltext}
+                    {$productName = $productName|cat:' '|cat:$sArticle.additionaltext}
+                {/if}
+            {/block}
 
-                {* Product badges *}
-                {block name='frontend_listing_box_article_badges'}
-                    {if !$imageOnly}
-                        {include file="frontend/listing/product-box/product-badges.tpl"}
-                    {/if}
-                {/block}
+            {block name="frontend_listing_box_article_content"}
+                <div class="box--content">
 
-                {block name='frontend_listing_box_article_info_container'}
-                    <div class="product--info">
+                    {* Product badges *}
+                    {block name='frontend_listing_box_article_badges'}
+                        {if !$imageOnly}
+                            {include file="frontend/listing/product-box/product-badges.tpl"}
+                        {/if}
+                    {/block}
 
-                        {* Product image *}
-                        {block name='frontend_listing_box_article_picture'}
-                            <a href="{$sArticle.linkDetails}"
-                               title="{$productName|escape}"
-                               class="product--image{if $imageOnly} is--large{/if}">
+                    {block name='frontend_listing_box_article_info_container'}
+                        <div class="product--info">
 
-                                {block name='frontend_listing_box_article_image_element'}
-                                    <span class="image--element">
+                            {* Product image *}
+                            {block name='frontend_listing_box_article_picture'}
+                                <a href="{$sArticle.linkDetails}"
+                                   title="{$productName|escape}"
+                                   class="product--image{if $imageOnly} is--large{/if}">
+
+                                    {block name='frontend_listing_box_article_image_element'}
+                                        <span class="image--element">
 
                                         {block name='frontend_listing_box_article_image_media'}
                                             <span class="image--media">
@@ -92,40 +95,41 @@
                                             </span>
                                         {/block}
                                     </span>
-                                {/block}
-                            </a>
-                        {/block}
+                                    {/block}
+                                </a>
+                            {/block}
 
-                        {if !$imageOnly}
-                            <div class="product--details">
+                            {if !$imageOnly}
+                                <div class="product--details">
 
-                                {* Product name *}
-                                {block name='frontend_listing_box_article_name'}
-                                    <a href="{$sArticle.linkDetails}"
-                                       class="product--title"
-                                       title="{$productName|escapeHtml}">
-                                        {$productName|truncate:50|escapeHtml}
-                                    </a>
-                                {/block}
+                                    {* Product name *}
+                                    {block name='frontend_listing_box_article_name'}
+                                        <a href="{$sArticle.linkDetails}"
+                                           class="product--title"
+                                           title="{$productName|escapeHtml}">
+                                            {$productName|truncate:50|escapeHtml}
+                                        </a>
+                                    {/block}
 
-                                {block name='frontend_listing_box_article_price_info'}
-                                    <div class="product--price-info">
-                                        {* Product price - Unit price *}
-                                        {block name='frontend_listing_box_article_unit'}
-                                            {include file="frontend/listing/product-box/product-price-unit.tpl"}
-                                        {/block}
+                                    {block name='frontend_listing_box_article_price_info'}
+                                        <div class="product--price-info">
+                                            {* Product price - Unit price *}
+                                            {block name='frontend_listing_box_article_unit'}
+                                                {include file="frontend/listing/product-box/product-price-unit.tpl"}
+                                            {/block}
 
-                                        {* Product price - Default and discount price *}
-                                        {block name='frontend_listing_box_article_price'}
-                                            {include file="frontend/listing/product-box/product-price.tpl"}
-                                        {/block}
-                                    </div>
-                                {/block}
-                            </div>
-                        {/if}
-                    </div>
-                {/block}
-            </div>
-        {/block}
+                                            {* Product price - Default and discount price *}
+                                            {block name='frontend_listing_box_article_price'}
+                                                {include file="frontend/listing/product-box/product-price.tpl"}
+                                            {/block}
+                                        </div>
+                                    {/block}
+                                </div>
+                            {/if}
+                        </div>
+                    {/block}
+                </div>
+            {/block}
+        </div>
     </div>
 {/block}
