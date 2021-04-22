@@ -15,6 +15,11 @@ abstract class Shopware_Plugins_Frontend_Boxalino_Bundle_Narrative_BoxalinoNarra
     protected $viewData;
     protected $main = false;
 
+    /** request information */
+    protected $bxRequestUuid;
+    protected $bxRequestGroupBy = "products_group_id";
+    protected $bxRequestId;
+
     public function __construct()
     {
         $this->config = Shopware()->Config();
@@ -38,6 +43,9 @@ abstract class Shopware_Plugins_Frontend_Boxalino_Bundle_Narrative_BoxalinoNarra
             'dependencies' => $this->getDependencies(),
             'narrativeData' => $this->getRenderer()->loadViewElements($this->getNarratives()),
             'bxRender' => $this->getRenderer(),
+            'narrative_bx_request_id' => $this->getBxRequestId(),
+            'narrative_bx_request_uuid' => $this->getBxRequestUuid(),
+            'narrative_bx_request_group_by' => $this->getBxRequestGroupBy()
         ];
     }
 
@@ -107,5 +115,54 @@ abstract class Shopware_Plugins_Frontend_Boxalino_Bundle_Narrative_BoxalinoNarra
         $this->choice = $choice;
         return $this;
     }
+
+    /**
+     * @return mixed
+     */
+    public function getBxRequestUuid()
+    {
+        return $this->bxRequestUuid;
+    }
+
+    /**
+     * @param mixed $bxRequestUuid
+     */
+    public function setBxRequestUuid($bxRequestUuid)
+    {
+        $this->bxRequestUuid = $bxRequestUuid;
+        return $this;
+    }
+
+    public function getBxRequestGroupBy()
+    {
+        return $this->bxRequestGroupBy;
+    }
+
+    /**
+     * @param string $bxRequestGroupBy
+     */
+    public function setBxRequestGroupBy(string $bxRequestGroupBy)
+    {
+        $this->bxRequestGroupBy = $bxRequestGroupBy;
+        return $this;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getBxRequestId()
+    {
+        return $this->bxRequestId;
+    }
+
+    /**
+     * @param mixed $bxRequestId
+     */
+    public function setBxRequestId($bxRequestId)
+    {
+        $this->bxRequestId = $bxRequestId;
+        return $this;
+    }
+
 
 }

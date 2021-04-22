@@ -118,7 +118,12 @@ class Shopware_Plugins_Frontend_Boxalino_Bundle_Narrative
         $narratives = $this->p13nHelper->getNarrative(
             $choiceId, null, [], $this->getHitCount(), $this->getPageOffset(), null, [], [], true
         );
-        $this->getBundle()->setResponse($narratives);
+
+        $this->getBundle()->setResponse($narratives)
+            ->setBxRequestId($this->p13nHelper->getRequestId($choiceId))
+            ->setBxRequestGroupBy($this->p13nHelper->getRequestGroupBy($choiceId))
+            ->setBxRequestUuid($this->p13nHelper->getRequestUuid($choiceId));
+
         return $this;
     }
 
