@@ -11,7 +11,8 @@
 		 data-imageSelector=".image-slider--item">
 
 		{block name="frontend_narrative_banner_slider_container"}
-			<div class="banner-slider--container image-slider--container">
+			<div class="banner-slider--container image-slider--container bx-narrative" data-bx-variant-uuid="{$narrative_bx_request_uuid}" data-bx-narrative-name="products-list" data-bx-narrative-group-by="{$narrative_bx_request_groupby}">
+
 				{block name="frontend_narrative_banner_slider_slide"}
 					<div class="banner-slider--slide image-slider--slide">
 						{foreach $bxSubRenderings as $subRendering}

@@ -89,6 +89,8 @@ class Shopware_Plugins_Frontend_Boxalino_Bundle_Narrative_Renderer
 
         try{
             $view->assign('bxRender', $this);
+            $view->assign($otherTemplateData);
+
             $html = $view->render();
         } catch(\Exception $e) {
             $this->logger->error("BxNarrativeRenderer: Exception " . $e->getMessage() . "on the element: " . json_encode($viewElement, true));

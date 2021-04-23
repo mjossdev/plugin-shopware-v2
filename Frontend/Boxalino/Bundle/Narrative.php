@@ -119,10 +119,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bundle_Narrative
             $choiceId, null, [], $this->getHitCount(), $this->getPageOffset(), null, [], [], true
         );
 
-        $this->getBundle()->setResponse($narratives)
-            ->setBxRequestId($this->p13nHelper->getRequestId($choiceId))
-            ->setBxRequestGroupBy($this->p13nHelper->getRequestGroupBy($choiceId))
-            ->setBxRequestUuid($this->p13nHelper->getRequestUuid($choiceId));
+        $this->getBundle()->setResponse($narratives);
 
         return $this;
     }
@@ -134,6 +131,19 @@ class Shopware_Plugins_Frontend_Boxalino_Bundle_Narrative
     public function addDependencies()
     {
         $this->getBundle()->setDependencies($this->p13nHelper->getNarrativeDependencies($this->choiceId));
+        $this->addBxAttributes();
+    }
+
+    /**
+     * @return $this
+     */
+    public function addBxAttributes()
+    {
+        $this->getBundle()->setBxRequestId($this->p13nHelper->getRequestId($this->choiceId))
+            ->setBxRequestGroupBy($this->p13nHelper->getRequestGroupBy($this->choiceId))
+            ->setBxRequestUuid($this->p13nHelper->getRequestUuid($this->choiceId));
+
+        return $this;
     }
 
     /**
