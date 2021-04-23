@@ -13,7 +13,7 @@
                     <div class="cpo-finder-expert-img-list"><img src="https://%%ExpertSelectionImage%%"></div>
                     <div class="cpo-finder-expert-name"><h4>%%ExpertFirstName%% %%ExpertLastName%%</h4></div>
                     <div class="cpo-finder-expert-characteristics">
-                        <ul><li><div="cpo-finder-expert-description">%%ExpertDescription%%</div></li></ul>
+                        <ul><li><div class="cpo-finder-expert-description">%%ExpertDescription%%</div></li></ul>
                     <div class="cpo-finder-expert-button">
                         <button type="button" name="button">{s namespace='boxalino/intelligence' name='productfinder/choose'}choose{/s}</button>
                     </div>
