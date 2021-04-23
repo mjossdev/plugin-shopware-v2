@@ -1,6 +1,6 @@
 {block name="frontend_listing_box_article"}
     <div class="product--box box--minimal bx-narrative" data-ordernumber="{$sArticle.ordernumber}" style="width: 25%;"
-            {if $narrative_bx_request_uuid} data-bx-variant-uuid="{$narrative_bx_request_uuid}" data-bx-narrative-name="products-list" data-bx-narrative-group-by="{$narrative_bx_request_groupby}{/if}">
+            {if $narrative_bx_request_uuid} data-bx-variant-uuid="{$narrative_bx_request_uuid}" data-bx-narrative-name="products-list" data-bx-narrative-group-by="{$narrative_bx_request_groupby}"{/if}>
 
         <div class="bx-narrative-item" data-bx-item-id="{$sArticle.articleID}">
 

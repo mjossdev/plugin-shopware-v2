@@ -14,7 +14,7 @@
             </div>
             <div class="listing--container">
                 <div class="listing bx-narrative" data-ajax-wishlist="true" data-compare-ajax="true"
-                        {if $narrative_bx_request_uuid} data-bx-variant-uuid="{$narrative_bx_request_uuid}" data-bx-narrative-name="products-list" data-bx-narrative-group-by="{$narrative_bx_request_groupby}{/if}">
+                        {if $narrative_bx_request_uuid} data-bx-variant-uuid="{$narrative_bx_request_uuid}" data-bx-narrative-name="products-list" data-bx-narrative-group-by="{$narrative_bx_request_groupby}"{/if}>
                     {$i=0}
                     {foreach $bxSubRenderings as $subRendering}
                         {$additionalParameter=[]}
