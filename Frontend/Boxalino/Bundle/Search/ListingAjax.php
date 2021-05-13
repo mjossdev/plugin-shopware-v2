@@ -8,15 +8,10 @@ class Shopware_Plugins_Frontend_Boxalino_Bundle_Search_ListingAjax
     {
         parent::init();
         $listingCount = $this->getRequest()->getActionName() == 'listingCount';
-        if(version_compare(Shopware::VERSION, '5.3.0', '>=')) {
-            if(!$listingCount || (!empty($this->stream) && !$this->config->get('boxalino_navigation_product_stream'))) {
-                throw new Shopware_Plugins_Frontend_Boxalino_Bundle_NullException("BxListingAjaxError: the stream {$this->stream} can not be used. Please enable Boxalino Search - Navigation -Product-Stream");
-            }
-        } else {
-            if ((!empty($this->stream) && !$this->config->get('boxalino_navigation_product_stream'))) {
-                throw new Shopware_Plugins_Frontend_Boxalino_Bundle_NullException("BxListingAjaxError: the stream {$this->stream} can not be used. Please enable Boxalino Search - Navigation -Product-Stream");
-            }
+        if(!$listingCount || (!empty($this->stream) && !$this->config->get('boxalino_navigation_product_stream'))) {
+            throw new Shopware_Plugins_Frontend_Boxalino_Bundle_NullException("BxListingAjaxError: the stream {$this->stream} can not be used. Please enable Boxalino Search - Navigation -Product-Stream");
         }
+
     }
 
     public function getContext()

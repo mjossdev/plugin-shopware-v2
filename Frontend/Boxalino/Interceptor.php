@@ -32,10 +32,6 @@ abstract class Shopware_Plugins_Frontend_Boxalino_Interceptor
      */
     private $view;
 
-    /**
-     * @var Shopware_Plugins_Frontend_Boxalino_Benchmark
-     */
-    private $benchmark;
 
     /**
      * constructor
@@ -43,7 +39,6 @@ abstract class Shopware_Plugins_Frontend_Boxalino_Interceptor
      */
     public function __construct(Shopware_Plugins_Frontend_Boxalino_Bootstrap $bootstrap)
     {
-        $this->benchmark = Shopware_Plugins_Frontend_Boxalino_Benchmark::instance();
         $this->helper = Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper::instance();
         $this->bxData = Shopware_Plugins_Frontend_Boxalino_Helper_BxData::instance();
         $this->bootstrap = $bootstrap;
@@ -123,13 +118,8 @@ abstract class Shopware_Plugins_Frontend_Boxalino_Interceptor
     }
 
     /**
-     * @return Shopware_Plugins_Frontend_Boxalino_Benchmark
+     * @return Shopware_Plugins_Frontend_Boxalino_Helper_BxData
      */
-    protected function Benchmark() 
-    {
-        return $this->benchmark;
-    }
-
     public function BxData() {
         return $this->bxData;
     }

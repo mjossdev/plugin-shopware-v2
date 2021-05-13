@@ -40,18 +40,12 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
      */
     private static $choiceContexts = array();
 
-    /**
-     * @var Shopware_Plugins_Frontend_Boxalino_Benchmark
-     */
-    private $benchmark;
-
     private $prefixContextParameter = null;
 
     /**
      * Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper constructor.
      */
     private function __construct() {
-        $this->benchmark = Shopware_Plugins_Frontend_Boxalino_Benchmark::instance();
         $this->config = Shopware()->Config();
         $libPath = __DIR__ . '/../lib';
         require_once($libPath . '/BxClient.php');
@@ -471,7 +465,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
             $bxRequest->setFilters($requestFilters);
             $bxRequest->setOffset($pageOffset);
             $bxRequest->setReturnFields(['products_ordernumber']);
-            $bxRequest->setGroupBy('id');
+            $bxRequest->setGroupBy('products_group_id');
             $bxRequest->setHitsGroupsAsHits(true);
             if ($sort != null && is_array($sort)) {
                 foreach ($sort as $s) {
@@ -1362,25 +1356,41 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         self::$bxClient->finalNotificationCheck($force);
     }
 
-    public function getRequestId($choiceId=null) {
-        return $this->getResponse()->getExtraInfo("_bx_request_id", "undefined-request-id", $choiceId);
+    public function getRequestId($choiceId=null, $variant=null) {
+        if(is_null($variant))
+        {
+            return $this->getResponse()->getExtraInfo("_bx_request_id", "undefined-request-id", $choiceId);
+        }
+
+        return $this->getResponse()->getVariantExtraInfo($variant, "_bx_request_id", "undefined-request-id");
     }
 
     /**
      * @param null $choiceId
      * @return string
      */
-    public function getRequestUuid($choiceId=null) {
-        return $this->getResponse()->getExtraInfo("_bx_variant_uuid", "undefined-request-uuid", $choiceId);
+    public function getRequestUuid($choiceId=null, $variant = null) {
+        if(is_null($variant))
+        {
+            return $this->getResponse()->getExtraInfo("_bx_variant_uuid", "undefined-request-uuid", $choiceId);
+        }
+
+        return $this->getResponse()->getVariantExtraInfo($variant, "_bx_variant_uuid", "undefined-request-uuid");
+
     }
 
     /**
      * @param null $choiceId
      * @return string
      */
-    public function getRequestGroupBy($choiceId=null)
+    public function getRequestGroupBy($choiceId=null, $variant=null)
     {
-        return $this->getResponse()->getExtraInfo("_bx_group_by", "undefined-request-group-by", $choiceId);
+        if(is_null($variant))
+        {
+            return $this->getResponse()->getExtraInfo("_bx_group_by", "undefined-request-group-by", $choiceId);
+        }
+
+        return $this->getResponse()->getVariantExtraInfo($variant, "_bx_group_by", "undefined-request-group-by");
     }
 
     /**

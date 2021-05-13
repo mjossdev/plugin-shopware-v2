@@ -96,7 +96,8 @@
                     <div class="cpo-finder-center-show-more-less"></div>
                 </div>
                 <div class="cpo-finder-button-container"></div>
-                <div class="listingBlock cpo-finder-listing-container">
+                <div class="listingBlock cpo-finder-listing-container bx-narrative" {if $narrative_bx_request_uuid} data-bx-variant-uuid="{$narrative_bx_request_uuid}" data-bx-narrative-name="products-list"{/if}
+                        {if $narrative_bx_request_group_by} data-bx-narrative-group-by="{$narrative_bx_request_group_by}"{/if}>
                     <div class="cpo-finder-listing-wrapper">
                         {block name="frontend_cpo_finder_listing_present"}
                             <div class="cpo-finder-listing bx-present product--details" data-ajax-wishlist="true" data-compare-ajax="true">
@@ -113,7 +114,7 @@
                                         {/foreach}
                                     {/if}
 
-                                    <div class="content product--details product--detail-upper block-group" data-ajax-wishlist="true" data-compare-ajax="true"{if $theme.ajaxVariantSwitch} data-ajax-bx-product-finder={$sArticle.articleID}{/if}>
+                                    <div class="content product--details product--detail-upper block-group bx-narrative-item" data-bx-item-id="{$sArticle.articleID}" data-ajax-wishlist="true" data-compare-ajax="true"{if $theme.ajaxVariantSwitch} data-ajax-bx-product-finder={$sArticle.articleID}{/if}>
                                         {* Product image *}
                                         {block name='frontend_detail_index_image_container'}
                                             <div class="product--image-container">
@@ -145,7 +146,9 @@
                             {* {if $Data.highlighted_articles} *}
                             <div class="cpo-finder-listing bx-listing-emotion">
                                 {foreach $Data.sArticles as $sArticle}
-                                    {include file="frontend/listing/box_article.tpl" productBoxLayout='image' isFinder='true'}
+                                    <div class="bx-narrative-item" data-bx-item-id="{$sArticle.articleID}">
+                                        {include file="frontend/listing/box_article.tpl" productBoxLayout='image' isFinder='true'}
+                                    </div>
                                 {/foreach}
                             </div>
                             {* {/if} *}

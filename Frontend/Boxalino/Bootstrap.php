@@ -52,7 +52,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
     }
 
     public function getVersion() {
-        return '3.2.5';
+        return '4.0.0';
     }
 
     public function getInfo() {
@@ -60,10 +60,10 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
             'version' => $this->getVersion(),
             'label' => $this->getLabel(),
             'author' => 'Boxalino AG',
-            'copyright' => 'Copyright © 2019, Boxalino AG',
-            'description' => 'Integrates Boxalino search & recommendation into Shopware.',
+            'copyright' => 'Copyright © 2021, Boxalino AG',
+            'description' => 'Integrates Boxalino Services in a Shopware 5 project.',
             'support' => 'support@boxalino.com',
-            'link' => 'http://www.boxalino.com/',
+            'link' => 'https://www.boxalino.com/',
         );
     }
 
@@ -833,17 +833,14 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
             return $data;
         }
         $emotionRepository = Shopware()->Models()->getRepository('Shopware\Models\Emotion\Emotion');
-        if(version_compare(Shopware::VERSION, '5.3.0', '>=')){
-            $emotionModel = $emotionRepository->findOneBy(array('id' => $args['element']['emotionId']));
-            if(isset($data['slider_filters']) && !empty($data['slider_filters']))
-            {
-                $filterFields = $this->checkExtraRulesOnFiltering($data['slider_filters']);
-            } else {
-                $filterFields = ["category_id"=>$emotionModel->getCategories()->first()->getId()];
-            }
+        $emotionModel = $emotionRepository->findOneBy(array('id' => $args['element']['emotionId']));
+        if(isset($data['slider_filters']) && !empty($data['slider_filters']))
+        {
+            $filterFields = $this->checkExtraRulesOnFiltering($data['slider_filters']);
         } else {
-            $filterFields = ["category_id" => $args->getSubject()->getEmotion($emotionRepository)[0]['categories'][0]['id']];
+            $filterFields = ["category_id"=>$emotionModel->getCategories()->first()->getId()];
         }
+
         $query = array_merge(array(
             'controller' => 'RecommendationSlider',
             'module' => 'frontend',

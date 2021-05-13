@@ -122,7 +122,8 @@ class Shopware_Plugins_Frontend_Boxalino_Bundle_Narrative_Finder
      * @return array|null
      */
     public function getContent() {
-        if (!$this->config->get('boxalino_active')) {
+        if (!$this->config->get('boxalino_active'))
+        {
             return null;
         }
 
@@ -170,6 +171,9 @@ class Shopware_Plugins_Frontend_Boxalino_Bundle_Narrative_Finder
             $this->viewData['highlighted'] = (sizeof($highlighted_articles)>0) ? "true" : "false";
             $this->viewData['top_match'] = $top_match;
             $this->viewData['max_score'] = round(max(array_values($scores)));
+            $this->viewData['narrative_bx_request_id'] = $this->helper->getRequestId($this->choice);
+            $this->viewData['narrative_bx_request_uuid'] = $this->helper->getRequestUuid($this->choice);
+            $this->viewData['narrative_bx_request_group_by'] = $this->helper->getRequestGroupBy($this->choice);
             if(empty($this->viewData['max_score']))
             {
                 $this->viewData['max_score'] = 0;
@@ -355,5 +359,6 @@ class Shopware_Plugins_Frontend_Boxalino_Bundle_Narrative_Finder
     {
         return null;
     }
+
 
 }

@@ -47,7 +47,7 @@
                 {if $sBlogArticles}
                     <div class="tab--container">
                         <div class="tab--content">
-                            <div class="blog--content block-group">
+                            <div class="blog--content block-group bx-narrative" data-bx-narrative-name="blog-list" data-bx-variant-uuid="{$blog_bx_request_uuid}" data-bx-narrative-group-by="{$blog_bx_request_groupby}">
                                 {block name='frontend_bx_search_blog_headline'}
                                     <h1 class="search--headline">
                                         {s name='bx_search_blog_headline'}Zu "{$term}" wurden {$bxBlogCount} Blog-Beitr&auml;ge gefunden!{/s}

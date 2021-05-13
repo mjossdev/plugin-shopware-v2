@@ -47,11 +47,7 @@ class Shopware_Plugins_Frontend_Boxalino_FrontendInterceptor
                 if(is_null($sArticle) || !isset($sArticle['articleID']))break;
                 $this->View()->addTemplateDir($this->Bootstrap()->Path() . 'Views/emotion/');
                 if ($this->Config()->get('boxalino_detail_recommendation_ajax')) {
-                    if(version_compare(Shopware::VERSION, '5.3.0', '>=')) {
-                        $this->View()->extendsTemplate('frontend/plugins/boxalino/detail/index_ajax_5_3.tpl');
-                    } else {
-                        $this->View()->extendsTemplate('frontend/plugins/boxalino/detail/index_ajax.tpl');
-                    }
+                    $this->View()->extendsTemplate('frontend/plugins/boxalino/detail/index_ajax_5_3.tpl');
                     if ($this->Config()->get('boxalino_detail_blog_recommendation')) {
                         $this->View()->assign('bx_load_blogs', true);
                     }
@@ -259,10 +255,7 @@ class Shopware_Plugins_Frontend_Boxalino_FrontendInterceptor
         $min = $this->Config()->get('boxalino_cart_recommendation_min');
         $this->Helper()->getRecommendation($choiceId, $max, $min, 0, $contextItems, 'basket', false, array(), false, $contextParams);
         $hitIds = $this->Helper()->getRecommendation($choiceId);
-        $trackingProperties = [
-            "bx_request_uuid" => $this->Helper()->getRequestUuid($choiceId),
-            'bx_request_groupby' => $this->Helper()->getRequestGroupBy($choiceId)
-        ];
+        $trackingProperties = $this->getTrackingHtmlAttributes($choiceId);
 
         $this->View()->addTemplateDir($this->Bootstrap()->Path() . 'Views/emotion/');
         if($this->Request()->getActionName() == 'ajaxCart') {
@@ -346,11 +339,7 @@ class Shopware_Plugins_Frontend_Boxalino_FrontendInterceptor
      */
     protected function addScript($script) {
         $this->View()->addTemplateDir($this->Bootstrap()->Path() . 'Views/emotion/');
-        if(version_compare(Shopware::VERSION, '5.3.0', '<')) {
-            $this->View()->extendsTemplate('frontend/plugins/boxalino/index.tpl');
-        } else {
-            $this->View()->extendsTemplate('frontend/plugins/boxalino/index_5_3.tpl');
-        }
+        $this->View()->extendsTemplate('frontend/plugins/boxalino/index_5_3.tpl');
         if ($script != null && $this->Config()->get('boxalino_tracking_enabled')) {
             $this->View()->assign('report_script', $script);
         }
@@ -375,6 +364,10 @@ class Shopware_Plugins_Frontend_Boxalino_FrontendInterceptor
         ];
     }
 
+    /**
+     * @param null $choiceId
+     * @return array
+     */
     public function getTrackingHtmlAttributes($choiceId=null)
     {
         return [
