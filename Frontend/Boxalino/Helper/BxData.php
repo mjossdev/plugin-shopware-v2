@@ -94,22 +94,12 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxData {
                         'label' => $snippetManager->get('category', 'Kategorie')
                     ];
                     $id = null;
-                    if(version_compare(Shopware::VERSION, '5.3.0', '<')) {
-                        if(isset($params[$mapper->getShortAlias('sCategory')])){
-                            $id = $params[$mapper->getShortAlias('sCategory')];
-                        } else if (isset($params['sCategory'])){
-                            $id = $params['sCategory'];
-                        } else {
-                            $id = Shopware()->Shop()->getCategory()->getId();
-                        }
+                    if (isset($params[$mapper->getShortAlias('categoryFilter')])){
+                        $id = $params[$mapper->getShortAlias('categoryFilter')];
+                    } else if (isset($params['categoryFilter'])){
+                        $id = $params['categoryFilter'];
                     } else {
-                        if (isset($params[$mapper->getShortAlias('categoryFilter')])){
-                            $id = $params[$mapper->getShortAlias('categoryFilter')];
-                        } else if (isset($params['categoryFilter'])){
-                            $id = $params['categoryFilter'];
-                        } else {
-                            $id = Shopware()->Shop()->getCategory()->getId();
-                        }
+                        $id = Shopware()->Shop()->getCategory()->getId();
                     }
                     if(!is_null($id)) {
                         $ids = explode('|', $id);
@@ -165,8 +155,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxData {
                     }
                     break;
                 case 'vote_average':
-                    $top = (version_compare(Shopware::VERSION, '5.3.0', '<')) ? 5 : 4;
-                    $vote = isset($params['rating']) ? range($params['rating'], $top) : null;
+                    $vote = isset($params['rating']) ? range($params['rating'], 4) : null;
                     $options['di_rating']['label'] = $snippetManager->get('vote_average', 'Bewertung');
                     if($vote) {
                         $options['di_rating']['value'] = $vote;
@@ -608,7 +597,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxData {
             {
                 return true;
             }
-             return !$result['hidefilter'];
+            return !$result['hidefilter'];
         }
         return true;
     }
