@@ -1051,8 +1051,8 @@ class BxFacets
 
             $facetRequest = new \com\boxalino\p13n\api\thrift\FacetRequest();
             $facetRequest->fieldName = $fieldName;
-            $facetRequest->numerical = $type == 'ranged' ? true : $type == 'numerical' ? true : false;
-            $facetRequest->range = $type == 'ranged' ? true : false;
+            $facetRequest->numerical = $type == 'ranged' || $type == 'numerical';
+            $facetRequest->range = $type == 'ranged';
             $facetRequest->boundsOnly = $facet['boundsOnly'];
             $facetRequest->selectedValues = $this->facetSelectedValue($fieldName, $type);
             $facetRequest->andSelectedValues = $andSelectedValues;
