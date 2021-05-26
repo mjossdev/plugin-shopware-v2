@@ -13,7 +13,7 @@
                     <div class="cpo-finder-expert-img-list"><img src="https://%%ExpertSelectionImage%%"></div>
                     <div class="cpo-finder-expert-name"><h4>%%ExpertFirstName%% %%ExpertLastName%%</h4></div>
                     <div class="cpo-finder-expert-characteristics">
-                        <ul><li><div class="cpo-finder-expert-description">%%ExpertDescription%%</div></li></ul>
+                        <ul><li><div="cpo-finder-expert-description">%%ExpertDescription%%</div></li></ul>
                     <div class="cpo-finder-expert-button">
                         <button type="button" name="button">{s namespace='boxalino/intelligence' name='productfinder/choose'}choose{/s}</button>
                     </div>
@@ -96,8 +96,8 @@
                     <div class="cpo-finder-center-show-more-less"></div>
                 </div>
                 <div class="cpo-finder-button-container"></div>
-                <div class="listingBlock cpo-finder-listing-container bx-narrative" {if $narrative_bx_request_uuid} data-bx-variant-uuid="{$narrative_bx_request_uuid}" data-bx-narrative-name="products-list"{/if}
-                        {if $narrative_bx_request_group_by} data-bx-narrative-group-by="{$narrative_bx_request_group_by}"{/if}>
+                <div class="listingBlock cpo-finder-listing-container bx-narrative" {if $Data.narrative_bx_request_uuid} data-bx-variant-uuid="{$Data.narrative_bx_request_uuid}" data-bx-narrative-name="products-list"{/if}
+                        {if $Data.narrative_bx_request_group_by} data-bx-narrative-group-by="{$Data.narrative_bx_request_group_by}"{/if}>
                     <div class="cpo-finder-listing-wrapper">
                         {block name="frontend_cpo_finder_listing_present"}
                             <div class="cpo-finder-listing bx-present product--details" data-ajax-wishlist="true" data-compare-ajax="true">
