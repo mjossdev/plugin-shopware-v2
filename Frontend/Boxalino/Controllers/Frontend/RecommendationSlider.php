@@ -189,6 +189,7 @@ class Shopware_Controllers_Frontend_RecommendationSlider extends Enlight_Control
             $this->View()->loadTemplate('frontend/_includes/product_slider_items.tpl');
             $path = Shopware()->Plugins()->Frontend()->Boxalino()->Path();
             $this->View()->addTemplateDir($path . 'Views/emotion/');
+            $this->View()->extendsTemplate('frontend/plugins/boxalino/_includes/product_slider_item.tpl');
             $this->View()->extendsTemplate('frontend/plugins/boxalino/listing/product-box/box-emotion.tpl');
             $this->View()->assign('articles', $articles);
             $this->View()->assign($this->getTrackingHtmlAttributes($helper, $choiceId));
