@@ -6,6 +6,6 @@
            {include file="frontend/plugins/boxalino/blog/recommendation.tpl" sArticle=$article}
        </div>
    {else}
-       {$smarty.block.parent}
+       {include file="frontend/listing/box_article.tpl" sArticle=$article productBoxLayout=$productBoxLayout fixedImageSize=$fixedImageSize}
    {/if}
 {/block}
