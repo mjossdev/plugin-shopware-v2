@@ -76,12 +76,6 @@ abstract class Shopware_Plugins_Frontend_Boxalino_Bundle_Search_BoxalinoSearch
         }
 
         $address = $_SERVER['HTTP_REFERER'];
-        $basePath = $request->getBasePath();
-        $start = strpos($address, $basePath) + strlen($basePath);
-        $end = strpos($address, '?');
-        $length = $end ? $end - $start : strlen($address);
-        $pathInfo = substr($address, $start, $length);
-        $request->setPathInfo($pathInfo);
         $params = explode('&', substr ($address,strpos($address, '?')+1, strlen($address)));
         foreach ($params as $index => $param){
             $keyValue = explode("=", $param);
