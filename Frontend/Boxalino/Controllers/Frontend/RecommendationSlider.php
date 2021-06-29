@@ -48,8 +48,6 @@ class Shopware_Controllers_Frontend_RecommendationSlider extends Enlight_Control
         $this->config = Shopware()->Config();
         $id = $this->request->getParam('articleId');
         if($id == 'sCategory') {
-            $exception = new \Exception("Request with empty parameters from : " . $_SERVER['HTTP_REFERER']);
-            Shopware()->Plugins()->Frontend()->Boxalino()->logException($exception, __FUNCTION__, $this->request->getRequestUri());
             return;
         } else if($id == '') {
             return;
@@ -95,7 +93,6 @@ class Shopware_Controllers_Frontend_RecommendationSlider extends Enlight_Control
                 $hitIds = $helper->getRecommendation($choiceIds[$recommendation], 0, 0, 0, 0, null, true, [], false, [], false, $allowDuplicatesOnPDPRecommendations);
                 $sArticles[$var_name] = array_merge($helper->getLocalArticles($hitIds));
                 $sArticles[$var_name."Tracking"] = $this->getTrackingHtmlAttributes($helper, $choiceIds[$recommendation]);
-                Shopware()->Container()->get("pluginlogger")->warning($var_name);
             }
         }
 
