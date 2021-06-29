@@ -7,7 +7,7 @@
        </div>
    {else}
        <div class="product-slider--item bxRecommendationSlider {if $bx_request_uuid}bx-narrative" data-bx-variant-uuid="{$bx_request_uuid}" data-bx-narrative-group-by="{$bx_request_groupby}"{else}"{/if}>
-           {$smarty.block.parent}
+           {include file="frontend/listing/box_article.tpl" sArticle=$article productBoxLayout=$productBoxLayout fixedImageSize=$fixedImageSize}
        </div>
    {/if}
 {/block}
