@@ -39,6 +39,8 @@
             me.$loader.fadeIn(me.opts.animationSpeed);
             me.lastSearchTerm = $.trim(searchTerm);
 
+            $.publish('plugin/swSearch/onSearchRequest', [me, searchTerm]);
+
             if (me.lastSearchAjax) {
                 me.lastSearchAjax.abort('searchTermChanged');
             }
@@ -60,6 +62,7 @@
 
                     me.showResult(htmlResponse);
                     $.publish('plugin/swSearch/onRtuxApiSearchResponse', [ this, searchTerm, response ]);
+                    $.publish('plugin/swSearch/onSearchResponse', [me, searchTerm, htmlResponse]);
                 },
                 error: function (response, statusText) {
                     if (statusText === 'searchTermChanged') {
