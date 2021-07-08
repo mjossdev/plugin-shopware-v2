@@ -69,27 +69,6 @@ abstract class Shopware_Plugins_Frontend_Boxalino_Bundle_Search_BoxalinoSearch
      */
     public function setRequestWithRefererParams()
     {
-        $request = $this->getRequest();
-        if(empty($request))
-        {
-            return $this;
-        }
-
-        $address = $_SERVER['HTTP_REFERER'];
-        $params = explode('&', substr ($address,strpos($address, '?')+1, strlen($address)));
-        foreach ($params as $index => $param){
-            $keyValue = explode("=", $param);
-            $params[$keyValue[0]] = $keyValue[1];
-            unset($params[$index]);
-        }
-        foreach ($params as $key => $value) {
-            $request->setParam($key, $value);
-            if($key == 'p') {
-                $request->setParam('sPage', (int) $value);
-            }
-        }
-
-        $this->setRequest($request);
         return $this;
     }
 
