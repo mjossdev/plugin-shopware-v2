@@ -87,8 +87,6 @@ class Shopware_Plugins_Frontend_Boxalino_Bundle_Search_ListingAjax
             } else {
                 $filter['products_stream_id'] = [$this->stream];
             }
-
-            $filter['stream'] = true;
         }
 
         if($supplier = $this->getRequest()->getParam('sSupplier')) {

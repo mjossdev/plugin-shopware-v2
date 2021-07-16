@@ -184,7 +184,8 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         return $filters;
     }
 
-    public function addFinder($hitCount = 1, $choiceId = 'productfinder', $filter=[], $type = 'product', $finder_type = 1){
+    public function addFinder($hitCount = 1, $choiceId = 'productfinder', $filter=[], $type = 'product', $finder_type = 1)
+    {
         $this->flushResponses();
         $this->resetRequests();
         $lang = $this->getShortLocale();
@@ -428,14 +429,9 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         return false;
     }
 
-    protected function addNarrativeRequest($choice, $hitCount, $pageOffset, $sort, $options = array(), $filters = array())
+    protected function addNarrativeRequest($choice, $hitCount, $pageOffset, $sort, $options = array(), $filters = array(), $stream = false)
     {
         $lang = $this->getShortLocale();
-        $stream = false;
-        if(isset($filters['stream'])) {
-            $stream = $filters['stream'];
-            unset($filters['stream']);
-        }
         if(strpos($choice, 'banner') !== FALSE) {
             $type = 'bxi_content';
             $returnFields = $this->getReturnFields($type);
@@ -482,11 +478,11 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
         self::$bxClient->addRequest($bxRequest);
     }
 
-    public function getNarrative($choiceId, $additional_choices, $options, $hitCount, $pageOffset, $sort, $params=[], $filters=[], $execute = false)
+    public function getNarrative($choiceId, $additional_choices, $options, $hitCount, $pageOffset, $sort, $params=[], $filters=[], $execute = false, $stream=false)
     {
         if(is_null(self::$bxClient->getChoiceIdRecommendationRequest($choiceId)))
         {
-            $this->addNarrativeRequest($choiceId, $hitCount, $pageOffset, $sort, $options, $filters);
+            $this->addNarrativeRequest($choiceId, $hitCount, $pageOffset, $sort, $options, $filters, $stream);
             foreach ($params as $key => $value) {
                 self::$bxClient->addRequestContextParameter($key, $value);
                 if ($key == 'choice_id') {
@@ -503,7 +499,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_P13NHelper {
                 $choice_ids = explode(',', $additional_choices);
                 if (is_array($choice_ids)) {
                     foreach ($choice_ids as $choice) {
-                        $this->addNarrativeRequest($choice, $hitCount, $pageOffset, $sort, $options, $filters);
+                        $this->addNarrativeRequest($choice, $hitCount, $pageOffset, $sort, $options, $filters, $stream);
                     }
                 }
             }

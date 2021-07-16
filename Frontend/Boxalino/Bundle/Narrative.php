@@ -90,7 +90,8 @@ class Shopware_Plugins_Frontend_Boxalino_Bundle_Narrative
             $this->getSearchBundle()->getSort(),
             $this->getRequest(),
             $this->getSearchBundle()->getFilters(),
-            $this->getExecute()
+            $this->getExecute(),
+            $this->getSearchBundle()->getIsStream()
         );
 
         $this->setRequest($this->getSearchBundle()->getRequest());
