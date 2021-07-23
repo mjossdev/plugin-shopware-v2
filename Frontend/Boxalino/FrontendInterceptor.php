@@ -361,6 +361,7 @@ class Shopware_Plugins_Frontend_Boxalino_FrontendInterceptor
             "suggestionsCount" => $this->Config()->get('boxalino_textual_suggestion_limit'),
             "apiKeyJs" => $this->Config()->get('boxalino_api_key_js'),
             "apiAccountJs" => $this->Config()->get('boxalino_account'),
+            "widget" => $this->Config()->get('boxalino_autocomplete_widget_name')
         ];
     }
 
