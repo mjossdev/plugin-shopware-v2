@@ -17,6 +17,7 @@
                 "apiPreferentialKey": "{$bxApiConfig['apiKeyJs']}",
                 "dev": '{$bxApiConfig["dev"]}'=='1' ? true : false,
                 "test": '{$bxApiConfig["test"]}'=='1' ? true : false,
+                "widget": '{$bxApiConfig["widget"]}',
                 "suggestionsCount":{$bxApiConfig['suggestionsCount']},
                 "productsCount":{$bxApiConfig['productsCount']},
                 "language": "{$Shop->getLocale()->toString()}",

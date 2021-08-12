@@ -13,7 +13,7 @@
         return window.rtuxApiHelper.getApiRequestData(
             window.rtuxAutocomplete['apiPreferentialAccount'],
             window.rtuxAutocomplete['apiPreferentialKey'],
-            'autocomplete',
+            window.rtuxAutocomplete['widget'],
             window.rtuxAutocomplete['language'],
             'products_group_id',
             window.rtuxAutocomplete['productsCount'],
