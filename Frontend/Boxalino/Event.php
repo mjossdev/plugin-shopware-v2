@@ -115,7 +115,8 @@ class Shopware_Plugins_Frontend_Boxalino_Event
             return self::BXL_INTELLIGENCE_TRACKER;
         }
         $isDev = Shopware()->Config()->get('boxalino_dev');
-        if($isDev)
+        $isTest = Shopware()->Config()->get('boxalino_test');
+        if($isDev || $isTest)
         {
             return self::BXL_INTELLIGENCE_STAGE_TRACKER;
         }
