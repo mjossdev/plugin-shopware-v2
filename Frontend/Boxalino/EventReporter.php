@@ -56,7 +56,8 @@ SCRIPT;
             return self::BXL_INTELLIGENCE_SCRIPT;
         }
         $isDev = Shopware()->Config()->get('boxalino_dev');
-        if($isDev)
+        $isTest = Shopware()->Config()->get('boxalino_test');
+        if($isDev || $isTest)
         {
             return self::BXL_INTELLIGENCE_STAGE_SCRIPT;
         }
