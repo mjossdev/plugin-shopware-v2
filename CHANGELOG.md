@@ -5,6 +5,13 @@ On every plugin update - please check the file and what needs to be tested on yo
 
 If you have any question, just contact us at support@boxalino.com
 
+### v5.7.x
+* *setup version* : 5.7.x
+
+Use this tag only for the Shopware5.7 and newer setups.
+For other Shopware5 versions, please use the older tags.
+
+
 ### v3.2
 * *setup version* : 3.2
 
