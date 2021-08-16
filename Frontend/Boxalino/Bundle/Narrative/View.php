@@ -27,7 +27,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bundle_Narrative_View
 
     public function createView($viewElement, $additionalParameter, $otherTemplateData = array())
     {
-        $view =  new Enlight_View_Default(Shopware()->Container()->get('Template'));
+        $view =  new Enlight_View_Default(Shopware()->Container()->get('template'));
 
         $this->applyThemeConfig($view);
         $this->assignSubRenderings($view, $viewElement);
@@ -41,7 +41,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bundle_Narrative_View
         $inheritance = Shopware()->Container()->get('theme_inheritance');
 
         /** @var \Shopware\Models\Shop\Shop $shop */
-        $shop = Shopware()->Container()->get('Shop');
+        $shop = Shopware()->Container()->get('shop');
         $config = $inheritance->buildConfig($shop->getTemplate(), $shop, false);
         Shopware()->Container()->get('template')->addPluginsDir(
             $inheritance->getSmartyDirectories(

@@ -105,7 +105,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         if (!$this->Config()->get('boxalino_active')) {
             return null;
         }
-        $view = new Enlight_View_Default($this->get('Template'));
+        $view = new Enlight_View_Default($this->get('template'));
         $view = $this->prepareViewConfig($view);
 
         $searchBundle = new Shopware_Plugins_Frontend_Boxalino_Bundle_Search($this->Helper(), "landingPage");
@@ -969,7 +969,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         $inheritance = $this->container->get('theme_inheritance');
 
         /** @var \Shopware\Models\Shop\Shop $shop */
-        $shop = $this->container->get('Shop');
+        $shop = $this->container->get('shop');
 
         $config = $inheritance->buildConfig($shop->getTemplate(), $shop, false);
 
@@ -1022,7 +1022,7 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
         $inheritance = $this->container->get('theme_inheritance');
 
         /** @var \Shopware\Models\Shop\Shop $shop */
-        $shop = $this->container->get('Shop');
+        $shop = $this->container->get('shop');
 
         $config = $inheritance->buildConfig($shop->getTemplate(), $shop, false);
 
