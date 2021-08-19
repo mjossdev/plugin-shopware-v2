@@ -935,12 +935,6 @@ class Shopware_Plugins_Frontend_Boxalino_SearchInterceptor
                 ->where("$ordernumber = ?", $search)
                 ->limit(2);
             $articles = $db->fetchCol($sql);
-
-            if (empty($articles)) {
-                $percent = $db->quote('%');
-                $sql->orWhere("? LIKE CONCAT($ordernumber, $percent)", $search);
-                $articles = $db->fetchCol($sql);
-            }
         }
         if (!empty($articles) && count($articles) == 1) {
             $sql = $db->select()
