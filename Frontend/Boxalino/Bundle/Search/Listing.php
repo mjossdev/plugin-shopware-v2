@@ -20,12 +20,18 @@ class Shopware_Plugins_Frontend_Boxalino_Bundle_Search_Listing
         $this->sSortRule = $requestOrder;
         if(is_null($this->sSortRule))
         {
-            $specialCase = $this->config->get('boxalino_navigation_special_enabled');
-            $ids = explode(',', $this->config->get('boxalino_navigation_exclude_ids'));
-            $sSortValue = Shopware_Plugins_Frontend_Boxalino_Bundle_Sorting_BoxalinoSortingInterface::BOXALINO_BUNDLE_SORTING_DEFAULT;
-            if($specialCase && in_array($this->getRequest()->getParam('sCategory'), $ids)) {
-                $sSortValue = $defaultListingSort;
+            $sSortValue = $this->_getConfiguredSortRuleOnListing();
+            if(is_null($sSortValue))
+            {
+                $specialCase = $this->config->get('boxalino_navigation_special_enabled');
+                $ids = explode(',', $this->config->get('boxalino_navigation_exclude_ids'));
+                $sSortValue = $this->getBoxalinoDefaultListingSortingValue();
+                if($specialCase && in_array($this->getRequest()->getParam('sCategory'), $ids))
+                {
+                    $sSortValue = $defaultListingSort;
+                }
             }
+
             $this->getRequest()->setParam("sSort", $sSortValue);
             $this->sSortRule = $sSortValue;
         }
@@ -37,7 +43,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bundle_Search_Listing
             if($this->getSortBundle()->getUseBoxalinoSort())
             {
                 $defaultListingSort = null;
-                $this->getRequest()->setParam("sSort", Shopware_Plugins_Frontend_Boxalino_Bundle_Sorting_BoxalinoSortingInterface::BOXALINO_BUNDLE_SORTING_DEFAULT);
+                $this->getRequest()->setParam("sSort", $this->getBoxalinoDefaultListingSortingValue());
             }
             $this->sSortRule = $defaultListingSort;
         }
@@ -111,5 +117,31 @@ class Shopware_Plugins_Frontend_Boxalino_Bundle_Search_Listing
 
         return $filter;
     }
+
+    /**
+     * Check in DB if there is a custom sorting configured on the category (ex: newest first)
+     * Solution proposed by @mjossdev
+     */
+    protected function _getConfiguredSortRuleOnListing()
+    {
+        /** @var Doctrine\DBAL\Connection $connection */
+        $connection = $this->get('dbal_connection');
+        $categoryId = $this->getRequest()->getParam('sCategory');
+        $sortingIdsStr = $connection->createQueryBuilder()
+            ->select('sorting_ids')
+            ->from('s_categories')
+            ->where('id = :id')
+            ->setParameter('id', $categoryId)
+            ->execute()
+            ->fetchColumn();
+        $sortingIds = array_values(array_filter(explode('|', $sortingIdsStr)));
+        if (count($sortingIds) > 0)
+        {
+            return $sortingIds[0];
+        }
+
+        return null;
+    }
+
 
 }

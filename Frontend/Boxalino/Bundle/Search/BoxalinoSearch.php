@@ -169,6 +169,11 @@ abstract class Shopware_Plugins_Frontend_Boxalino_Bundle_Search_BoxalinoSearch
         return $this->get('config')->get('defaultListingSorting');
     }
 
+    public function getBoxalinoDefaultListingSortingValue()
+    {
+        return Shopware_Plugins_Frontend_Boxalino_Bundle_Sorting_BoxalinoSortingInterface::BOXALINO_BUNDLE_SORTING_DEFAULT;
+    }
+
     public function setRequest($request)
     {
         $this->request = $request;
