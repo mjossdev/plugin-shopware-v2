@@ -46,7 +46,7 @@
             }
 
             var requestUrl = window.rtuxApiHelper.getApiRequestUrl();
-            var apiRequestData = _getApiRequestData(searchTerm);
+            var apiRequestData = _getApiRequestData(me.lastSearchTerm);
             var apiAcRenderer = $.getRtuxApiAcRenderer();
 
             me.lastSearchAjax = $.ajax({
@@ -57,7 +57,7 @@
                 dataType: "json",
                 ignoreCSRFHeader: true,
                 success: function (response) {
-                    var htmlResponse = apiAcRenderer.getHtml(JSON.stringify(response), searchTerm);
+                    var htmlResponse = apiAcRenderer.getHtml(JSON.stringify(response), me.lastSearchTerm);
                     if(apiRequestData.test) { console.log(JSON.stringify(response)); console.log(htmlResponse);}
 
                     me.showResult(htmlResponse);
