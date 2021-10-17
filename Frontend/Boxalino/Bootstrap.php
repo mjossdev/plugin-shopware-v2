@@ -52,7 +52,7 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
     }
 
     public function getVersion() {
-        return '5.7.2';
+        return '5.7.3';
     }
 
     public function getInfo() {
