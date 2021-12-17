@@ -18,19 +18,19 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
     protected $request;
     protected $manager;
 
-    protected $propertyDescriptions = array();
+    protected $propertyDescriptions = [];
     protected $dirPath = null;
     protected $db;
     protected $log;
     protected $delta = false;
     protected $deltaLast;
     protected $fileHandle;
-    protected $deltaIds = array();
+    protected $deltaIds = [];
     protected $_config;
     protected $bxData;
-    protected $_attributes = array();
-    protected $shopProductIds = array();
-    protected $rootCategories = array();
+    protected $_attributes = [];
+    protected $shopProductIds = [];
+    protected $rootCategories = [];
 
     protected $account = null;
     protected $files = null;
@@ -244,6 +244,17 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
                 $this->exportItemImages();
                 $this->log->info("BxIndexLog: -- exportItemImages after memory: " . memory_get_usage(true));
                 $this->log->info("BxIndexLog: Finished products - image.");
+
+                try{
+                    $this->log->info("BxIndexLog: Preparing products - cover image.");
+                    $this->exportItemCoverImages();
+                    $this->log->info("BxIndexLog: -- exportItemCoverImages after memory: " . memory_get_usage(true));
+                    $this->log->info("BxIndexLog: Finished products - cover image.");
+                } catch (\Throwable $exception)
+                {
+                    $this->log->info("BxIndexLog: error on exporting cover image: " . $exception->getMessage());
+                }
+
             }
             if ($this->_config->exportProductUrl($account)) {
                 $this->log->info("BxIndexLog: Preparing products - url.");
@@ -299,7 +310,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
         $countMax = 100000000;
         $limit = 1000000;
         $header = true;
-        $data = array();
+        $data = [];
         $categoryShopIds = $this->_config->getShopCategoryIds($account);
         $main_shop_id = $this->_config->getAccountStoreId($account);
         $startforeach = microtime(true);
@@ -314,11 +325,11 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
             {
                 $sql = $db->select()
                     ->from(array('s_articles'), $product_properties)
-                    ->join(array('s_articles_details'), 's_articles_details.articleID = s_articles.id', array())
-                    ->join(array('s_articles_attributes'), 's_articles_attributes.articledetailsID = s_articles_details.id', array())
-                    ->join(array('s_articles_categories'), 's_articles_categories.articleID = s_articles_details.articleID', array())
+                    ->join(array('s_articles_details'), 's_articles_details.articleID = s_articles.id', [])
+                    ->join(array('s_articles_attributes'), 's_articles_attributes.articledetailsID = s_articles_details.id', [])
+                    ->join(array('s_articles_categories'), 's_articles_categories.articleID = s_articles_details.articleID', [])
                     ->joinLeft(array('s_articles_prices'), 's_articles_prices.articledetailsID = s_articles_details.id', array('price'))
-                    ->joinLeft(array('s_categories'), 's_categories.id = s_articles_categories.categoryID', array())
+                    ->joinLeft(array('s_categories'), 's_categories.id = s_articles_categories.categoryID', [])
                     ->where('s_articles.mode = ?', 0)
                     ->where('s_categories.path LIKE \'%|' . $category_id . '|%\'')
                     ->limit($limit, ($page - 1) * $limit)
@@ -442,7 +453,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
                 ->orWhere($this->qi('main_id') . ' = ?', $id);
 
             $cPath = $this->qi('c.path');
-            $catIds = array();
+            $catIds = [];
             foreach ($db->fetchCol($sql) as $categoryId) {
                 $catIds[] = "$cPath LIKE " . $db->quote("%|$categoryId|%");
             }
@@ -463,7 +474,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
      */
     protected function getShopCategoryIds($id)
     {
-        $shopCat = array();
+        $shopCat = [];
         $db = $this->db;
         $sql = $db->select()
             ->from('s_core_shops', array('id', 'category_id'))
@@ -489,11 +500,11 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
     {
         $files = $this->getFiles();
         $db = $this->db;
-        $data = array();
+        $data = [];
         $header = true;
         $count = 0;
         $sql = $db->select()
-            ->from(array('a' => 's_articles'), array())
+            ->from(array('a' => 's_articles'), [])
             ->join(
                 array('d' => 's_articles_details'),
                 $this->qi('d.articleID') . ' = ' . $this->qi('a.id') . ' AND ' .
@@ -540,7 +551,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
     {
         $files = $this->getFiles();
         $db = $this->db;
-        $data = array();
+        $data = [];
         $header = true;
         $sql = $db->select()
             ->from(array('a' => 's_articles_vote'),
@@ -568,10 +579,10 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
         $files->savepartToCsv('vote.csv', $data);
         $referenceKey = $this->bxData->addResourceFile($files->getPath('vote.csv'), 'articleID', ['average']);
 
-        $data = array();
+        $data = [];
         $header = true;
         $sql = $db->select()
-            ->from(array('a' => 's_articles'), array())
+            ->from(array('a' => 's_articles'), [])
             ->join(
                 array('d' => 's_articles_details'),
                 $this->qi('d.articleID') . ' = ' . $this->qi('a.id') . ' AND ' .
@@ -594,7 +605,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
                 $data[$row['id']] = array('id' => $row['id'], 'articleID' => $row['articleID']);
                 if(sizeof($data) > 1000) {
                     $files->savepartToCsv('product_vote.csv', $data);
-                    $data = array();
+                    $data = [];
                 }
             }
         }
@@ -628,7 +639,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
                 array('d.id', 'd.articleID', 'd.instock', 'd.active')
             )
             ->joinLeft(array('a_p' => 's_articles_prices'), 'a_p.articledetailsID = d.id', array('price', 'pseudoprice'))
-            ->joinLeft(array('c_c' => 's_core_customergroups'), 'c_c.groupkey = a_p.pricegroup',array())
+            ->joinLeft(array('c_c' => 's_core_customergroups'), 'c_c.groupkey = a_p.pricegroup',[])
             ->joinLeft(array('c_t' => 's_core_tax'), 'c_t.id = a.taxID', array('tax'))
             ->joinLeft(
                 array('p_d' => 's_core_pricegroups_discounts'),
@@ -641,8 +652,8 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
             $sql->where('a.id IN(?)', $this->deltaIds);
         }
 
-        $grouped_price = array();
-        $data = array();
+        $grouped_price = [];
+        $data = [];
         $stmt = $db->query($sql);
         while ($row = $stmt->fetch()) {
             if(!isset($this->shopProductIds[$row['id']])){
@@ -701,8 +712,8 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
         $db = $this->db;
         $account = $this->getAccount();
         $files = $this->getFiles();
-        $mapped_option_values = array();
-        $option_values = array();
+        $mapped_option_values = [];
+        $option_values = [];
         $languages = $this->_config->getAccountLanguages($account);
         $sql = $db->select()->from(array('f_o' => 's_filter_options'));
         $facets = $db->fetchAll($sql);
@@ -711,8 +722,8 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
             $facet_id = $facet['id'];
             $facet_name = "option_{$facet_id}";
 
-            $data = array();
-            $localized_columns = array();
+            $data = [];
+            $localized_columns = [];
             $foreachstart = microtime(true);
             foreach ($languages as $shop_id => $language) {
                 $localized_columns[$language] = "value_{$language}";
@@ -759,7 +770,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
 
             $sql = $db->select()
                 ->from(array('a' => 's_articles'),
-                    array()
+                    []
                 )
                 ->join(
                     array('d' => 's_articles_details'),
@@ -773,7 +784,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
                 )
                 ->join(array('f_a' => 's_filter_articles'),
                     'f_a.articleID = a.id  AND f_v.id = f_a.valueID',
-                    array()
+                    []
                 );
             if ($this->delta) {
                 $sql->where('a.id IN(?)', $this->deltaIds);
@@ -831,7 +842,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
             'assigned_articles', 'tags', 'media_id', 'shop_id', 'media_url');
         $id = $this->_config->getAccountStoreId($account);
         $shopCategories = $this->getShopCategoryIds($id);
-        $data = array();
+        $data = [];
         $media_service = Shopware()->Container()->get('shopware_media.media_service');
         $sql = $db->select()
             ->from(array('b' => 's_blog'),
@@ -846,10 +857,10 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
                     'media_path' => 'm.path'
                 )
             )
-            ->joinLeft(array('bas' => 's_blog_assigned_articles'), 'bas.blog_id = b.id',array())
-            ->joinLeft(array('bt' => 's_blog_tags'), 'bt.blog_id = b.id',array())
-            ->joinLeft(array('bm' => 's_blog_media'), 'bm.blog_id = b.id AND bm.preview = 1',array())
-            ->joinLeft(array('m' => 's_media'), 'bm.media_id = m.id',array())
+            ->joinLeft(array('bas' => 's_blog_assigned_articles'), 'bas.blog_id = b.id',[])
+            ->joinLeft(array('bt' => 's_blog_tags'), 'bt.blog_id = b.id',[])
+            ->joinLeft(array('bm' => 's_blog_media'), 'bm.blog_id = b.id AND bm.preview = 1',[])
+            ->joinLeft(array('m' => 's_media'), 'bm.media_id = m.id',[])
             ->join(
                 array('c' => 's_categories'),
                 $this->qi('c.id') . ' = ' . $this->qi('b.category_id') .
@@ -900,9 +911,9 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
         $shop = $repository->getActiveById($main_shopId);
         $defaultPath = 'http://'. $shop->getHost() . $shop->getBasePath() . '/';
         $languages = $this->_config->getAccountLanguages($account);
-        $lang_header = array();
-        $lang_productPath = array();
-        $data = array();
+        $lang_header = [];
+        $lang_productPath = [];
+        $data = [];
         foreach ($languages as $shopId => $language) {
             $lang_header[$language] = "value_$language";
             $shop = $repository->getActiveById($shopId);
@@ -948,7 +959,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
             }
         }
         $sql = $db->select()
-            ->from(array('a' => 's_articles'), array())
+            ->from(array('a' => 's_articles'), [])
             ->join(
                 array('d' => 's_articles_details'),
                 $this->qi('d.articleID') . ' = ' . $this->qi('a.id') . ' AND ' .
@@ -979,7 +990,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
         $files->savepartToCsv('url.csv', $data);
         $referenceKey = $this->bxData->addResourceFile($files->getPath('url.csv'), 'articleID', $lang_header);
         $sql = $db->select()
-            ->from(array('a' => 's_articles'), array())
+            ->from(array('a' => 's_articles'), [])
             ->join(
                 array('d' => 's_articles_details'),
                 $this->qi('d.articleID') . ' = ' . $this->qi('a.id') . ' AND ' .
@@ -1012,7 +1023,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
         $account = $this->getAccount();
         $files = $this->getFiles();
         $db = $this->db;
-        $data = array();
+        $data = [];
         $pipe = $db->quote('|');
         $fieldMain = $this->qi('s_articles_img.main');
         $imagePath = $this->qi('s_media.path');
@@ -1026,7 +1037,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
                 ORDER BY $fieldMain, $fieldPosition
                 SEPARATOR $pipe)")
             )
-            ->join(array('s_media'), 's_media.id = s_articles_img.media_id', array())
+            ->join(array('s_media'), 's_media.id = s_articles_img.media_id', [])
             ->where('s_articles_img.articleID = a.id');
 
         $sql = $db->select()
@@ -1063,6 +1074,54 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
     }
 
     /**
+     * Export item images link
+     *
+     * @throws Zend_Db_Adapter_Exception
+     * @throws Zend_Db_Statement_Exception
+     */
+    public function exportItemCoverImages()
+    {
+        $files = $this->getFiles();
+        $db = $this->db;
+        $data = [];
+        $imagePath = $this->qi('s_media.path');
+        $header = true;
+        $mediaService = Shopware()->Container()->get('shopware_media.media_service');
+        $inner_select = $db->select()
+            ->from('s_articles_img', [$imagePath])
+            ->join(array('s_media'), 's_media.id = s_articles_img.media_id', [])
+            ->where('s_articles_img.articleID = a.id')
+            ->where('s_articles_img.main = 1');
+
+        $sql = $db->select()
+            ->from(array('a' => 's_articles'), array('value' => new Zend_Db_Expr("($inner_select)")))
+            ->join(
+                array('d' => 's_articles_details'),
+                $this->qi('d.articleID') . ' = ' . $this->qi('a.id') . ' AND ' .
+                $this->qi('d.kind') . ' <> ' . $db->quote(3),
+                array('id')
+            );
+        if ($this->delta) {
+            $sql->where('a.id IN(?)', $this->deltaIds);
+        }
+        $stmt = $db->query($sql);
+        while ($row = $stmt->fetch()) {
+            if(!isset($this->shopProductIds[$row['id']])){
+                continue;
+            }
+            if($header) {
+                $data[] = array_keys($row);
+                $header = false;
+            }
+            $row['value'] =  $mediaService->getUrl($row['value']);
+            $data[] = $row;
+        }
+        $files->savepartToCsv('product_cover_image_url.csv', $data);
+        $sourceKey = $this->bxData->addCSVItemFile($files->getPath('product_cover_image_url.csv'), 'id');
+        $this->bxData->addSourceStringField($sourceKey, 'cover_image', 'value');
+    }
+
+    /**
      * Export item brands/suppliers
      * Create file product_brands.csv
      *
@@ -1073,10 +1132,10 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
     {
         $db = $this->db;
         $files = $this->getFiles();
-        $data = array();
+        $data = [];
         $header = true;
         $sql = $db->select()
-            ->from(array('a' => 's_articles'), array())
+            ->from(array('a' => 's_articles'), [])
             ->join(
                 array('d' => 's_articles_details'),
                 $this->qi('d.articleID') . ' = ' . $this->qi('a.id') . ' AND ' .
@@ -1119,17 +1178,17 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
         $db = $this->db;
         $account = $this->getAccount();
         $files = $this->getFiles();
-        $data = array();
-        $selectFields = array();
-        $attributeValueHeader = array();
-        $translationJoins = array();
+        $data = [];
+        $selectFields = [];
+        $attributeValueHeader = [];
+        $translationJoins = [];
         $select = $db->select();
         foreach ($this->_config->getAccountLanguages($account) as $shop_id => $language) {
-            $select->joinLeft(array("t_{$language}" => "s_articles_translations"), "t_{$language}.articleID = sa.id AND t_{$language}.languageID = {$shop_id}", array());
+            $select->joinLeft(array("t_{$language}" => "s_articles_translations"), "t_{$language}.articleID = sa.id AND t_{$language}.languageID = {$shop_id}", []);
             $translationJoins[$shop_id] = "t_{$language}";
             foreach ($this->translationFields as $field) {
                 if(!isset($attributeValueHeader[$field])){
-                    $attributeValueHeader[$field] = array();
+                    $attributeValueHeader[$field] = [];
                 }
                 $column = "{$field}_{$language}";
                 $attributeValueHeader[$field][$language] = $column;
@@ -1142,14 +1201,14 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
         $header = true;
         $countMax = 2000000;
         $limit = 1000000;
-        $doneCases = array();
+        $doneCases = [];
         $log = true;
         $totalCount = 0;
         $start = microtime(true);
         $page = 1;
         $select->from(array('sa' => 's_articles'), $selectFields)
-            ->join(array('a' => 's_articles_details'), 'a.articleID = sa.id', array())
-            ->joinLeft(array('b' => 's_articles_attributes'), 'a.id = b.articledetailsID', array())
+            ->join(array('a' => 's_articles_details'), 'a.articleID = sa.id', [])
+            ->joinLeft(array('b' => 's_articles_attributes'), 'a.id = b.articledetailsID', [])
             ->order('sa.id');
 
         while($countMax > $totalCount + $limit) {
@@ -1225,7 +1284,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
         $db = $this->db;
         $account = $this->getAccount();
         $files = $this->getFiles();
-        $categories = array();
+        $categories = [];
         $header = true;
         $languages = $this->_config->getAccountLanguages($account);
         $select = $db->select()->from(array('c' => 's_categories'), array('id', 'parent', 'description', 'path'));
@@ -1253,8 +1312,8 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
         $categories = null;
         $this->bxData->addCategoryFile($files->getPath('categories.csv'), 'category_id', 'parent_id', $language_headers);
         $language_headers = null;
-        $data = array();
-        $doneCases = array();
+        $data = [];
+        $doneCases = [];
         $header = true;
         $categoryShopIds = $this->_config->getShopCategoryIds($account);
 
@@ -1262,14 +1321,14 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
         foreach ($languages as $shop_id => $language) {
             $category_id = $categoryShopIds[$shop_id];
             $sql = $db->select()
-                ->from(array('ac' => 's_articles_categories_ro'), array())
+                ->from(array('ac' => 's_articles_categories_ro'), [])
                 ->join(
                     array('d' => 's_articles_details'),
                     $this->qi('d.articleID') . ' = ' . $this->qi('ac.articleID') . ' AND ' .
                     $this->qi('d.kind') . ' <> ' . $db->quote(3),
                     array('d.id', 'ac.categoryID')
                 )
-                ->joinLeft(array('c' => 's_categories'), 'ac.categoryID = c.id', array())
+                ->joinLeft(array('c' => 's_categories'), 'ac.categoryID = c.id', [])
                 ->where('c.path LIKE \'%|' . $category_id . '|%\'');
             if ($this->delta) {
                 $sql->where('d.articleID IN(?)', $this->deltaIds);
@@ -1320,9 +1379,9 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
         $files = $this->getFiles();
         $languages = $this->_config->getAccountLanguages($account);
         $header = true;
-        $data = array();
-        $doneCases = array();
-        $headers = array();
+        $data = [];
+        $doneCases = [];
+        $headers = [];
         foreach ($languages as $shop_id => $language) {
             $sql = $db->select()->from(array('v' => 's_emarketing_vouchers'),
                 array('v.*',
@@ -1361,7 +1420,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
         foreach ($headers as $header){
             $this->bxData->addSourceStringField($attributeSourceKey, 'voucher_'.$header, $header);
         }
-        $data = array();
+        $data = [];
         $header = true;
         $sql = $db->select()->from(array('v_c' => 's_emarketing_voucher_codes'));
         $voucherCodes = $db->fetchAll($sql);
@@ -1376,7 +1435,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
                 $data[] = $row;
             }
         }
-        $doneCases = array();
+        $doneCases = [];
         $files->savePartToCsv('voucher_codes.csv', $data);
         $this->bxData->addCSVItemFile($files->getPath('voucher_codes.csv'), 'id');
     }
@@ -1388,7 +1447,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
     public function getCustomerAttributes()
     {
         $account = $this->getAccount();
-        $all_attributes = array();
+        $all_attributes = [];
         $this->log->info('BxIndexLog: get all customer attributes for account: ' . $account);
         $db = $this->db;
         $db_name = $db->getConfig()['dbname'];
@@ -1425,7 +1484,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
     public function getTransactionAttributes()
     {
         $account = $this->getAccount();
-        $all_attributes = array();
+        $all_attributes = [];
         $this->log->info('BxIndexLog: get all transaction attributes for account: ' . $account);
         $db = $this->db;
         $db_name = $db->getConfig()['dbname'];
@@ -1460,7 +1519,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
      */
     public function getTransactionAddressAttributes()
     {
-        $addressAttributes = array();
+        $addressAttributes = [];
         $db = $this->db;
         $db_name = $db->getConfig()['dbname'];
         $tables = ['s_order_billingaddress', 's_order_shippingaddress'];
@@ -1494,7 +1553,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
     public function getProductAttributes()
     {
         $account = $this->getAccount();
-        $all_attributes = array();
+        $all_attributes = [];
         $exclude = array_merge($this->translationFields, array('articleID','id','active', 'articledetailsID'));
         $db = $this->db;
         $db_name = $db->getConfig()['dbname'];
@@ -1557,7 +1616,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
             );
 
         foreach ($this->_config->getAccountLanguages($account) as $shop_id => $language) {
-            $data = array();
+            $data = [];
             $countMax = 1000000;
             $limit = 3000;
             $totalCount = 0;
@@ -1571,7 +1630,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
                     ->joinLeft(
                         array('s_user_billingaddress' => new Zend_Db_Expr("(" . $latestOrderSQL->__toString() .")") ),
                         $this->qi('s_user_billingaddress.userID') . ' = ' . $this->qi('s_user.id'),
-                        array()
+                        []
                     )
                     ->joinLeft(
                         array('s_core_countries'),
@@ -1665,7 +1724,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
         );
 
         $header = true;
-        $data = array();
+        $data = [];
         $countMax = 10000000;
         $limit = 3000;
         $totalCount = 0;
@@ -1683,12 +1742,12 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
                     ->joinLeft(
                         array('s_order_shippingaddress'),
                         $this->qi('s_order.id') . ' = ' . $this->qi('s_order_shippingaddress.orderID'),
-                        array()
+                        []
                     )
                     ->joinLeft(
                         array('s_order_billingaddress'),
                         $this->qi('s_order.id') . ' = ' . $this->qi('s_order_billingaddress.orderID'),
-                        array()
+                        []
                     )
                     ->joinLeft(
                         array('c_b' => 's_core_countries'),
@@ -1718,7 +1777,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
                     ->joinLeft(
                         array('s_order_details'),
                         $this->qi('s_order_details.orderID') . ' = ' . $this->qi('s_order.id'),
-                        array()
+                        []
                     )
                     ->joinLeft(
                         array('a_d' => 's_articles_details'),
@@ -2040,7 +2099,7 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
         } catch(\Exception $exc)
         {
             $this->log->warning("BxIndexLog: {$table} - additional table error: ". $exc->getMessage());
-            return array();
+            return [];
         }
     }
 
