@@ -155,7 +155,7 @@ class Shopware_Plugins_Frontend_Boxalino_Helper_BxData {
                     }
                     break;
                 case 'vote_average':
-                    $vote = isset($params['rating']) ? range($params['rating'], 4) : null;
+                    $vote = isset($params['rating']) ? range(max($params["rating"],1), 4) : null;
                     $options['di_rating']['label'] = $snippetManager->get('vote_average', 'Bewertung');
                     if($vote) {
                         $options['di_rating']['value'] = $vote;
