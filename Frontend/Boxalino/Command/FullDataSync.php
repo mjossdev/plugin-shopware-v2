@@ -36,8 +36,8 @@ class Shopware_Plugins_Frontend_Boxalino_Command_FullDataSync extends ShopwareCo
             $exporter = Shopware()->Container()->get('boxalino_intelligence.service_exporter');
             $exporter->setAccount($account);
             $exporter->setDelta(false);
-            $output = $exporter->run();
-            $successMessages[] = $output;
+            $outputMessage = $exporter->run();
+            $output->writeln('<info>'.$outputMessage.'</info>');
         } catch (\Throwable $e) {
             $output->writeln('<info>'.sprintf("Exception: %s.", $e->getMessage()).'</info>');
         }
