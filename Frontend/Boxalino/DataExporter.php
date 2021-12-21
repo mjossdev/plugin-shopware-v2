@@ -1084,14 +1084,15 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
         $files = $this->getFiles();
         $db = $this->db;
         $data = [];
-        $imagePath = $this->qi('s_media.path');
         $header = true;
         $mediaService = Shopware()->Container()->get('shopware_media.media_service');
         $inner_select = $db->select()
-            ->from('s_articles_img', [$imagePath])
+            ->from('s_articles_img', ['s_media.path'])
             ->join(array('s_media'), 's_media.id = s_articles_img.media_id', [])
             ->where('s_articles_img.articleID = a.id')
-            ->where('s_articles_img.main = 1');
+            ->where('s_articles_img.main = 1')
+            ->order('s_articles_img.position')
+            ->limit(1);
 
         $sql = $db->select()
             ->from(array('a' => 's_articles'), array('value' => new Zend_Db_Expr("($inner_select)")))
