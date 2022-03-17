@@ -18,7 +18,7 @@ class BxData
     private $delimiter = ',';
     private $sources = array();
 
-    private $host = 'http://di1.bx-cloud.com';
+    private $host = 'https://di1.bx-cloud.com';
 
     private $owner = 'bx_client_data_api';
 
@@ -574,6 +574,8 @@ class BxData
         curl_setopt($s, CURLOPT_ENCODING, '');
         curl_setopt($s, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($s, CURLOPT_POSTFIELDS, $fields);
+        curl_setopt($s, CURLOPT_SSL_VERIFYHOST, false);
+        curl_setopt($s, CURLOPT_SSL_VERIFYPEER, false);
 
         $responseBody = @curl_exec($s);
 
