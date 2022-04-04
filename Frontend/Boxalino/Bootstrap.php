@@ -1004,13 +1004,16 @@ class Shopware_Plugins_Frontend_Boxalino_Bootstrap
         }
     }
 
-
     protected function isLandingPage($categoryId) {
         $db = Shopware()->Db();
-        $sql = $db->select()->from(array('e_c' => 's_emotion_categories'), array())
-            ->joinLeft(array('e_e' => 's_emotion_element'), 'e_c.emotion_id = e_e.emotionID', array())
-            ->joinLeft(array('comp' => 's_library_component'), 'e_e.componentID = comp.id AND comp.template = \'boxalino_landingpage\'')
-            ->where('e_c.category_id = ?', $categoryId);
+        $sql = $db->select()->from(['e_c' => 's_emotion_categories'], [])
+            ->joinInner(['e' => 's_emotion'], 'e_c.emotion_id = e.id', [])
+            ->joinInner(['e_e' => 's_emotion_element'], 'e.id = e_e.emotionID', [])
+            ->joinInner(['comp' => 's_library_component'], 'e_e.componentID = comp.id')
+            ->where('e_c.category_id = ?', $categoryId)
+            ->where('e.active')
+            ->where("comp.template = 'boxalino_landingpage'")
+            ->limit(1);
         $result = $db->query($sql);
         return $result->rowCount() > 0;
     }
