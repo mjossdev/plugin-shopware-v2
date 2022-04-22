@@ -251,8 +251,8 @@ class BxClient
 
         // Refresh cookies
         if (empty($this->domain)) {
-            @setcookie('cems', $sessionId, 0);
-            @setcookie('cemv', $profileId, time() + self::VISITOR_COOKIE_TIME);
+            @setcookie('cems', $sessionId, 0, '/');
+            @setcookie('cemv', $profileId, time() + self::VISITOR_COOKIE_TIME, '/');
         } else {
             @setcookie('cems', $sessionId, 0, '/', $this->domain);
             @setcookie('cemv', $profileId, time() + self::VISITOR_COOKIE_TIME, '/', $this->domain);
