@@ -917,13 +917,13 @@ class Shopware_Plugins_Frontend_Boxalino_DataExporter
         foreach ($languages as $shopId => $language) {
             $lang_header[$language] = "value_$language";
             $shop = $repository->getActiveById($shopId);
-            $productPath = 'http://' . $shop->getHost() . $shop->getBasePath()  . $shop->getBaseUrl() . '/' ;
+            $productPath = 'https://' . $shop->getHost() . $shop->getBasePath()  . $shop->getBaseUrl() . '/' ;
             $lang_productPath[$language] = $productPath;
             $shop = null;
 
             $sql = $db->select()
                 ->from(array('r_u' => 's_core_rewrite_urls'),
-                    array('subshopID', 'path', 'org_path', 'main',
+                    array('subshopID', new Zend_Db_Expr("LOWER(path) as path"), 'org_path', 'main',
                         new Zend_Db_Expr("SUBSTR(org_path, LOCATE('sArticle=', org_path) + CHAR_LENGTH('sArticle=')) as articleID")
                     )
                 )
